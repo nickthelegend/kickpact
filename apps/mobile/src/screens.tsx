@@ -60,7 +60,11 @@ import {
 } from "./swap"
 import { ChainLogo, ChainSwitcherModal, chainByKey, type EvmChain } from "./chains"
 import { offRamp, onRamp } from "./fiat"
+import { QRModal } from "./qr"
 import { ethers } from "ethers"
+
+// Deep-link join targets encoded in shareable QR codes.
+export const joinLink = (type: "duel" | "pact", id: string) => `flicky://join?type=${type}&id=${id}`
 
 // USD₮ address per chain (for the dashboard balance + withdraw).
 const USDT_BY_CHAIN: Record<string, string> = {
@@ -518,6 +522,7 @@ export function PvpScreen({ onBack, onEnterDuel }: { onBack: () => void; onEnter
   const [busy, setBusy] = useState<string | null>(null)
   const [status, setStatus] = useState<string | null>(null)
   const [createdId, setCreatedId] = useState<string | null>(null)
+  const [qrOpen, setQrOpen] = useState(false)
 
   const stake = CHAIN.stakeTiers[tier]
   const stakeHuman = Number(stake) / Number(CHAIN.ONE_USDT)
@@ -633,7 +638,10 @@ export function PvpScreen({ onBack, onEnterDuel }: { onBack: () => void; onEnter
             <View style={st.codeBox}>
               <PixelText size={11} color={C.white45}>duel code</PixelText>
               <PixelText size={26} tracking={2}>#{createdId}</PixelText>
-              <PixelButton label="enter duel →" color={C.eth} onPress={() => onEnterDuel(createdId)} style={{ marginTop: 8 }} size={13} />
+              <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+                <PixelButton label="▦ QR" color={C.importBlue} onPress={() => setQrOpen(true)} size={13} style={{ flex: 1 }} />
+                <PixelButton label="enter duel →" color={C.eth} onPress={() => onEnterDuel(createdId)} size={13} style={{ flex: 1 }} />
+              </View>
             </View>
           )}
         </Panel>
@@ -660,6 +668,16 @@ export function PvpScreen({ onBack, onEnterDuel }: { onBack: () => void; onEnter
           you are {address ? shortAddr(address) : ""}
         </PixelText>
       </ScrollView>
+      {createdId && (
+        <QRModal
+          visible={qrOpen}
+          title={`duel #${createdId}`}
+          value={joinLink("duel", createdId)}
+          code={`#${createdId}`}
+          hint="your opponent scans this (or enters the code) to join and stake."
+          onClose={() => setQrOpen(false)}
+        />
+      )}
     </View>
   )
 }
@@ -1138,6 +1156,7 @@ export function ProfileScreen({ onSwap }: { onSwap?: () => void }) {
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [receiveOpen, setReceiveOpen] = useState(false)
 
   useEffect(() => {
     if (!address) return
@@ -1197,7 +1216,7 @@ export function ProfileScreen({ onSwap }: { onSwap?: () => void }) {
           </PixelText>
           <View style={{ height: 1, alignSelf: "stretch", backgroundColor: C.white15, marginVertical: 14 }} />
           <View style={{ flexDirection: "row", gap: 10, alignSelf: "stretch" }}>
-            <PixelButton label="receive" color={C.eth} size={12} style={{ flex: 1 }} onPress={copyAddr} />
+            <PixelButton label="receive" color={C.eth} size={12} style={{ flex: 1 }} onPress={() => setReceiveOpen(true)} />
             <PixelButton label={busy ? "…" : "mint USD₮"} color={C.green} size={12} style={{ flex: 1 }} onPress={faucet} />
           </View>
         </Panel>
@@ -1300,6 +1319,14 @@ export function ProfileScreen({ onSwap }: { onSwap?: () => void }) {
 
         <PixelButton label="log out" color="#7a2e2e" size={13} onPress={logout} style={{ marginTop: 4, marginBottom: 8 }} />
       </ScrollView>
+      <QRModal
+        visible={receiveOpen}
+        title="receive"
+        value={address || ""}
+        code={address ? shortAddr(address) : ""}
+        hint="scan to send USD₮ or ETH to this self-custodial wallet."
+        onClose={() => setReceiveOpen(false)}
+      />
     </View>
   )
 }
@@ -1376,6 +1403,7 @@ export function GameScreen({ gameId, onBack }: { gameId: string; onBack: () => v
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState<string | null>(null)
   const [createdId, setCreatedId] = useState<string | null>(null)
+  const [qrOpen, setQrOpen] = useState(false)
 
   useEffect(() => {
     fetchGame(gameId).then(setGame).catch(() => {})
@@ -1498,8 +1526,9 @@ export function GameScreen({ gameId, onBack }: { gameId: string; onBack: () => v
                   <View style={st.codeBox}>
                     <PixelText size={10} color={C.white45}>prediction code</PixelText>
                     <PixelText size={24} tracking={2}>#{createdId}</PixelText>
-                    <PixelText size={9} upper={false} color={C.white45} style={{ marginTop: 4 }}>
-                      friend accepts in the Pacts tab
+                    <PixelButton label="▦ show QR to share" color={C.importBlue} onPress={() => setQrOpen(true)} size={12} style={{ marginTop: 8 }} />
+                    <PixelText size={9} upper={false} color={C.white45} style={{ marginTop: 6 }}>
+                      friend scans the QR or accepts in the Pacts tab
                     </PixelText>
                   </View>
                 )}
@@ -1512,6 +1541,16 @@ export function GameScreen({ gameId, onBack }: { gameId: string; onBack: () => v
             </>
           )}
         </ScrollView>
+      )}
+      {createdId && (
+        <QRModal
+          visible={qrOpen}
+          title={`prediction #${createdId}`}
+          value={joinLink("pact", createdId)}
+          code={`#${createdId}`}
+          hint="your friend scans this (or enters the code in Pacts) to take the other side."
+          onClose={() => setQrOpen(false)}
+        />
       )}
     </View>
   )
