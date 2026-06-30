@@ -12,6 +12,7 @@ import {
   DuelScreen,
   GameScreen,
   HomeScreen,
+  MarketsScreen,
   PactsScreen,
   ProfileScreen,
   PvpScreen,
@@ -92,6 +93,7 @@ function Game() {
   const [gameId, setGameId] = useState<string | null>(null)
   const [swapOpen, setSwapOpen] = useState(false)
   const [bridgeOpen, setBridgeOpen] = useState(false)
+  const [marketsOpen, setMarketsOpen] = useState(false)
 
   if (status === "INITIALIZING") {
     return (
@@ -108,6 +110,7 @@ function Game() {
   if (gameId) return <GameScreen gameId={gameId} onBack={() => setGameId(null)} />
   if (swapOpen) return <SwapScreen onBack={() => setSwapOpen(false)} />
   if (bridgeOpen) return <BridgeScreen onBack={() => setBridgeOpen(false)} />
+  if (marketsOpen) return <MarketsScreen onBack={() => setMarketsOpen(false)} />
 
   return (
     <View style={{ flex: 1 }}>
@@ -118,6 +121,7 @@ function Game() {
             onGame={(id) => setGameId(id)}
             onSwap={() => setSwapOpen(true)}
             onBridge={() => setBridgeOpen(true)}
+            onMarkets={() => setMarketsOpen(true)}
           />
         )}
         {tab === "pacts" && <PactsScreen />}

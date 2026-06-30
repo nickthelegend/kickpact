@@ -6,7 +6,7 @@
  *  - Duel    : reveal deck (creator) + swipe YES/NO on each card — real txs
  */
 import { useCallback, useEffect, useRef, useState } from "react"
-import { ActivityIndicator, Image, Modal, Pressable, ScrollView, Share, StyleSheet, TextInput, View } from "react-native"
+import { ActivityIndicator, Image, Linking, Modal, Pressable, ScrollView, Share, StyleSheet, TextInput, View } from "react-native"
 
 import { C } from "./theme"
 import { BalanceChip, Panel, PixelButton, PixelText } from "./ui"
@@ -64,6 +64,7 @@ import {
 import { ChainLogo, ChainSwitcherModal, chainByKey, type EvmChain } from "./chains"
 import { BRIDGE_CHAINS, bridge, quoteBridge, type BridgeChain } from "./bridge"
 import { offRamp, onRamp } from "./fiat"
+import { fetchMarkets, fmtVolume, marketUrl, toCents, type PolyMarket } from "./polymarket"
 import { QRModal } from "./qr"
 import { ethers } from "ethers"
 
@@ -344,7 +345,7 @@ function WithdrawModal({
   )
 }
 
-function HomeDashboard({ onSwap, onBridge }: { onSwap: () => void; onBridge: () => void }) {
+function HomeDashboard({ onSwap, onBridge, onMarkets }: { onSwap: () => void; onBridge: () => void; onMarkets: () => void }) {
   const { usdt, signer, address, refresh } = useWallet()
   const [mode, setMode] = useState<"testnet" | "mainnet">("testnet")
   const [mainBal, setMainBal] = useState<number | null>(null)
@@ -444,6 +445,19 @@ function HomeDashboard({ onSwap, onBridge }: { onSwap: () => void; onBridge: () 
 
       {note && <PixelText size={10} upper={false} color={C.white60}>{note}</PixelText>}
 
+      <Pressable onPress={onMarkets} style={st.polyBanner}>
+        <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: C.eth, alignItems: "center", justifyContent: "center" }}>
+          <PixelText size={16} color={C.white}>◎</PixelText>
+        </View>
+        <View style={{ flex: 1 }}>
+          <PixelText size={12} tracking={1}>Polymarket</PixelText>
+          <PixelText size={9} upper={false} color={C.white45} style={{ marginTop: 2 }}>
+            trade real World Cup markets · mainnet
+          </PixelText>
+        </View>
+        <PixelText size={14} color={C.eth}>→</PixelText>
+      </Pressable>
+
       <WithdrawModal
         visible={withdrawing}
         chain={chain}
@@ -455,7 +469,7 @@ function HomeDashboard({ onSwap, onBridge }: { onSwap: () => void; onBridge: () 
   )
 }
 
-export function HomeScreen({ onProfile, onGame, onSwap, onBridge }: { onProfile?: () => void; onGame: (id: string) => void; onSwap: () => void; onBridge: () => void }) {
+export function HomeScreen({ onProfile, onGame, onSwap, onBridge, onMarkets }: { onProfile?: () => void; onGame: (id: string) => void; onSwap: () => void; onBridge: () => void; onMarkets: () => void }) {
   const [games, setGames] = useState<Game[]>([])
   const [filter, setFilter] = useState<GameFilter>("upcoming")
   const [loading, setLoading] = useState(true)
@@ -486,7 +500,7 @@ export function HomeScreen({ onProfile, onGame, onSwap, onBridge }: { onProfile?
     <View style={{ flex: 1 }}>
       <WalletHeader onAvatar={onProfile} />
       <ScrollView style={{ flex: 1 }} contentContainerStyle={st.scroll}>
-        <HomeDashboard onSwap={onSwap} onBridge={onBridge} />
+        <HomeDashboard onSwap={onSwap} onBridge={onBridge} onMarkets={onMarkets} />
         <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", marginTop: 2 }}>
           <PixelText size={20} tracking={3}>world cup</PixelText>
           <PixelText size={9} upper={false} color={C.white45}>p2p prediction market</PixelText>
@@ -1923,6 +1937,110 @@ export function BridgeScreen({ onBack }: { onBack: () => void }) {
   )
 }
 
+// ───────────────────────── Polymarket (mainnet CLOB) ─────────────────────────
+function MarketCard({ m, onTrade }: { m: PolyMarket; onTrade: () => void }) {
+  const yesIdx = m.outcomes.findIndex((o) => o.toLowerCase() === "yes")
+  const isYesNo = m.outcomes.length === 2 && yesIdx >= 0
+  const noIdx = yesIdx === 0 ? 1 : 0
+  const topIdx = m.prices.indexOf(Math.max(...m.prices))
+  return (
+    <Pressable onPress={onTrade}>
+      <Panel style={st.pad}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          {m.image ? (
+            <Image source={{ uri: m.image }} style={{ width: 38, height: 38, borderRadius: 8 }} />
+          ) : (
+            <View style={{ width: 38, height: 38, borderRadius: 8, backgroundColor: C.panel }} />
+          )}
+          <PixelText size={11} upper={false} style={{ flex: 1, lineHeight: 16 }}>{m.question}</PixelText>
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 12 }}>
+          {isYesNo ? (
+            <>
+              <View style={[st.mktPill, { backgroundColor: "rgba(59,163,75,0.18)" }]}>
+                <PixelText size={11} color={C.greenLight}>yes {toCents(m.prices[yesIdx])}</PixelText>
+              </View>
+              <View style={[st.mktPill, { backgroundColor: "rgba(192,57,43,0.18)" }]}>
+                <PixelText size={11} color="#ff8a80">no {toCents(m.prices[noIdx])}</PixelText>
+              </View>
+            </>
+          ) : (
+            <View style={[st.mktPill, { backgroundColor: "rgba(98,126,234,0.18)" }]}>
+              <PixelText size={11} color={C.ethLight}>{m.outcomes[topIdx]} {toCents(m.prices[topIdx])}</PixelText>
+            </View>
+          )}
+          <View style={{ flex: 1 }} />
+          <PixelText size={9} upper={false} color={C.white45}>{fmtVolume(m.volume)} vol</PixelText>
+        </View>
+        <View style={{ marginTop: 10, alignItems: "flex-end" }}>
+          <PixelText size={9} upper color={C.eth} tracking={1}>trade on polymarket ↗</PixelText>
+        </View>
+      </Panel>
+    </Pressable>
+  )
+}
+
+export function MarketsScreen({ onBack }: { onBack: () => void }) {
+  const [markets, setMarkets] = useState<PolyMarket[]>([])
+  const [loading, setLoading] = useState(true)
+  const [q, setQ] = useState("")
+
+  const [err, setErr] = useState<string | null>(null)
+
+  const load = useCallback(() => {
+    setLoading(true)
+    setErr(null)
+    fetchMarkets({ limit: 40 })
+      .then(setMarkets)
+      .catch((e) => setErr(String(e?.message || e)))
+      .finally(() => setLoading(false))
+  }, [])
+  useEffect(load, [load])
+
+  const shown = q ? markets.filter((m) => m.question.toLowerCase().includes(q.toLowerCase())) : markets
+
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={st.topbar}>
+        <PixelButton label="←" color={C.importBlue} onPress={onBack} size={14} />
+        <PixelText size={16} tracking={2}>polymarket</PixelText>
+        <View style={{ width: 44 }} />
+      </View>
+      <ScrollView contentContainerStyle={st.scroll}>
+        <Panel style={st.pad}>
+          <PixelText size={9} upper={false} color={C.white45} style={{ lineHeight: 14 }}>
+            real-money prediction markets · live CLOB odds · Polygon mainnet. the
+            real-stakes version of your Pacts — same World Cup, real order book.
+          </PixelText>
+        </Panel>
+        <TextInput
+          value={q}
+          onChangeText={setQ}
+          placeholder="search markets (e.g. world cup, USA…)"
+          placeholderTextColor={C.white35}
+          autoCapitalize="none"
+          style={[st.input, { marginBottom: 0 }]}
+        />
+        {loading && <ActivityIndicator color={C.eth} style={{ marginTop: 24 }} />}
+        {!loading && err && (
+          <View style={{ alignItems: "center", marginTop: 24, gap: 10 }}>
+            <PixelText size={11} upper={false} color={C.white35}>couldn't load markets — {err}</PixelText>
+            <PixelButton label="retry" color={C.eth} size={12} onPress={load} />
+          </View>
+        )}
+        {!loading && !err && shown.length === 0 && (
+          <PixelText size={11} upper={false} color={C.white35} style={{ textAlign: "center", marginTop: 24 }}>
+            no markets found.
+          </PixelText>
+        )}
+        {shown.map((m) => (
+          <MarketCard key={m.id} m={m} onTrade={() => Linking.openURL(marketUrl(m))} />
+        ))}
+      </ScrollView>
+    </View>
+  )
+}
+
 const st = StyleSheet.create({
   chainBtn: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: C.panel, borderWidth: 1, borderColor: C.panelBorder, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11 },
   modeRow: { flexDirection: "row", alignSelf: "flex-start", backgroundColor: C.panel, borderRadius: 999, padding: 3, gap: 3 },
@@ -1935,6 +2053,8 @@ const st = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
   modalSheet: { backgroundColor: C.frame, borderTopLeftRadius: 18, borderTopRightRadius: 18, borderTopWidth: 1, borderTopColor: C.highlight, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 28 },
   betRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 9, borderTopWidth: 1, borderTopColor: C.white15 },
+  mktPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  polyBanner: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "rgba(98,126,234,0.12)", borderWidth: 1, borderColor: C.eth, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 28 },
   hero: { width: 240, height: 150, marginBottom: 4 },
   sub: { textAlign: "center", marginTop: 6, marginBottom: 20 },
