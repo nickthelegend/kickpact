@@ -624,6 +624,7 @@ export function PactsScreen() {
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState<string | null>(null)
   const [ids, setIds] = useState<bigint[]>([])
+  const [showCreate, setShowCreate] = useState(false)
 
   const stake = CHAIN.stakeTiers[tier]
 
@@ -660,6 +661,7 @@ export function PactsScreen() {
       setStatus(`pact #${pactId} created — share the code so your friend can accept`)
       setTerms("")
       setCounterparty("")
+      setShowCreate(false)
       await load()
     } catch (e) {
       setStatus(errMsg(e))
@@ -678,16 +680,31 @@ export function PactsScreen() {
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={st.scroll}>
+        {/* stats + create toggle */}
         <Panel style={st.pad}>
-          <PixelText size={11} upper={false} color={C.white60} style={{ lineHeight: 18 }}>
-            lock a bet with a friend. e.g. “if Brazil scores first, you owe me 2
-            USD₮.” both stake; the winner claims the pot and the loser's escrow
-            auto-releases. no custodian, no KYC — pure self-custodial P2P.
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <View>
+              <PixelText size={32} tracking={1}>{ids.length}</PixelText>
+              <PixelText size={10} upper color={C.white45} tracking={1}>
+                pact{ids.length === 1 ? "" : "s"} with friends
+              </PixelText>
+            </View>
+            <PixelButton
+              label={showCreate ? "✕ cancel" : "+ create pact"}
+              color={showCreate ? C.importBlue : C.green}
+              size={12}
+              onPress={() => setShowCreate((v) => !v)}
+            />
+          </View>
+          <PixelText size={10} upper={false} color={C.white45} style={{ marginTop: 10, lineHeight: 15 }}>
+            lock a bet with a friend — both stake, winner claims the pot, loser's
+            escrow auto-releases. no custodian, no KYC.
           </PixelText>
         </Panel>
 
-        {/* create */}
-        <Panel style={st.pad}>
+        {/* create form (toggled) */}
+        {showCreate && (
+        <Panel style={[st.pad, { borderColor: C.green }]}>
           <PixelText size={13} tracking={2}>
             new pact
           </PixelText>
@@ -724,6 +741,7 @@ export function PactsScreen() {
           </PixelText>
           <PixelButton label={busy ? "…" : "lock the pact"} color={C.green} onPress={onCreate} style={{ marginTop: 12 }} />
         </Panel>
+        )}
 
         {status && (
           <Panel style={st.pad}>
@@ -901,13 +919,22 @@ export function ProfileScreen() {
   const [phrase, setPhrase] = useState<string | null>(null)
   const [showPhrase, setShowPhrase] = useState(false)
   const [history, setHistory] = useState<HistoryItem[]>([])
+  const [showHistory, setShowHistory] = useState(true)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (!address) return
     myHistory(provider, address).then(setHistory).catch(() => {})
   }, [provider, address])
+
+  const copyAddr = async () => {
+    if (!address) return
+    await Share.share({ message: address })
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
 
   const reveal = async () => {
     if (showPhrase) return setShowPhrase(false)
@@ -938,20 +965,26 @@ export function ProfileScreen() {
       </View>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={st.scroll}>
         <Panel style={[st.pad, { alignItems: "center" }]}>
-          <View style={[st.avatar, { width: 64, height: 64, marginBottom: 10 }]} />
-          <PixelText size={14} tracking={1}>
+          <View style={[st.avatar, { width: 88, height: 88, borderRadius: 14, marginBottom: 12 }]} />
+          <PixelText size={20} tracking={1}>
             {address ? shortAddr(address) : "…"}
           </PixelText>
-          <PixelText size={9} upper={false} color={C.white35} style={{ marginTop: 6, textAlign: "center" }}>
-            {address}
+          <Pressable onPress={copyAddr} style={{ marginTop: 8, flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <PixelText size={11} upper={false} color={copied ? C.greenLight : C.white60}>
+              {address ? shortAddr(address) : ""}
+            </PixelText>
+            <PixelText size={13} color={copied ? C.greenLight : C.white45}>
+              {copied ? "✓" : "⎘"}
+            </PixelText>
+          </Pressable>
+          <PixelText size={9} tracking={2} color={C.white45} style={{ marginTop: 8 }}>
+            self-custodial · via WDK
           </PixelText>
-          <PixelButton
-            label="share address (receive)"
-            color={C.importBlue}
-            size={12}
-            style={{ marginTop: 12, alignSelf: "stretch" }}
-            onPress={() => address && Share.share({ message: address })}
-          />
+          <View style={{ height: 1, alignSelf: "stretch", backgroundColor: C.white15, marginVertical: 14 }} />
+          <View style={{ flexDirection: "row", gap: 10, alignSelf: "stretch" }}>
+            <PixelButton label="receive" color={C.eth} size={12} style={{ flex: 1 }} onPress={copyAddr} />
+            <PixelButton label={busy ? "…" : "mint USD₮"} color={C.green} size={12} style={{ flex: 1 }} onPress={faucet} />
+          </View>
         </Panel>
 
         <View style={{ flexDirection: "row", gap: 12 }}>
@@ -973,9 +1006,8 @@ export function ProfileScreen() {
           </Panel>
         </View>
 
-        <PixelButton label={busy ? "…" : "+ mint 100 test USD₮"} color={C.green} onPress={faucet} size={13} />
         {msg && (
-          <PixelText size={11} upper={false} color={C.white60}>
+          <PixelText size={11} upper={false} color={C.white60} style={{ textAlign: "center" }}>
             {msg}
           </PixelText>
         )}
@@ -1011,16 +1043,20 @@ export function ProfileScreen() {
           />
         </Panel>
 
-        {/* history */}
-        <PixelText size={12} tracking={2} color={C.white45}>
-          match history
-        </PixelText>
-        {history.length === 0 && (
-          <PixelText size={11} upper={false} color={C.white35}>
-            no matches yet — start a duel or a pact.
+        {/* pvp history (collapsible) */}
+        <Pressable
+          onPress={() => setShowHistory((v) => !v)}
+          style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: C.eth, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 13 }}
+        >
+          <PixelText size={12} tracking={2}>pvp history ({history.length})</PixelText>
+          <PixelText size={12}>{showHistory ? "▾" : "▸"}</PixelText>
+        </Pressable>
+        {showHistory && history.length === 0 && (
+          <PixelText size={11} upper={false} color={C.white35} style={{ textAlign: "center", marginTop: 2 }}>
+            no 1v1 history yet
           </PixelText>
         )}
-        {history.map((h) => (
+        {showHistory && history.map((h) => (
           <Panel key={`${h.kind}-${h.id}`} style={[st.pad, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}>
             <View>
               <PixelText size={12} tracking={1}>
