@@ -26,6 +26,19 @@ import {
   type DuelState,
 } from "./duel"
 import { loadSecret, saveSecret } from "./storage"
+import {
+  acceptPact,
+  agreePact,
+  cancelPact,
+  createPact,
+  fetchPact,
+  getTermsText,
+  listMyPacts,
+  resolvePactByArbiter,
+  ZERO,
+  type PactState,
+} from "./pact"
+import { PACT_STATUS } from "./chain"
 
 const USDT_ICON = require("../assets/tokens/usdc-icon.png")
 const MANAGER_ICON = require("../assets/tokens/manager-usdc.png")
@@ -456,6 +469,287 @@ export function DuelScreen({ duelId, onExit }: { duelId: string; onExit: () => v
         )}
       </ScrollView>
     </View>
+  )
+}
+
+// ───────────────────────── Pacts (friend bets) ─────────────────────────
+const isAddr = (s: string) => /^0x[a-fA-F0-9]{40}$/.test(s.trim())
+const errMsg = (e: unknown) => (e instanceof Error ? e.message.slice(0, 90) : "failed")
+
+export function PactsScreen() {
+  const { signer, address, provider, usdt } = useWallet()
+  const [counterparty, setCounterparty] = useState("")
+  const [terms, setTerms] = useState("")
+  const [tier, setTier] = useState(0)
+  const [busy, setBusy] = useState(false)
+  const [status, setStatus] = useState<string | null>(null)
+  const [ids, setIds] = useState<bigint[]>([])
+
+  const stake = CHAIN.stakeTiers[tier]
+
+  const load = useCallback(async () => {
+    if (!address) return
+    try {
+      setIds(await listMyPacts(provider, address))
+    } catch {
+      /* ignore */
+    }
+  }, [provider, address])
+
+  useEffect(() => {
+    load()
+    const t = setInterval(load, 8000)
+    return () => clearInterval(t)
+  }, [load])
+
+  const onCreate = async () => {
+    if (!signer || !address) return
+    if (!isAddr(counterparty)) return setStatus("enter a valid friend address (0x…)")
+    if (!terms.trim()) return setStatus("describe the bet")
+    setBusy(true)
+    setStatus("approving USD₮ + creating pact…")
+    try {
+      await approveUsdt(signer, stake)
+      const deadline = Math.floor(Date.now() / 1000) + 7 * 24 * 3600
+      const { pactId } = await createPact(signer, {
+        counterparty: counterparty.trim(),
+        stake,
+        termsText: terms.trim(),
+        deadline,
+      })
+      setStatus(`pact #${pactId} created — share the code so your friend can accept`)
+      setTerms("")
+      setCounterparty("")
+      await load()
+    } catch (e) {
+      setStatus(errMsg(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={st.header}>
+        <PixelText size={22} tracking={4}>
+          pacts
+        </PixelText>
+        <BalanceChip icon={USDT_ICON} amount={usdt.toFixed(2)} />
+      </View>
+
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={st.scroll}>
+        <Panel style={st.pad}>
+          <PixelText size={11} upper={false} color={C.white60} style={{ lineHeight: 18 }}>
+            lock a bet with a friend. e.g. “if Brazil scores first, you owe me 2
+            USD₮.” both stake; the winner claims the pot and the loser's escrow
+            auto-releases. no custodian, no KYC — pure self-custodial P2P.
+          </PixelText>
+        </Panel>
+
+        {/* create */}
+        <Panel style={st.pad}>
+          <PixelText size={13} tracking={2}>
+            new pact
+          </PixelText>
+          <TextInput
+            value={terms}
+            onChangeText={setTerms}
+            placeholder="if Brazil scores first, you owe me 2 USD₮"
+            placeholderTextColor={C.white35}
+            multiline
+            style={st.input}
+          />
+          <TextInput
+            value={counterparty}
+            onChangeText={setCounterparty}
+            placeholder="friend's wallet address (0x…)"
+            placeholderTextColor={C.white35}
+            autoCapitalize="none"
+            style={st.input}
+          />
+          <View style={st.tiers}>
+            {CHAIN.stakeTiers.map((t, i) => (
+              <PixelButton
+                key={i}
+                label={`${Number(t) / Number(CHAIN.ONE_USDT)}`}
+                color={i === tier ? C.eth : C.importBlue}
+                onPress={() => setTier(i)}
+                style={st.tier}
+                size={13}
+              />
+            ))}
+          </View>
+          <PixelText size={10} upper={false} color={C.white45} style={{ marginTop: 6 }}>
+            each side stakes {Number(stake) / Number(CHAIN.ONE_USDT)} USD₮ · winner takes {(2 * Number(stake)) / Number(CHAIN.ONE_USDT)}
+          </PixelText>
+          <PixelButton label={busy ? "…" : "lock the pact"} color={C.green} onPress={onCreate} style={{ marginTop: 12 }} />
+        </Panel>
+
+        {status && (
+          <Panel style={st.pad}>
+            <PixelText size={11} upper={false} color={C.white70}>
+              {status}
+            </PixelText>
+          </Panel>
+        )}
+
+        <PixelText size={12} tracking={2} color={C.white45} style={{ marginTop: 4 }}>
+          your pacts
+        </PixelText>
+        {ids.length === 0 && (
+          <PixelText size={11} upper={false} color={C.white35}>
+            no pacts yet. lock one above, or ask a friend for their pact code.
+          </PixelText>
+        )}
+        {ids.map((id) => (
+          <PactRow key={id.toString()} id={id} onChanged={load} setStatus={setStatus} />
+        ))}
+
+        {/* accept by code */}
+        <AcceptByCode onAccepted={load} setStatus={setStatus} />
+      </ScrollView>
+    </View>
+  )
+}
+
+function AcceptByCode({ onAccepted, setStatus }: { onAccepted: () => void; setStatus: (s: string) => void }) {
+  const { signer, provider } = useWallet()
+  const [code, setCode] = useState("")
+  const [busy, setBusy] = useState(false)
+  const onAccept = async () => {
+    if (!signer || !code) return
+    setBusy(true)
+    setStatus("approving + accepting pact…")
+    try {
+      const p = await fetchPact(provider, BigInt(code))
+      await approveUsdt(signer, p.stake)
+      await acceptPact(signer, BigInt(code))
+      setStatus(`accepted pact #${code} — stake locked`)
+      setCode("")
+      onAccepted()
+    } catch (e) {
+      setStatus(errMsg(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <Panel style={st.pad}>
+      <PixelText size={13} tracking={2}>
+        accept by code
+      </PixelText>
+      <TextInput
+        value={code}
+        onChangeText={setCode}
+        placeholder="pact #"
+        placeholderTextColor={C.white35}
+        keyboardType="number-pad"
+        style={st.input}
+      />
+      <PixelButton label={busy ? "…" : "accept pact"} color={C.eth} onPress={onAccept} />
+    </Panel>
+  )
+}
+
+function PactRow({ id, onChanged, setStatus }: { id: bigint; onChanged: () => void; setStatus: (s: string) => void }) {
+  const { signer, address, provider } = useWallet()
+  const [p, setP] = useState<PactState | null>(null)
+  const [text, setText] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  const load = useCallback(async () => {
+    try {
+      setP(await fetchPact(provider, id))
+      setText(await getTermsText(id))
+    } catch {
+      /* ignore */
+    }
+  }, [provider, id])
+  useEffect(() => {
+    load()
+  }, [load])
+
+  if (!p || !address) return null
+  const me = address.toLowerCase()
+  const amProposer = p.proposer.toLowerCase() === me
+  const amCounter = p.counterparty.toLowerCase() === me
+  const amArbiter = p.arbiter.toLowerCase() === me && p.arbiter !== ZERO
+  const other = amProposer ? p.counterparty : p.proposer
+  const statusName =
+    p.status === PACT_STATUS.PROPOSED ? "proposed"
+    : p.status === PACT_STATUS.ACTIVE ? "active — locked"
+    : p.status === PACT_STATUS.RESOLVED ? "resolved"
+    : "refunded"
+
+  const act = async (fn: () => Promise<string>, msg: string) => {
+    setBusy(true)
+    setStatus(msg)
+    try {
+      await fn()
+      setStatus("done")
+      await load()
+      onChanged()
+    } catch (e) {
+      setStatus(errMsg(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Panel style={st.pad}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <PixelText size={12} tracking={1}>
+          pact #{id.toString()}
+        </PixelText>
+        <PixelText size={10} color={C.white45}>
+          {statusName}
+        </PixelText>
+      </View>
+      <PixelText size={12} upper={false} color={C.white} style={{ marginTop: 8, lineHeight: 18 }}>
+        {text ?? "(terms hash on-chain — ask the proposer for the wording)"}
+      </PixelText>
+      <PixelText size={10} upper={false} color={C.white45} style={{ marginTop: 6 }}>
+        stake {Number(p.stake) / Number(CHAIN.ONE_USDT)} USD₮ · vs {shortAddr(other)}
+        {p.status === PACT_STATUS.RESOLVED && p.winner !== ZERO ? `\nwinner: ${p.winner.toLowerCase() === me ? "you 🏆" : shortAddr(p.winner)}` : ""}
+      </PixelText>
+
+      {busy && <ActivityIndicator color={C.eth} style={{ marginTop: 8 }} />}
+
+      {/* actions */}
+      {p.status === PACT_STATUS.PROPOSED && amCounter && (
+        <PixelButton label="accept & lock stake" color={C.green} style={{ marginTop: 10 }} size={13}
+          onPress={() => act(async () => { await approveUsdt(signer!, p.stake); return acceptPact(signer!, id) }, "accepting…")} />
+      )}
+      {p.status === PACT_STATUS.PROPOSED && amProposer && (
+        <PixelButton label="cancel & refund" color={C.importBlue} style={{ marginTop: 10 }} size={13}
+          onPress={() => act(() => cancelPact(signer!, id), "cancelling…")} />
+      )}
+      {p.status === PACT_STATUS.ACTIVE && amArbiter && (
+        <View style={{ marginTop: 10, gap: 8 }}>
+          <PixelText size={10} color={C.white45}>you are the arbiter — declare the winner</PixelText>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <PixelButton label="proposer" color={C.eth} style={{ flex: 1 }} size={12}
+              onPress={() => act(() => resolvePactByArbiter(signer!, id, p.proposer), "resolving…")} />
+            <PixelButton label="counterparty" color={C.eth} style={{ flex: 1 }} size={12}
+              onPress={() => act(() => resolvePactByArbiter(signer!, id, p.counterparty), "resolving…")} />
+          </View>
+        </View>
+      )}
+      {p.status === PACT_STATUS.ACTIVE && (amProposer || amCounter) && (
+        <View style={{ marginTop: 10, gap: 8 }}>
+          <PixelText size={10} color={C.white45}>agree on the outcome (both must match)</PixelText>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <PixelButton label="I won" color={C.green} style={{ flex: 1 }} size={12}
+              onPress={() => act(() => agreePact(signer!, id, address), "voting…")} />
+            <PixelButton label="they won" color="#b3434f" style={{ flex: 1 }} size={12}
+              onPress={() => act(() => agreePact(signer!, id, other), "voting…")} />
+            <PixelButton label="void" color={C.importBlue} style={{ flex: 1 }} size={12}
+              onPress={() => act(() => agreePact(signer!, id, ZERO), "voting…")} />
+          </View>
+        </View>
+      )}
+    </Panel>
   )
 }
 

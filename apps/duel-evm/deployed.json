@@ -5,6 +5,7 @@
   "explorer": "https://sepolia.etherscan.io",
   "contracts": {
     "FlickyDuel": "0x045Ad96EB24CE29f02C4E41542507DE26FE13895",
+    "FlickyPacts": "0x7Fa4E76aD2BDF8939972d690b7c60ba9dbe42881",
     "MockUSDT": "0x4802B35fFE360CAcF7bc22702544DDA207b950A3"
   },
   "stakeToken": {

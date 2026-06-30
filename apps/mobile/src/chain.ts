@@ -8,6 +8,7 @@ export const CHAIN = {
   rpcUrl: "https://ethereum-sepolia-rpc.publicnode.com",
   explorer: "https://sepolia.etherscan.io",
   duelAddress: "0x045Ad96EB24CE29f02C4E41542507DE26FE13895",
+  pactsAddress: "0x7Fa4E76aD2BDF8939972d690b7c60ba9dbe42881",
   usdtAddress: "0x4802B35fFE360CAcF7bc22702544DDA207b950A3",
   USDT_DECIMALS: 6,
   ONE_USDT: 1_000_000n,
@@ -44,6 +45,22 @@ export const USDT_ABI = [
 ] as const
 
 export const DUEL_STATUS = { PENDING: 1, ACTIVE: 2, COMPLETE: 3 } as const
+
+export const FLICKY_PACTS_ABI = [
+  "function createPact(address counterparty, address arbiter, uint128 stake, bytes32 terms, uint64 deadline) returns (uint256 pactId)",
+  "function acceptPact(uint256 pactId)",
+  "function agree(uint256 pactId, address winner)",
+  "function resolveByArbiter(uint256 pactId, address winner)",
+  "function cancelPact(uint256 pactId)",
+  "function refundExpired(uint256 pactId)",
+  "function nextPactId() view returns (uint256)",
+  "function getPact(uint256 pactId) view returns (tuple(address proposer, address counterparty, address arbiter, uint128 stake, uint8 status, address winner, bytes32 terms, uint64 deadline, address p0Vote, address p1Vote, bool p0Voted, bool p1Voted))",
+  "event PactCreated(uint256 indexed pactId, address indexed proposer, address indexed counterparty, address arbiter, uint128 stake, bytes32 terms, uint64 deadline)",
+  "event PactAccepted(uint256 indexed pactId, address indexed counterparty)",
+  "event PactResolved(uint256 indexed pactId, address indexed winner, uint256 payout, bool byArbiter)",
+] as const
+
+export const PACT_STATUS = { PROPOSED: 1, ACTIVE: 2, RESOLVED: 3, REFUNDED: 4 } as const
 
 export function shortAddr(a: string): string {
   return a ? `${a.slice(0, 6)}…${a.slice(-4)}` : ""

@@ -1,24 +1,87 @@
 import { useState } from "react"
-import { ActivityIndicator, View } from "react-native"
+import { ActivityIndicator, Image, Pressable, View } from "react-native"
 import { StatusBar } from "expo-status-bar"
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context"
 import { useFonts } from "expo-font"
 
 import { C } from "./src/theme"
+import { PixelText } from "./src/ui"
 import { WalletProvider, useWallet } from "./src/wallet"
-import { DuelScreen, HomeScreen, PvpScreen, SignInScreen } from "./src/screens"
+import {
+  DuelScreen,
+  HomeScreen,
+  PactsScreen,
+  PvpScreen,
+  SignInScreen,
+} from "./src/screens"
 
 /**
- * Flicky mobile — Expo / React Native. Self-custodial wallet (real BIP-39 seed
- * in the device keystore) + real on-chain PvP duels on the deployed Sepolia
- * FlickyDuel contract. Premium pixel UI rebuilt natively (RN StyleSheet).
+ * Flicky mobile — Expo / React Native. Self-custodial WDK wallet (seed in the
+ * device keychain) + real on-chain features on Sepolia:
+ *   • PvP prediction duels (FlickyDuel)
+ *   • Pacts — P2P friend bets in escrow (FlickyPacts)
+ * Premium pixel UI rebuilt natively (RN StyleSheet).
  */
 
-type Screen = { name: "home" } | { name: "pvp" } | { name: "duel"; id: string }
+type Tab = "home" | "pacts" | "pvp"
+
+const TABS: { key: Tab; icon: number; label: string }[] = [
+  { key: "home", icon: require("./assets/icons/main_menu.png"), label: "home" },
+  { key: "pacts", icon: require("./assets/icons/link.png"), label: "pacts" },
+  { key: "pvp", icon: require("./assets/icons/swords.png"), label: "pvp" },
+]
+
+function BottomNav({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        borderTopWidth: 1,
+        borderTopColor: "rgba(0,0,0,0.4)",
+        backgroundColor: C.frame,
+        paddingVertical: 8,
+      }}
+    >
+      {TABS.map((t) => {
+        const active = t.key === tab
+        return (
+          <Pressable key={t.key} onPress={() => onTab(t.key)} style={{ flex: 1, alignItems: "center", gap: 2 }}>
+            <View
+              style={
+                t.key === "pvp"
+                  ? {
+                      width: 60,
+                      height: 60,
+                      marginTop: -10,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: 12,
+                      borderWidth: 2,
+                      borderColor: C.gold,
+                      backgroundColor: C.frameDark,
+                      opacity: active ? 1 : 0.85,
+                    }
+                  : { opacity: active ? 1 : 0.5 }
+              }
+            >
+              <Image source={t.icon} style={{ width: 38, height: 38 }} resizeMode="contain" />
+            </View>
+            {t.key !== "pvp" && (
+              <PixelText size={9} color={active ? C.white : C.white45} tracking={1}>
+                {t.label}
+              </PixelText>
+            )}
+          </Pressable>
+        )
+      })}
+    </View>
+  )
+}
 
 function Game() {
   const { status } = useWallet()
-  const [screen, setScreen] = useState<Screen>({ name: "home" })
+  const [tab, setTab] = useState<Tab>("home")
+  const [duelId, setDuelId] = useState<string | null>(null)
 
   if (status === "INITIALIZING") {
     return (
@@ -30,19 +93,21 @@ function Game() {
 
   if (status === "NO_WALLET" || status === "BACKUP_PENDING") return <SignInScreen />
 
-  switch (screen.name) {
-    case "pvp":
-      return (
-        <PvpScreen
-          onBack={() => setScreen({ name: "home" })}
-          onEnterDuel={(id) => setScreen({ name: "duel", id })}
-        />
-      )
-    case "duel":
-      return <DuelScreen duelId={screen.id} onExit={() => setScreen({ name: "home" })} />
-    default:
-      return <HomeScreen onPlay={() => setScreen({ name: "pvp" })} />
-  }
+  // Duel is a focused full-screen flow (no tab bar).
+  if (duelId) return <DuelScreen duelId={duelId} onExit={() => setDuelId(null)} />
+
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
+        {tab === "home" && <HomeScreen onPlay={() => setTab("pvp")} />}
+        {tab === "pacts" && <PactsScreen />}
+        {tab === "pvp" && (
+          <PvpScreen onBack={() => setTab("home")} onEnterDuel={(id) => setDuelId(id)} />
+        )}
+      </View>
+      <BottomNav tab={tab} onTab={setTab} />
+    </View>
+  )
 }
 
 export default function App() {
