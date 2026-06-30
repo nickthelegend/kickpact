@@ -12,6 +12,7 @@ contract FlickyPactsTest is Test {
     address alice = address(0xA11CE); // proposer
     address bob = address(0xB0B); // counterparty
     address ref = address(0x4EF); // arbiter
+    address carol = address(0xCA401); // open-room joiner
 
     uint128 constant STAKE = 2_000_000; // 2 USD₮
     bytes32 constant TERMS = keccak256("If Brazil scores first, you owe me 2 USDt");
@@ -21,6 +22,7 @@ contract FlickyPactsTest is Test {
         pacts = new FlickyPacts(address(usdt));
         _fund(alice);
         _fund(bob);
+        _fund(carol);
     }
 
     function _fund(address who) internal {
@@ -151,5 +153,38 @@ contract FlickyPactsTest is Test {
         vm.prank(alice);
         vm.expectRevert(FlickyPacts.ZeroStake.selector);
         pacts.createPact(bob, ref, 0, TERMS, uint64(block.timestamp + 1 days));
+    }
+
+    // --- open rooms (counterparty == address(0): anyone can join) ---
+    function test_OpenRoom_AnyoneJoins() public {
+        vm.prank(alice);
+        uint256 id = pacts.createPact(address(0), ref, STAKE, TERMS, uint64(block.timestamp + 1 days));
+        assertEq(pacts.getPact(id).counterparty, address(0), "open on create");
+        uint256 cBefore = usdt.balanceOf(carol);
+        vm.prank(carol);
+        pacts.acceptPact(id);
+        assertEq(pacts.getPact(id).counterparty, carol, "joiner becomes counterparty");
+        assertEq(pacts.getPact(id).status, 2, "active");
+        assertEq(cBefore - usdt.balanceOf(carol), STAKE, "joiner stake pulled");
+    }
+
+    function test_OpenRoom_ArbiterPaysJoiner() public {
+        vm.prank(alice);
+        uint256 id = pacts.createPact(address(0), ref, STAKE, TERMS, uint64(block.timestamp + 1 days));
+        vm.prank(carol);
+        pacts.acceptPact(id);
+        uint256 cBefore = usdt.balanceOf(carol);
+        vm.prank(ref);
+        pacts.resolveByArbiter(id, carol);
+        assertEq(usdt.balanceOf(carol) - cBefore, 2 * STAKE, "open-room joiner wins pot");
+        assertEq(pacts.getPact(id).status, 3, "resolved");
+    }
+
+    function test_RevertWhen_ProposerJoinsOwnOpenRoom() public {
+        vm.prank(alice);
+        uint256 id = pacts.createPact(address(0), ref, STAKE, TERMS, uint64(block.timestamp + 1 days));
+        vm.prank(alice);
+        vm.expectRevert(FlickyPacts.BadCounterparty.selector);
+        pacts.acceptPact(id);
     }
 }

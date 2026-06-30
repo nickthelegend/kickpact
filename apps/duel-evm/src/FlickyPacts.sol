@@ -88,7 +88,8 @@ contract FlickyPacts {
         uint64 deadline
     ) external returns (uint256 pactId) {
         if (stake == 0) revert ZeroStake();
-        if (counterparty == address(0) || counterparty == msg.sender) revert BadCounterparty();
+        // counterparty == address(0) is allowed: an OPEN room anyone can join.
+        if (counterparty == msg.sender) revert BadCounterparty();
         pactId = nextPactId++;
         Pact storage p = pacts[pactId];
         p.proposer = msg.sender;
@@ -102,11 +103,18 @@ contract FlickyPacts {
         emit PactCreated(pactId, msg.sender, counterparty, arbiter, stake, terms, deadline);
     }
 
-    /// @notice Accept a pact as the named counterparty and lock your stake.
+    /// @notice Accept a pact and lock your stake. For a named pact only the
+    /// counterparty may accept; for an OPEN room (counterparty == 0) anyone but
+    /// the proposer may join and becomes the counterparty.
     function acceptPact(uint256 pactId) external {
         Pact storage p = pacts[pactId];
         if (p.status != STATUS_PROPOSED) revert NotProposed();
-        if (msg.sender != p.counterparty) revert NotCounterparty();
+        if (p.counterparty == address(0)) {
+            if (msg.sender == p.proposer) revert BadCounterparty();
+            p.counterparty = msg.sender;
+        } else if (msg.sender != p.counterparty) {
+            revert NotCounterparty();
+        }
         p.status = STATUS_ACTIVE;
         _pull(msg.sender, p.stake);
         emit PactAccepted(pactId, msg.sender);
