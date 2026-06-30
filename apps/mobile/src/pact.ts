@@ -42,7 +42,35 @@ export async function getTermsText(id: string | bigint): Promise<string | null> 
   try { return await AsyncStorage.getItem(termsKey(id)) } catch { return null }
 }
 
+// ── match → pacts index (so a match screen can show the bets placed on it) ──
+const matchKey = (gameId: string) => `flicky.match.pacts.${gameId}`
+export async function listMatchPacts(gameId: string): Promise<string[]> {
+  try {
+    const raw = await AsyncStorage.getItem(matchKey(gameId))
+    return raw ? (JSON.parse(raw) as string[]) : []
+  } catch { return [] }
+}
+export async function addMatchPact(gameId: string, pactId: string | bigint) {
+  try {
+    const cur = await listMatchPacts(gameId)
+    const next = Array.from(new Set([pactId.toString(), ...cur]))
+    await AsyncStorage.setItem(matchKey(gameId), JSON.stringify(next))
+  } catch {}
+}
+
 // ── writes ──
+/** Approve the FlickyPacts contract to pull `amount` USD₮ (stake escrow). */
+export async function approvePacts(signer: ethers.Signer, amount: bigint): Promise<string> {
+  const usdt = new ethers.Contract(
+    CHAIN.usdtAddress,
+    ["function approve(address,uint256) returns (bool)"],
+    signer,
+  )
+  const tx = await usdt.approve(CHAIN.pactsAddress, amount)
+  await tx.wait()
+  return tx.hash
+}
+
 export async function createPact(
   signer: ethers.Signer,
   opts: { counterparty: string; arbiter?: string; stake: bigint; termsText: string; deadline: number },

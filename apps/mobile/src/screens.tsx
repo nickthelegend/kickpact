@@ -31,10 +31,13 @@ import { loadSecret, saveSecret } from "./storage"
 import {
   acceptPact,
   agreePact,
+  addMatchPact,
+  approvePacts,
   cancelPact,
   createPact,
   fetchPact,
   getTermsText,
+  listMatchPacts,
   listMyPacts,
   resolvePactByArbiter,
   ZERO,
@@ -883,7 +886,7 @@ export function PactsScreen() {
     setBusy(true)
     setStatus("approving USD₮ + creating pact…")
     try {
-      await approveUsdt(signer, stake)
+      await approvePacts(signer, stake)
       const deadline = Math.floor(Date.now() / 1000) + 7 * 24 * 3600
       const { pactId } = await createPact(signer, {
         counterparty: counterparty.trim(),
@@ -1394,8 +1397,10 @@ export function RankScreen() {
 }
 
 // ───────────────────────── Game detail + predict ─────────────────────────
+interface MatchBet { id: string; pact: PactState; label: string }
+
 export function GameScreen({ gameId, onBack }: { gameId: string; onBack: () => void }) {
-  const { signer, usdt } = useWallet()
+  const { signer, usdt, provider, address } = useWallet()
   const [game, setGame] = useState<Game | null>(null)
   const [outcome, setOutcome] = useState<"home" | "draw" | "away" | null>(null)
   const [counterparty, setCounterparty] = useState("")
@@ -1404,10 +1409,25 @@ export function GameScreen({ gameId, onBack }: { gameId: string; onBack: () => v
   const [status, setStatus] = useState<string | null>(null)
   const [createdId, setCreatedId] = useState<string | null>(null)
   const [qrOpen, setQrOpen] = useState(false)
+  const [bets, setBets] = useState<MatchBet[]>([])
+
+  const loadBets = useCallback(async () => {
+    const ids = await listMatchPacts(gameId)
+    const out: MatchBet[] = []
+    for (const id of ids) {
+      try {
+        const pact = await fetchPact(provider, BigInt(id))
+        const terms = (await getTermsText(id)) || "prediction"
+        out.push({ id, pact, label: terms.split(" · World Cup")[0] })
+      } catch {}
+    }
+    setBets(out)
+  }, [gameId, provider])
 
   useEffect(() => {
     fetchGame(gameId).then(setGame).catch(() => {})
-  }, [gameId])
+    loadBets()
+  }, [gameId, loadBets])
 
   const stake = CHAIN.stakeTiers[tier]
   const live = game?.state === "in"
@@ -1424,15 +1444,17 @@ export function GameScreen({ gameId, onBack }: { gameId: string; onBack: () => v
           ? `Draw — ${game.home.shortName} vs ${game.away.shortName}`
           : `${outcome === "home" ? game.home.shortName : game.away.shortName} to beat ${outcome === "home" ? game.away.shortName : game.home.shortName}`
       const terms = `${label} · World Cup ${kickoffLabel(game)}`
-      await approveUsdt(signer, stake)
+      await approvePacts(signer, stake)
       const { pactId } = await createPact(signer, {
         counterparty: counterparty.trim(),
         stake,
         termsText: terms,
         deadline: Math.floor(Date.now() / 1000) + 30 * 24 * 3600,
       })
+      await addMatchPact(gameId, pactId)
       setCreatedId(pactId.toString())
       setStatus(`prediction #${pactId} locked — share the code with your friend`)
+      loadBets()
     } catch (e) {
       setStatus(errMsg(e))
     } finally {
@@ -1475,6 +1497,38 @@ export function GameScreen({ gameId, onBack }: { gameId: string; onBack: () => v
               <PixelText size={9} upper={false} color={C.white35} style={{ textAlign: "center", marginTop: 12 }}>{game.venue}</PixelText>
             )}
           </Panel>
+
+          {bets.length > 0 && (
+            <Panel style={st.pad}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <PixelText size={12} tracking={2}>predictions on this match</PixelText>
+                <PixelText size={10} color={C.white45}>{bets.length}</PixelText>
+              </View>
+              {bets.map((b) => {
+                const s = b.pact.status
+                const meta =
+                  s === PACT_STATUS.PROPOSED ? { t: "OPEN", c: C.amber }
+                  : s === PACT_STATUS.ACTIVE ? { t: "LOCKED", c: C.ethLight }
+                  : s === PACT_STATUS.RESOLVED ? { t: "SETTLED", c: C.greenLight }
+                  : { t: "REFUNDED", c: C.white45 }
+                const stk = (Number(b.pact.stake) / Number(CHAIN.ONE_USDT)).toFixed(0)
+                const mine = !!address && [b.pact.proposer, b.pact.counterparty].some((a) => a.toLowerCase() === address.toLowerCase())
+                return (
+                  <View key={b.id} style={st.betRow}>
+                    <View style={{ flex: 1 }}>
+                      <PixelText size={11} upper={false}>{b.label}</PixelText>
+                      <PixelText size={9} upper={false} color={C.white45} style={{ marginTop: 3 }}>
+                        #{b.id} · {stk} USD₮ each{mine ? " · yours" : ""}
+                      </PixelText>
+                    </View>
+                    <View style={st.statusPill}>
+                      <PixelText size={9} color={meta.c} tracking={1}>{meta.t}</PixelText>
+                    </View>
+                  </View>
+                )
+              })}
+            </Panel>
+          )}
 
           {done ? (
             <Panel style={st.pad}>
@@ -1719,6 +1773,7 @@ const st = StyleSheet.create({
   actionIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: C.importBlue, alignItems: "center", justifyContent: "center" },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
   modalSheet: { backgroundColor: C.frame, borderTopLeftRadius: 18, borderTopRightRadius: 18, borderTopWidth: 1, borderTopColor: C.highlight, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 28 },
+  betRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 9, borderTopWidth: 1, borderTopColor: C.white15 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 28 },
   hero: { width: 240, height: 150, marginBottom: 4 },
   sub: { textAlign: "center", marginTop: 6, marginBottom: 20 },
