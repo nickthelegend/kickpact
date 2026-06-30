@@ -1,47 +1,53 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit"
 
-import {
-  DUSDC_COIN_TYPE,
-  SUI_COIN_TYPE,
-  fetchCoinBalance,
-} from "@/lib/swap"
-import {
-  findPredictManager,
-  getManagerDusdcBalance,
-} from "@/lib/deepbook"
+import { useWdkWallet } from "@/wdk/wallet"
+import { getUsdtBalance } from "@/lib/duel-contract"
+import { EVM_CONFIG } from "@/lib/evm-config"
 
 const BALANCE_ROOT_KEY = "wallet-balance"
 const MANAGER_BALANCE_KEY = "manager-balance"
 
 /**
- * Live balance hook backed by react-query. Polls every 5s while the
- * component is mounted and shares cache across every consumer, so the
- * header chips, profile stats, swap screen, and deposit modal all
- * stay in sync. Call useInvalidateWalletBalances() after any action
- * that should produce an immediate refresh (deposit, swap, etc.).
+ * Live balance hooks backed by react-query (EVM / WDK).
+ *
+ * Migrated from Sui: the player's self-custodial WDK wallet now holds USD₮
+ * (ERC-20, the stake asset) and Sepolia ETH (gas). Hook names + return shapes
+ * are preserved so the UI (header chips, profile stats, deposit modal) is
+ * untouched — only the data source changed.
+ *
+ * Polls every 5s and shares cache across consumers. Call
+ * useInvalidateWalletBalances() after any action that should refresh.
  */
+
+/** Generic balance reader. coinType is accepted for call-site compatibility;
+ *  the ETH sentinel returns native gas balance, anything else returns USD₮. */
 export function useWalletBalance(coinType: string) {
-  const account = useCurrentAccount()
-  const client = useSuiClient()
+  const { address, provider } = useWdkWallet()
   return useQuery({
-    queryKey: [BALANCE_ROOT_KEY, account?.address ?? null, coinType],
+    queryKey: [BALANCE_ROOT_KEY, address ?? null, coinType],
     queryFn: async () => {
-      if (!account) return 0
-      return fetchCoinBalance(client, account.address, coinType)
+      if (!address) return 0
+      if (coinType === "ETH") {
+        const wei = await provider.getBalance(address)
+        return Number(wei) / 1e18
+      }
+      const raw = await getUsdtBalance(provider, address)
+      return Number(raw) / Number(EVM_CONFIG.ONE_USDT)
     },
-    enabled: !!account,
+    enabled: !!address,
     refetchInterval: 5_000,
     staleTime: 2_000,
   })
 }
 
+/** Native gas balance (Sepolia ETH). Kept under the old name for the UI. */
 export function useSuiBalance() {
-  return useWalletBalance(SUI_COIN_TYPE)
+  return useWalletBalance("ETH")
 }
 
+/** USD₮ wallet balance — the stakeable asset. */
 export function useDusdcBalance() {
-  return useWalletBalance(DUSDC_COIN_TYPE)
+  return useWalletBalance("USDT")
 }
 
 export function useInvalidateWalletBalances() {
@@ -55,24 +61,24 @@ export function useInvalidateWalletBalances() {
 }
 
 /**
- * PredictManager dUSDC balance, scaled to the same dUSDC base unit
- * (1e6 micro-units → human dUSDC) as `useDusdcBalance`. Returns the
- * float for direct UI rendering, and `managerId` for callers that
- * need to build deposit/withdraw PTBs.
+ * Stakeable USD₮ balance. On Sui this read a separate PredictManager; on EVM
+ * the wallet holds USD₮ directly, so `managerId` is just the wallet address
+ * (kept non-null to preserve the "ready to stake" UI gate) and `balance` is
+ * the wallet's USD₮ balance in human units.
  */
 export function useManagerBalance() {
-  const account = useCurrentAccount()
-  const client = useSuiClient()
+  const { address, provider } = useWdkWallet()
   return useQuery({
-    queryKey: [MANAGER_BALANCE_KEY, account?.address ?? null],
+    queryKey: [MANAGER_BALANCE_KEY, address ?? null],
     queryFn: async () => {
-      if (!account) return { managerId: null as string | null, balance: 0 }
-      const mgr = await findPredictManager(client, account.address)
-      if (!mgr) return { managerId: null, balance: 0 }
-      const micro = await getManagerDusdcBalance(client, mgr.id)
-      return { managerId: mgr.id, balance: Number(micro) / 1e6 }
+      if (!address) return { managerId: null as string | null, balance: 0 }
+      const raw = await getUsdtBalance(provider, address)
+      return {
+        managerId: address,
+        balance: Number(raw) / Number(EVM_CONFIG.ONE_USDT),
+      }
     },
-    enabled: !!account,
+    enabled: !!address,
     refetchInterval: 5_000,
     staleTime: 2_000,
   })
