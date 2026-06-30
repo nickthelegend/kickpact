@@ -15,6 +15,9 @@ export const CHAIN = {
   usdtAddress: "0x4802B35fFE360CAcF7bc22702544DDA207b950A3",
   // Keeper/oracle that auto-settles match predictions from official results.
   keeperAddress: "0x64a902070DBF96B1e83986db7B77faa75B377B27",
+  // Flip to true once FlickyPacts (open-room support) is redeployed + the
+  // pactsAddress above is updated. The deployed contract is named-only for now.
+  openRoomsLive: false,
   USDT_DECIMALS: 6,
   ONE_USDT: 1_000_000n,
   PROB_SCALE: 1_000_000_000n,

@@ -101,6 +101,38 @@ export async function acceptPact(signer: ethers.Signer, pactId: bigint): Promise
   return tx.hash
 }
 
+/** Create an OPEN room — counterparty left open so anyone can join. */
+export async function createOpenPact(
+  signer: ethers.Signer,
+  opts: { arbiter?: string; stake: bigint; termsText: string; deadline: number },
+): Promise<{ hash: string; pactId: bigint }> {
+  return createPact(signer, { counterparty: ZERO, ...opts })
+}
+
+/** Open rooms (counterparty == 0) still PROPOSED, optionally excluding `mine`. */
+export async function listOpenRooms(
+  provider: ethers.Provider,
+  mine?: string,
+  lookback = 60_000,
+): Promise<{ id: bigint; pact: PactState }[]> {
+  const c = pactsContract(provider)
+  const latest = await provider.getBlockNumber()
+  const from = Math.max(0, latest - lookback)
+  const ev = await c.queryFilter(c.filters.PactCreated(null, null, ZERO), from, latest).catch(() => [])
+  const out: { id: bigint; pact: PactState }[] = []
+  for (const l of ev) {
+    const id = (l as ethers.EventLog).args?.pactId as bigint
+    if (id === undefined) continue
+    try {
+      const pact = await fetchPact(provider, id)
+      if (pact.status === 1 && (!mine || pact.proposer.toLowerCase() !== mine.toLowerCase())) {
+        out.push({ id, pact })
+      }
+    } catch {}
+  }
+  return out.sort((a, b) => (a.id > b.id ? -1 : 1))
+}
+
 export async function agreePact(signer: ethers.Signer, pactId: bigint, winner: string): Promise<string> {
   const tx = await pactsContract(signer).agree(pactId, winner)
   await tx.wait()

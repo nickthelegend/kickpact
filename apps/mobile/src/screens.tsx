@@ -34,11 +34,13 @@ import {
   agreePact,
   approvePacts,
   cancelPact,
+  createOpenPact,
   createPact,
   fetchPact,
   getTermsText,
   listMatchPacts,
   listMyPacts,
+  listOpenRooms,
   resolvePactByArbiter,
   ZERO,
   type PactState,
@@ -883,9 +885,11 @@ export function PactsScreen() {
   const [status, setStatus] = useState<string | null>(null)
   const [ids, setIds] = useState<bigint[]>([])
   const [showCreate, setShowCreate] = useState(false)
+  const [roomMode, setRoomMode] = useState<"friend" | "open">("friend")
 
   const stake = CHAIN.stakeTiers[tier]
 
+  const [openRooms, setOpenRooms] = useState<{ id: bigint; pact: PactState }[]>([])
   const load = useCallback(async () => {
     if (!address) return
     try {
@@ -893,7 +897,30 @@ export function PactsScreen() {
     } catch {
       /* ignore */
     }
+    if (CHAIN.openRoomsLive) {
+      try {
+        setOpenRooms(await listOpenRooms(provider, address))
+      } catch {
+        /* ignore */
+      }
+    }
   }, [provider, address])
+
+  const joinRoom = async (room: { id: bigint; pact: PactState }) => {
+    if (!signer) return
+    setBusy(true)
+    setStatus(`joining room #${room.id}…`)
+    try {
+      await approvePacts(signer, room.pact.stake)
+      await acceptPact(signer, room.id)
+      setStatus(`joined room #${room.id} — it's now active`)
+      await load()
+    } catch (e) {
+      setStatus(errMsg(e))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   useEffect(() => {
     load()
@@ -903,20 +930,18 @@ export function PactsScreen() {
 
   const onCreate = async () => {
     if (!signer || !address) return
-    if (!isAddr(counterparty)) return setStatus("enter a valid friend address (0x…)")
+    const open = roomMode === "open"
+    if (!open && !isAddr(counterparty)) return setStatus("enter a valid friend address (0x…)")
     if (!terms.trim()) return setStatus("describe the bet")
     setBusy(true)
-    setStatus("approving USD₮ + creating pact…")
+    setStatus(open ? "approving USD₮ + opening room…" : "approving USD₮ + creating pact…")
     try {
       await approvePacts(signer, stake)
       const deadline = Math.floor(Date.now() / 1000) + 7 * 24 * 3600
-      const { pactId } = await createPact(signer, {
-        counterparty: counterparty.trim(),
-        stake,
-        termsText: terms.trim(),
-        deadline,
-      })
-      setStatus(`pact #${pactId} created — share the code so your friend can accept`)
+      const { pactId } = open
+        ? await createOpenPact(signer, { stake, termsText: terms.trim(), deadline })
+        : await createPact(signer, { counterparty: counterparty.trim(), stake, termsText: terms.trim(), deadline })
+      setStatus(open ? `open room #${pactId} created — anyone can join` : `pact #${pactId} created — share the code so your friend can accept`)
       setTerms("")
       setCounterparty("")
       setShowCreate(false)
@@ -974,14 +999,30 @@ export function PactsScreen() {
             multiline
             style={st.input}
           />
-          <TextInput
-            value={counterparty}
-            onChangeText={setCounterparty}
-            placeholder="friend's wallet address (0x…)"
-            placeholderTextColor={C.white35}
-            autoCapitalize="none"
-            style={st.input}
-          />
+          <View style={{ flexDirection: "row", gap: 8, marginBottom: 4 }}>
+            <PixelButton label="a friend" color={roomMode === "friend" ? C.eth : C.importBlue} size={11} style={{ flex: 1 }} onPress={() => setRoomMode("friend")} />
+            <PixelButton
+              label="open to anyone"
+              color={roomMode === "open" ? C.eth : C.importBlue}
+              size={11}
+              style={{ flex: 1 }}
+              onPress={() => (CHAIN.openRoomsLive ? setRoomMode("open") : setStatus("open rooms go live after the v2 redeploy"))}
+            />
+          </View>
+          {roomMode === "friend" ? (
+            <TextInput
+              value={counterparty}
+              onChangeText={setCounterparty}
+              placeholder="friend's wallet address (0x…)"
+              placeholderTextColor={C.white35}
+              autoCapitalize="none"
+              style={st.input}
+            />
+          ) : (
+            <PixelText size={10} upper={false} color={C.white45} style={{ marginVertical: 8, lineHeight: 15 }}>
+              open room — anyone can browse + join (no named friend). winner settles from the result.
+            </PixelText>
+          )}
           <View style={st.tiers}>
             {CHAIN.stakeTiers.map((t, i) => (
               <PixelButton
@@ -1021,6 +1062,35 @@ export function PactsScreen() {
           <PactRow key={id.toString()} id={id} onChanged={load} setStatus={setStatus} />
         ))}
 
+        {/* open rooms — anyone can join */}
+        <PixelText size={12} tracking={2} color={C.white45} style={{ marginTop: 8 }}>
+          open rooms
+        </PixelText>
+        {!CHAIN.openRoomsLive ? (
+          <PixelText size={10} upper={false} color={C.white35} style={{ lineHeight: 15 }}>
+            open rooms (anyone joins — no named friend) go live after the v2
+            contract redeploy. the contract + UI are ready.
+          </PixelText>
+        ) : openRooms.length === 0 ? (
+          <PixelText size={11} upper={false} color={C.white35}>
+            no open rooms right now — create one above (open to anyone).
+          </PixelText>
+        ) : (
+          openRooms.map((r) => (
+            <Panel key={r.id.toString()} style={st.pad}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <PixelText size={11} upper={false}>room #{r.id.toString()}</PixelText>
+                  <PixelText size={9} upper={false} color={C.white45} style={{ marginTop: 3 }}>
+                    {(Number(r.pact.stake) / Number(CHAIN.ONE_USDT)).toFixed(0)} USD₮ each · by {shortAddr(r.pact.proposer)}
+                  </PixelText>
+                </View>
+                <PixelButton label={busy ? "…" : "join"} color={C.green} size={11} onPress={() => joinRoom(r)} style={{ paddingHorizontal: 16 }} />
+              </View>
+            </Panel>
+          ))
+        )}
+
         {/* accept by code */}
         <AcceptByCode onAccepted={load} setStatus={setStatus} />
       </ScrollView>
@@ -1038,7 +1108,7 @@ function AcceptByCode({ onAccepted, setStatus }: { onAccepted: () => void; setSt
     setStatus("approving + accepting pact…")
     try {
       const p = await fetchPact(provider, BigInt(code))
-      await approveUsdt(signer, p.stake)
+      await approvePacts(signer, p.stake)
       await acceptPact(signer, BigInt(code))
       setStatus(`accepted pact #${code} — stake locked`)
       setCode("")
