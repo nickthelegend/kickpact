@@ -9,6 +9,7 @@ import { PixelText } from "./src/ui"
 import { WalletProvider, useWallet } from "./src/wallet"
 import {
   DuelScreen,
+  GameScreen,
   HomeScreen,
   PactsScreen,
   ProfileScreen,
@@ -86,6 +87,7 @@ function Game() {
   const { status } = useWallet()
   const [tab, setTab] = useState<Tab>("home")
   const [duelId, setDuelId] = useState<string | null>(null)
+  const [gameId, setGameId] = useState<string | null>(null)
 
   if (status === "INITIALIZING") {
     return (
@@ -97,14 +99,15 @@ function Game() {
 
   if (status === "NO_WALLET" || status === "BACKUP_PENDING") return <SignInScreen />
 
-  // Duel is a focused full-screen flow (no tab bar).
+  // Full-screen flows (no tab bar).
   if (duelId) return <DuelScreen duelId={duelId} onExit={() => setDuelId(null)} />
+  if (gameId) return <GameScreen gameId={gameId} onBack={() => setGameId(null)} />
 
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
         {tab === "home" && (
-          <HomeScreen onPlay={() => setTab("pvp")} onProfile={() => setTab("profile")} />
+          <HomeScreen onProfile={() => setTab("profile")} onGame={(id) => setGameId(id)} />
         )}
         {tab === "pacts" && <PactsScreen />}
         {tab === "pvp" && (

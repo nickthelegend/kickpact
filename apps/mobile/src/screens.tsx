@@ -42,6 +42,14 @@ import {
 } from "./pact"
 import { PACT_STATUS } from "./chain"
 import { leaderboard, myHistory, type HistoryItem, type RankRow } from "./stats"
+import {
+  fetchGame,
+  fetchGames,
+  filterGames,
+  kickoffLabel,
+  type Filter as GameFilter,
+  type Game,
+} from "./football"
 
 const USDT_ICON = require("../assets/tokens/usdc-icon.png")
 const MANAGER_ICON = require("../assets/tokens/manager-usdc.png")
@@ -144,89 +152,144 @@ export function SignInScreen() {
 }
 
 // ───────────────────────── Home ─────────────────────────
-export function HomeScreen({ onPlay, onProfile }: { onPlay: () => void; onProfile?: () => void }) {
-  const { address, usdt, eth, signer, refresh } = useWallet()
-  const [minting, setMinting] = useState(false)
-  const [msg, setMsg] = useState<string | null>(null)
-
-  const faucet = useCallback(async () => {
+export function WalletHeader({ onAvatar }: { onAvatar?: () => void }) {
+  const { usdt, signer, address, refresh } = useWallet()
+  const faucet = async () => {
     if (!signer || !address) return
-    setMinting(true)
-    setMsg(null)
     try {
       await mintUsdt(signer, address, 100n * CHAIN.ONE_USDT)
       await refresh()
-      setMsg("minted 100 test USD₮")
-    } catch (e) {
-      setMsg(e instanceof Error ? e.message.slice(0, 80) : "mint failed")
-    } finally {
-      setMinting(false)
+    } catch {
+      /* ignore */
     }
-  }, [signer, address, refresh])
+  }
+  return (
+    <View style={st.header}>
+      <View style={st.headerLeft}>
+        <Pressable onPress={onAvatar} hitSlop={6}>
+          <View style={st.avatar} />
+        </Pressable>
+        <BalanceChip icon={USDT_ICON} amount={usdt.toFixed(2)} onPressAdd={faucet} />
+      </View>
+      <Pressable style={st.gear} onPress={onAvatar}>
+        <Image source={require("../assets/icons/gear.png")} style={{ width: 22, height: 22 }} resizeMode="contain" />
+      </Pressable>
+    </View>
+  )
+}
+
+function TeamRow({ team, score }: { team: Game["home"]; score: string | null }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center" }}>
+      {team.logo ? (
+        <Image source={{ uri: team.logo }} style={{ width: 26, height: 26, marginRight: 10 }} resizeMode="contain" />
+      ) : (
+        <View style={{ width: 26, height: 26, marginRight: 10, borderRadius: 4, backgroundColor: C.panel }} />
+      )}
+      <PixelText size={13} upper={false} style={{ flex: 1 }}>
+        {team.name}
+      </PixelText>
+      {score != null && score !== "" && (
+        <PixelText size={17} color={team.winner ? C.greenLight : C.white}>
+          {score}
+        </PixelText>
+      )}
+    </View>
+  )
+}
+
+function GameCard({ g, onPress }: { g: Game; onPress: () => void }) {
+  const live = g.state === "in"
+  const done = g.state === "post"
+  const showScore = live || done
+  return (
+    <Pressable onPress={onPress}>
+      <Panel style={[st.pad, live ? { borderColor: "#c0392b" } : null]}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <PixelText size={9} color={C.white45} tracking={1}>
+            {g.leagueName}
+          </PixelText>
+          <View style={[st.statusPill, live ? { backgroundColor: "#c0392b" } : null]}>
+            <PixelText size={9} color={live ? C.white : C.white60} tracking={1}>
+              {live ? `● ${g.status || "LIVE"}` : done ? "FT" : kickoffLabel(g)}
+            </PixelText>
+          </View>
+        </View>
+        <TeamRow team={g.home} score={showScore ? g.home.score : null} />
+        <View style={{ height: 8 }} />
+        <TeamRow team={g.away} score={showScore ? g.away.score : null} />
+        <View style={st.cardCta}>
+          <PixelText size={9} upper color={C.eth} tracking={1}>
+            tap to predict →
+          </PixelText>
+        </View>
+      </Panel>
+    </Pressable>
+  )
+}
+
+export function HomeScreen({ onProfile, onGame }: { onProfile?: () => void; onGame: (id: string) => void }) {
+  const [games, setGames] = useState<Game[]>([])
+  const [filter, setFilter] = useState<GameFilter>("upcoming")
+  const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const PAGE = 8
+
+  const load = useCallback(async () => {
+    try {
+      setGames(await fetchGames())
+    } catch {
+      /* keep prior */
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+  useEffect(() => {
+    load()
+    const t = setInterval(load, 30000)
+    return () => clearInterval(t)
+  }, [load])
+  useEffect(() => setPage(1), [filter])
+
+  const filtered = filterGames(games, filter)
+  const shown = filtered.slice(0, page * PAGE)
+  const liveCount = filterGames(games, "live").length
 
   return (
     <View style={{ flex: 1 }}>
-      <View style={st.header}>
-        <View style={st.headerLeft}>
-          <View style={st.avatar} />
-          <BalanceChip icon={USDT_ICON} amount={usdt.toFixed(2)} onPressAdd={faucet} />
-          <View style={st.ethChip}>
-            <PixelText size={11} color={C.white60} upper={false}>{eth.toFixed(4)} ETH</PixelText>
-          </View>
-        </View>
-        <Pressable style={st.gear} onPress={onProfile}>
-          <Image source={require("../assets/icons/gear.png")} style={{ width: 22, height: 22 }} resizeMode="contain" />
-        </Pressable>
+      <WalletHeader onAvatar={onProfile} />
+      <View style={st.titleRow}>
+        <PixelText size={20} tracking={3}>world cup</PixelText>
+        <PixelText size={9} upper={false} color={C.white45}>p2p prediction market</PixelText>
+      </View>
+      <View style={st.filterRow}>
+        {(["live", "upcoming", "completed"] as GameFilter[]).map((f) => (
+          <Pressable
+            key={f}
+            onPress={() => setFilter(f)}
+            style={[st.filterTab, filter === f ? st.filterTabActive : null]}
+          >
+            <PixelText size={11} color={filter === f ? C.white : C.white45} tracking={1}>
+              {f}
+              {f === "live" && liveCount > 0 ? ` ${liveCount}` : ""}
+            </PixelText>
+          </Pressable>
+        ))}
       </View>
 
-      <PixelText size={30} tracking={6} style={st.title}>home</PixelText>
-
       <ScrollView style={{ flex: 1 }} contentContainerStyle={st.scroll}>
-        <Panel style={st.pad}>
-          <View style={st.row}>
-            <View style={st.avatar} />
-            <View>
-              <PixelText size={14} tracking={1}>{address ? shortAddr(address) : "…"}</PixelText>
-              <View style={st.rankRow}>
-                <View style={st.badge}><PixelText size={10} color={C.white70}>unranked</PixelText></View>
-              </View>
-            </View>
-          </View>
-          <View style={st.stats}>
-            {["wins", "losses", "streak"].map((s) => (
-              <View key={s} style={st.stat}>
-                <PixelText size={10} color={C.white45} tracking={2}>{s}</PixelText>
-                <PixelText size={14} color={C.white70} style={{ marginTop: 4 }}>—</PixelText>
-              </View>
-            ))}
-          </View>
-        </Panel>
-
-        {msg && (
-          <Panel style={[st.pad, { borderColor: C.eth }]}>
-            <PixelText size={11} upper={false} color={C.white70}>{msg}</PixelText>
-          </Panel>
-        )}
-
-        <Panel style={st.pad}>
-          <PixelText size={13} tracking={2}>your match</PixelText>
-          <View style={st.matchBody}>
-            <Image source={require("../assets/icons/swords.png")} style={{ width: 48, height: 48, marginBottom: 8 }} resizeMode="contain" />
-            <PixelText size={15} tracking={2}>no active duel</PixelText>
-            <PixelText size={12} upper={false} color={C.white45} style={{ textAlign: "center", marginTop: 6, lineHeight: 18 }}>
-              stake USD₮ and face another player{"\n"}who reads the market better
-            </PixelText>
-            <PixelButton label="find a duel" color={C.green} onPress={onPlay} style={{ marginTop: 16, paddingHorizontal: 32 }} />
-          </View>
-        </Panel>
-
-        <Panel style={st.pad}>
-          <PixelText size={12} upper={false} color={C.white45} style={{ lineHeight: 18 }}>
-            need test funds? tap the + on your USD₮ balance to mint 100 test USD₮.
-            you also need a little Sepolia ETH for gas (faucet).
+        {loading && <ActivityIndicator color={C.eth} style={{ marginTop: 24 }} />}
+        {!loading && shown.length === 0 && (
+          <PixelText size={11} upper={false} color={C.white35} style={{ textAlign: "center", marginTop: 24 }}>
+            no {filter} matches right now.
           </PixelText>
-          <PixelButton label={minting ? "minting…" : "+ mint 100 test USD₮"} color={C.importBlue} onPress={faucet} style={{ marginTop: 12 }} size={12} />
-        </Panel>
+        )}
+        {shown.map((g) => (
+          <GameCard key={g.id} g={g} onPress={() => onGame(g.id)} />
+        ))}
+        {filtered.length > shown.length && (
+          <PixelButton label="load more" color={C.importBlue} size={12} onPress={() => setPage((p) => p + 1)} />
+        )}
       </ScrollView>
     </View>
   )
@@ -1050,6 +1113,157 @@ export function RankScreen() {
   )
 }
 
+// ───────────────────────── Game detail + predict ─────────────────────────
+export function GameScreen({ gameId, onBack }: { gameId: string; onBack: () => void }) {
+  const { signer, usdt } = useWallet()
+  const [game, setGame] = useState<Game | null>(null)
+  const [outcome, setOutcome] = useState<"home" | "draw" | "away" | null>(null)
+  const [counterparty, setCounterparty] = useState("")
+  const [tier, setTier] = useState(0)
+  const [busy, setBusy] = useState(false)
+  const [status, setStatus] = useState<string | null>(null)
+  const [createdId, setCreatedId] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchGame(gameId).then(setGame).catch(() => {})
+  }, [gameId])
+
+  const stake = CHAIN.stakeTiers[tier]
+  const live = game?.state === "in"
+  const done = game?.state === "post"
+
+  const onCreate = async () => {
+    if (!signer || !game || !outcome) return setStatus("pick an outcome")
+    if (!isAddr(counterparty)) return setStatus("enter a friend's wallet address")
+    setBusy(true)
+    setStatus("approving USD₮ + creating prediction…")
+    try {
+      const label =
+        outcome === "draw"
+          ? `Draw — ${game.home.shortName} vs ${game.away.shortName}`
+          : `${outcome === "home" ? game.home.shortName : game.away.shortName} to beat ${outcome === "home" ? game.away.shortName : game.home.shortName}`
+      const terms = `${label} · World Cup ${kickoffLabel(game)}`
+      await approveUsdt(signer, stake)
+      const { pactId } = await createPact(signer, {
+        counterparty: counterparty.trim(),
+        stake,
+        termsText: terms,
+        deadline: Math.floor(Date.now() / 1000) + 30 * 24 * 3600,
+      })
+      setCreatedId(pactId.toString())
+      setStatus(`prediction #${pactId} locked — share the code with your friend`)
+    } catch (e) {
+      setStatus(errMsg(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={st.topbar}>
+        <PixelButton label="←" color={C.importBlue} onPress={onBack} size={14} />
+        <PixelText size={16} tracking={2}>match</PixelText>
+        <View style={{ width: 44 }} />
+      </View>
+      {!game ? (
+        <ActivityIndicator color={C.eth} style={{ marginTop: 30 }} />
+      ) : (
+        <ScrollView contentContainerStyle={st.scroll}>
+          <Panel style={[st.pad, live ? { borderColor: "#c0392b" } : null]}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}>
+              <PixelText size={9} color={C.white45} tracking={1}>{game.leagueName}</PixelText>
+              <PixelText size={9} color={live ? "#ff8a80" : C.white45} tracking={1}>
+                {live ? `● ${game.status}` : done ? "FULL TIME" : kickoffLabel(game)}
+              </PixelText>
+            </View>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-around" }}>
+              <View style={{ alignItems: "center", flex: 1 }}>
+                {game.home.logo && <Image source={{ uri: game.home.logo }} style={{ width: 52, height: 52 }} resizeMode="contain" />}
+                <PixelText size={11} upper={false} style={{ marginTop: 6, textAlign: "center" }}>{game.home.shortName}</PixelText>
+              </View>
+              <PixelText size={26} tracking={1}>
+                {live || done ? `${game.home.score ?? 0}–${game.away.score ?? 0}` : "vs"}
+              </PixelText>
+              <View style={{ alignItems: "center", flex: 1 }}>
+                {game.away.logo && <Image source={{ uri: game.away.logo }} style={{ width: 52, height: 52 }} resizeMode="contain" />}
+                <PixelText size={11} upper={false} style={{ marginTop: 6, textAlign: "center" }}>{game.away.shortName}</PixelText>
+              </View>
+            </View>
+            {game.venue && (
+              <PixelText size={9} upper={false} color={C.white35} style={{ textAlign: "center", marginTop: 12 }}>{game.venue}</PixelText>
+            )}
+          </Panel>
+
+          {done ? (
+            <Panel style={st.pad}>
+              <PixelText size={12} upper={false} color={C.white60} style={{ textAlign: "center" }}>
+                this match has finished — predictions are closed.
+              </PixelText>
+            </Panel>
+          ) : (
+            <>
+              <Panel style={[st.pad, { borderColor: C.green }]}>
+                <PixelText size={13} tracking={2}>create a prediction</PixelText>
+                <PixelText size={10} upper={false} color={C.white45} style={{ marginTop: 6, lineHeight: 15 }}>
+                  pick an outcome and lock USD₮ vs a friend. winner takes the pot when the match settles.
+                </PixelText>
+                <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
+                  {([
+                    ["home", game.home.shortName],
+                    ["draw", "draw"],
+                    ["away", game.away.shortName],
+                  ] as const).map(([k, lbl]) => (
+                    <PixelButton
+                      key={k}
+                      label={lbl}
+                      color={outcome === k ? C.eth : C.importBlue}
+                      onPress={() => setOutcome(k)}
+                      style={{ flex: 1, paddingHorizontal: 0 }}
+                      size={11}
+                    />
+                  ))}
+                </View>
+                <View style={st.tiers}>
+                  {CHAIN.stakeTiers.map((t, i) => (
+                    <PixelButton key={i} label={`${Number(t) / Number(CHAIN.ONE_USDT)}`} color={i === tier ? C.eth : C.importBlue} onPress={() => setTier(i)} style={st.tier} size={13} />
+                  ))}
+                </View>
+                <TextInput
+                  value={counterparty}
+                  onChangeText={setCounterparty}
+                  placeholder="friend's wallet address (0x…)"
+                  placeholderTextColor={C.white35}
+                  autoCapitalize="none"
+                  style={st.input}
+                />
+                <PixelText size={10} upper={false} color={C.white45}>
+                  balance {usdt.toFixed(2)} USD₮ · stake {Number(stake) / Number(CHAIN.ONE_USDT)} each
+                </PixelText>
+                <PixelButton label={busy ? "…" : "lock prediction"} color={C.green} onPress={onCreate} style={{ marginTop: 10 }} />
+                {createdId && (
+                  <View style={st.codeBox}>
+                    <PixelText size={10} color={C.white45}>prediction code</PixelText>
+                    <PixelText size={24} tracking={2}>#{createdId}</PixelText>
+                    <PixelText size={9} upper={false} color={C.white45} style={{ marginTop: 4 }}>
+                      friend accepts in the Pacts tab
+                    </PixelText>
+                  </View>
+                )}
+              </Panel>
+              {status && (
+                <Panel style={st.pad}>
+                  <PixelText size={11} upper={false} color={C.white70}>{status}</PixelText>
+                </Panel>
+              )}
+            </>
+          )}
+        </ScrollView>
+      )}
+    </View>
+  )
+}
+
 const st = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 28 },
   hero: { width: 240, height: 150, marginBottom: 4 },
@@ -1069,6 +1283,12 @@ const st = StyleSheet.create({
   avatar: { width: 46, height: 46, borderRadius: 10, backgroundColor: C.ethLight },
   gear: { width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 10, backgroundColor: C.green },
   title: { textAlign: "center", marginVertical: 10 },
+  titleRow: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", paddingHorizontal: 14, marginBottom: 8 },
+  filterRow: { flexDirection: "row", gap: 8, paddingHorizontal: 12, marginBottom: 6 },
+  filterTab: { flex: 1, alignItems: "center", paddingVertical: 8, borderRadius: 8, backgroundColor: C.panel },
+  filterTabActive: { backgroundColor: C.eth },
+  statusPill: { backgroundColor: "rgba(0,0,0,0.35)", borderRadius: 4, paddingHorizontal: 8, paddingVertical: 3 },
+  cardCta: { marginTop: 10, alignItems: "flex-end" },
   scroll: { gap: 14, paddingHorizontal: 12, paddingBottom: 28, paddingTop: 4 },
   pad: { padding: 16 },
   row: { flexDirection: "row", alignItems: "center", gap: 12 },
