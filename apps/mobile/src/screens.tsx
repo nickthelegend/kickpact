@@ -62,9 +62,13 @@ import {
   type Token,
 } from "./swap"
 import { ChainLogo, ChainSwitcherModal, chainByKey, type EvmChain } from "./chains"
+import { BRIDGE_CHAINS, bridge, quoteBridge, type BridgeChain } from "./bridge"
 import { offRamp, onRamp } from "./fiat"
 import { QRModal } from "./qr"
 import { ethers } from "ethers"
+
+const BRIDGE_CHAIN_LOGOS = BRIDGE_CHAINS.map((c) => chainByKey(c.key)).filter(Boolean) as EvmChain[]
+const nativeSym = (key: string) => (key === "polygon" ? "POL" : "ETH")
 
 // Deep-link join targets encoded in shareable QR codes.
 export const joinLink = (type: "duel" | "pact", id: string) => `flicky://join?type=${type}&id=${id}`
@@ -340,7 +344,7 @@ function WithdrawModal({
   )
 }
 
-function HomeDashboard({ onSwap }: { onSwap: () => void }) {
+function HomeDashboard({ onSwap, onBridge }: { onSwap: () => void; onBridge: () => void }) {
   const { usdt, signer, address, refresh } = useWallet()
   const [mode, setMode] = useState<"testnet" | "mainnet">("testnet")
   const [mainBal, setMainBal] = useState<number | null>(null)
@@ -433,6 +437,7 @@ function HomeDashboard({ onSwap }: { onSwap: () => void }) {
       <View style={st.actionRow}>
         <ActionBtn icon="＋" label={mode === "testnet" ? "mint" : "add"} onPress={addBalance} disabled={busy} />
         <ActionBtn icon="⇄" label="swap" onPress={onSwap} />
+        <ActionBtn icon="⤳" label="bridge" onPress={onBridge} />
         <ActionBtn icon="↑" label="withdraw" onPress={() => setWithdrawing(true)} />
         <ActionBtn icon="＄" label="offramp" onPress={doOfframp} />
       </View>
@@ -450,7 +455,7 @@ function HomeDashboard({ onSwap }: { onSwap: () => void }) {
   )
 }
 
-export function HomeScreen({ onProfile, onGame, onSwap }: { onProfile?: () => void; onGame: (id: string) => void; onSwap: () => void }) {
+export function HomeScreen({ onProfile, onGame, onSwap, onBridge }: { onProfile?: () => void; onGame: (id: string) => void; onSwap: () => void; onBridge: () => void }) {
   const [games, setGames] = useState<Game[]>([])
   const [filter, setFilter] = useState<GameFilter>("upcoming")
   const [loading, setLoading] = useState(true)
@@ -481,7 +486,7 @@ export function HomeScreen({ onProfile, onGame, onSwap }: { onProfile?: () => vo
     <View style={{ flex: 1 }}>
       <WalletHeader onAvatar={onProfile} />
       <ScrollView style={{ flex: 1 }} contentContainerStyle={st.scroll}>
-        <HomeDashboard onSwap={onSwap} />
+        <HomeDashboard onSwap={onSwap} onBridge={onBridge} />
         <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", marginTop: 2 }}>
           <PixelText size={20} tracking={3}>world cup</PixelText>
           <PixelText size={9} upper={false} color={C.white45}>p2p prediction market</PixelText>
@@ -1757,6 +1762,162 @@ export function SwapScreen({ onBack }: { onBack: () => void }) {
           if (n) setNet(n)
         }}
         onClose={() => setChainModal(false)}
+      />
+    </View>
+  )
+}
+
+// ───────────────────────── Bridge (USD₮0 / LayerZero) ─────────────────────────
+export function BridgeScreen({ onBack }: { onBack: () => void }) {
+  const { getSeedPhrase, address } = useWallet()
+  const [source, setSource] = useState<BridgeChain>(BRIDGE_CHAINS.find((c) => c.key === "arbitrum")!)
+  const [target, setTarget] = useState<BridgeChain>(BRIDGE_CHAINS.find((c) => c.key === "polygon")!)
+  const [amount, setAmount] = useState("10")
+  const [recipient, setRecipient] = useState("")
+  const [fee, setFee] = useState<bigint | null>(null)
+  const [busy, setBusy] = useState<"quote" | "bridge" | null>(null)
+  const [status, setStatus] = useState<string | null>(null)
+  const [picker, setPicker] = useState<"source" | "target" | null>(null)
+
+  const srcLogo = chainByKey(source.key)
+  const tgtLogo = chainByKey(target.key)
+  const to = recipient.trim() || address || ""
+
+  const getQuote = async () => {
+    setBusy("quote")
+    setStatus(null)
+    setFee(null)
+    try {
+      if (source.key === target.key) throw new Error("pick two different chains")
+      const amt = ethers.parseUnits(amount || "0", 6)
+      if (amt <= 0n) throw new Error("enter an amount")
+      const { bridgeFee } = await quoteBridge({ source, target, amount: amt, recipient: to || "0x0000000000000000000000000000000000000001" })
+      setFee(bridgeFee)
+    } catch (e) {
+      setStatus(errMsg(e))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const doBridge = async () => {
+    setBusy("bridge")
+    setStatus(`bridging ${source.name} → ${target.name}…`)
+    try {
+      const seed = await getSeedPhrase()
+      if (!seed) throw new Error("no wallet")
+      const provider = new ethers.JsonRpcProvider(source.rpc, source.chainId, { staticNetwork: true })
+      const signer = ethers.Wallet.fromPhrase(seed).connect(provider)
+      const amt = ethers.parseUnits(amount, 6)
+      const { hash } = await bridge({ signer, source, target, amount: amt, recipient: to || (await signer.getAddress()) })
+      setStatus(`bridged! ${hash.slice(0, 12)}…`)
+    } catch (e) {
+      setStatus(errMsg(e))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={st.topbar}>
+        <PixelButton label="←" color={C.importBlue} onPress={onBack} size={14} />
+        <PixelText size={16} tracking={2}>bridge</PixelText>
+        <View style={{ width: 44 }} />
+      </View>
+      <ScrollView contentContainerStyle={st.scroll}>
+        <Pressable onPress={() => setPicker("source")} style={st.chainBtn}>
+          {srcLogo && <ChainLogo chain={srcLogo} size={26} />}
+          <View style={{ flex: 1 }}>
+            <PixelText size={9} color={C.white45} tracking={1}>from</PixelText>
+            <PixelText size={13} style={{ marginTop: 2 }}>{source.name}</PixelText>
+          </View>
+          <PixelText size={12} color={C.white45}>change ▾</PixelText>
+        </Pressable>
+
+        <Pressable
+          onPress={() => { setSource(target); setTarget(source); setFee(null) }}
+          style={{ alignSelf: "center" }}
+        >
+          <PixelText size={18} color={C.eth}>↓</PixelText>
+        </Pressable>
+
+        <Pressable onPress={() => setPicker("target")} style={st.chainBtn}>
+          {tgtLogo && <ChainLogo chain={tgtLogo} size={26} />}
+          <View style={{ flex: 1 }}>
+            <PixelText size={9} color={C.white45} tracking={1}>to</PixelText>
+            <PixelText size={13} style={{ marginTop: 2 }}>{target.name}</PixelText>
+          </View>
+          <PixelText size={12} color={C.white45}>change ▾</PixelText>
+        </Pressable>
+
+        <Panel style={st.pad}>
+          <PixelText size={10} color={C.white45} tracking={1}>amount (USD₮0)</PixelText>
+          <TextInput
+            value={amount}
+            onChangeText={(t) => { setAmount(t); setFee(null) }}
+            keyboardType="decimal-pad"
+            style={[st.input, { marginBottom: 0 }]}
+            placeholder="0.0"
+            placeholderTextColor={C.white35}
+          />
+        </Panel>
+
+        <Panel style={st.pad}>
+          <PixelText size={10} color={C.white45} tracking={1}>recipient</PixelText>
+          <TextInput
+            value={recipient}
+            onChangeText={setRecipient}
+            autoCapitalize="none"
+            style={[st.input, { marginBottom: 0 }]}
+            placeholder="default: your wallet"
+            placeholderTextColor={C.white35}
+          />
+        </Panel>
+
+        <PixelButton label={busy === "quote" ? "quoting…" : "get quote"} color={C.eth} onPress={getQuote} />
+        {fee != null && (
+          <Panel style={st.pad}>
+            <PixelText size={10} color={C.white45} tracking={1}>layerzero fee</PixelText>
+            <PixelText size={20} style={{ marginTop: 4 }}>
+              {Number(ethers.formatEther(fee)).toFixed(5)} {nativeSym(source.key)}
+            </PixelText>
+            <PixelText size={9} upper={false} color={C.white45} style={{ marginTop: 4 }}>
+              paid in {source.name} gas · arrives as USD₮0 on {target.name}
+            </PixelText>
+          </Panel>
+        )}
+        {fee != null && (
+          <PixelButton label={busy === "bridge" ? "bridging…" : `bridge to ${target.name}`} color={C.green} onPress={doBridge} />
+        )}
+
+        <Panel style={st.pad}>
+          <PixelText size={9} upper={false} color={C.white45} style={{ lineHeight: 14 }}>
+            USD₮0 omnichain bridge via LayerZero (same protocol as WDK's bridge
+            module). needs USD₮0 + native gas on {source.name}. this rail moves
+            funds to Polygon for the Polymarket tier.
+          </PixelText>
+        </Panel>
+
+        {status && (
+          <Panel style={st.pad}>
+            <PixelText size={11} upper={false} color={C.white70}>{status}</PixelText>
+          </Panel>
+        )}
+      </ScrollView>
+
+      <ChainSwitcherModal
+        visible={picker !== null}
+        chains={BRIDGE_CHAIN_LOGOS}
+        selectedKey={picker === "source" ? source.key : target.key}
+        onSelect={(c) => {
+          const bc = BRIDGE_CHAINS.find((x) => x.key === c.key)
+          if (!bc) return
+          if (picker === "source") setSource(bc)
+          else setTarget(bc)
+          setFee(null)
+        }}
+        onClose={() => setPicker(null)}
       />
     </View>
   )

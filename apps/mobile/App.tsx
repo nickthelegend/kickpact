@@ -8,6 +8,7 @@ import { C } from "./src/theme"
 import { PixelText } from "./src/ui"
 import { WalletProvider, useWallet } from "./src/wallet"
 import {
+  BridgeScreen,
   DuelScreen,
   GameScreen,
   HomeScreen,
@@ -90,6 +91,7 @@ function Game() {
   const [duelId, setDuelId] = useState<string | null>(null)
   const [gameId, setGameId] = useState<string | null>(null)
   const [swapOpen, setSwapOpen] = useState(false)
+  const [bridgeOpen, setBridgeOpen] = useState(false)
 
   if (status === "INITIALIZING") {
     return (
@@ -105,6 +107,7 @@ function Game() {
   if (duelId) return <DuelScreen duelId={duelId} onExit={() => setDuelId(null)} />
   if (gameId) return <GameScreen gameId={gameId} onBack={() => setGameId(null)} />
   if (swapOpen) return <SwapScreen onBack={() => setSwapOpen(false)} />
+  if (bridgeOpen) return <BridgeScreen onBack={() => setBridgeOpen(false)} />
 
   return (
     <View style={{ flex: 1 }}>
@@ -114,6 +117,7 @@ function Game() {
             onProfile={() => setTab("profile")}
             onGame={(id) => setGameId(id)}
             onSwap={() => setSwapOpen(true)}
+            onBridge={() => setBridgeOpen(true)}
           />
         )}
         {tab === "pacts" && <PactsScreen />}
