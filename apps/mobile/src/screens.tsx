@@ -32,7 +32,7 @@ const MANAGER_ICON = require("../assets/tokens/manager-usdc.png")
 
 // ───────────────────────── Sign in ─────────────────────────
 export function SignInScreen() {
-  const { createWallet, importWallet } = useWallet()
+  const { createWallet, confirmBackup, importWallet } = useWallet()
   const [view, setView] = useState<"choose" | "backup" | "import">("choose")
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -105,7 +105,7 @@ export function SignInScreen() {
               </View>
             ))}
           </View>
-          <PixelButton label="i've saved it — enter" color={C.eth} onPress={() => { /* status already READY */ }} style={st.full} />
+          <PixelButton label="i've saved it — enter" color={C.eth} onPress={confirmBackup} style={st.full} />
         </>
       )}
 

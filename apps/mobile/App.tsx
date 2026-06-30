@@ -28,7 +28,7 @@ function Game() {
     )
   }
 
-  if (status === "NO_WALLET") return <SignInScreen />
+  if (status === "NO_WALLET" || status === "BACKUP_PENDING") return <SignInScreen />
 
   switch (screen.name) {
     case "pvp":

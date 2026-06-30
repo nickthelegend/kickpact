@@ -19,7 +19,7 @@ import { getEthBalance, getUsdtBalance } from "./duel"
 
 const SEED_KEY = "flicky.wallet.seed"
 
-type Status = "INITIALIZING" | "NO_WALLET" | "READY"
+type Status = "INITIALIZING" | "NO_WALLET" | "BACKUP_PENDING" | "READY"
 
 interface WalletContextValue {
   status: Status
@@ -29,6 +29,7 @@ interface WalletContextValue {
   usdt: number
   eth: number
   createWallet(): Promise<string>
+  confirmBackup(): void
   importWallet(phrase: string): Promise<void>
   logout(): Promise<void>
   refresh(): Promise<void>
@@ -57,7 +58,6 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     const w = ethers.Wallet.fromPhrase(phrase).connect(providerRef.current!)
     setSigner(w)
     setAddress(w.address)
-    setStatus("READY")
     return w
   }, [])
 
@@ -81,8 +81,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     loadSecret(SEED_KEY)
       .then(async (seed) => {
         if (cancelled) return
-        if (seed) await connect(seed)
-        else setStatus("NO_WALLET")
+        if (seed) {
+          await connect(seed)
+          setStatus("READY")
+        } else setStatus("NO_WALLET")
       })
       .catch(() => setStatus("NO_WALLET"))
     return () => {
@@ -103,8 +105,12 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     const phrase = w.mnemonic!.phrase
     await saveSecret(SEED_KEY, phrase)
     await connect(phrase)
+    // Hold at BACKUP_PENDING so the user must see + save the phrase first.
+    setStatus("BACKUP_PENDING")
     return phrase
   }, [connect])
+
+  const confirmBackup = React.useCallback(() => setStatus("READY"), [])
 
   const importWallet = React.useCallback(
     async (phrase: string) => {
@@ -114,6 +120,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       }
       await saveSecret(SEED_KEY, normalized)
       await connect(normalized)
+      setStatus("READY")
     },
     [connect],
   )
@@ -138,12 +145,13 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       usdt,
       eth,
       createWallet,
+      confirmBackup,
       importWallet,
       logout,
       refresh,
       getSeedPhrase,
     }),
-    [status, address, signer, usdt, eth, createWallet, importWallet, logout, refresh, getSeedPhrase],
+    [status, address, signer, usdt, eth, createWallet, confirmBackup, importWallet, logout, refresh, getSeedPhrase],
   )
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>
