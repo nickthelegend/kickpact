@@ -1,0 +1,19 @@
+{
+  "network": "sepolia",
+  "chainId": 11155111,
+  "rpcUrl": "https://ethereum-sepolia-rpc.publicnode.com",
+  "explorer": "https://sepolia.etherscan.io",
+  "contracts": {
+    "FlickyDuel": "0x045Ad96EB24CE29f02C4E41542507DE26FE13895",
+    "MockUSDT": "0x4802B35fFE360CAcF7bc22702544DDA207b950A3"
+  },
+  "stakeToken": {
+    "address": "0x4802B35fFE360CAcF7bc22702544DDA207b950A3",
+    "symbol": "USDT",
+    "decimals": 6,
+    "note": "Mock test USD₮ with an open public mint() faucet — testnet only."
+  },
+  "oracleKeeper": "0x64a902070DBF96B1e83986db7B77faa75B377B27",
+  "deployedAt": "2026-06-30",
+  "notes": "Deployer/oracle is a throwaway key (scratchpad). Stakes & payouts in USD₮ (6dp); gas in Sepolia ETH. See src/FlickyDuel.sol for the duel lifecycle."
+}

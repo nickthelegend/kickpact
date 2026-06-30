@@ -1,0 +1,9 @@
+# Foundry
+out/
+cache/
+broadcast/*/*/dry-run/
+
+# Env / secrets — never commit deployer keys
+.env
+.env.*
+*.key
