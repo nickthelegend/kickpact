@@ -6,7 +6,7 @@
  *  - Duel    : reveal deck (creator) + swipe YES/NO on each card — real txs
  */
 import { useCallback, useEffect, useRef, useState } from "react"
-import { ActivityIndicator, Image, Pressable, ScrollView, Share, StyleSheet, TextInput, View } from "react-native"
+import { ActivityIndicator, Image, Modal, Pressable, ScrollView, Share, StyleSheet, TextInput, View } from "react-native"
 
 import { C } from "./theme"
 import { BalanceChip, Panel, PixelButton, PixelText } from "./ui"
@@ -59,7 +59,18 @@ import {
   type Token,
 } from "./swap"
 import { ChainLogo, ChainSwitcherModal, chainByKey, type EvmChain } from "./chains"
+import { offRamp, onRamp } from "./fiat"
 import { ethers } from "ethers"
+
+// USD₮ address per chain (for the dashboard balance + withdraw).
+const USDT_BY_CHAIN: Record<string, string> = {
+  sepolia: CHAIN.usdtAddress,
+  polygon: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+}
+const ERC20_MIN = [
+  "function balanceOf(address) view returns (uint256)",
+  "function transfer(address,uint256) returns (bool)",
+]
 
 const SWAP_CHAINS = SWAP_NETWORKS.map((n) => chainByKey(n.key)).filter(Boolean) as EvmChain[]
 
@@ -240,7 +251,199 @@ function GameCard({ g, onPress }: { g: Game; onPress: () => void }) {
   )
 }
 
-export function HomeScreen({ onProfile, onGame }: { onProfile?: () => void; onGame: (id: string) => void }) {
+// ───────────────────────── Home dashboard (balance + actions) ─────────────────────────
+function ActionBtn({ icon, label, onPress, disabled }: { icon: string; label: string; onPress?: () => void; disabled?: boolean }) {
+  return (
+    <Pressable onPress={onPress} disabled={disabled} style={[st.actionBtn, disabled ? { opacity: 0.4 } : null]}>
+      <View style={st.actionIcon}>
+        <PixelText size={17} color={C.white}>{icon}</PixelText>
+      </View>
+      <PixelText size={9} color={C.white70} tracking={1}>{label}</PixelText>
+    </Pressable>
+  )
+}
+
+function WithdrawModal({
+  visible,
+  chain,
+  usdtAddress,
+  onClose,
+  onDone,
+}: {
+  visible: boolean
+  chain: EvmChain
+  usdtAddress?: string
+  onClose: () => void
+  onDone: (msg: string) => void
+}) {
+  const { getSeedPhrase } = useWallet()
+  const [to, setTo] = useState("")
+  const [amt, setAmt] = useState("")
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  const send = async () => {
+    setErr(null)
+    if (!usdtAddress) return setErr("USD₮ not available on " + chain.name)
+    if (!ethers.isAddress(to)) return setErr("invalid address")
+    setBusy(true)
+    try {
+      const seed = await getSeedPhrase()
+      if (!seed) throw new Error("no wallet")
+      const provider = new ethers.JsonRpcProvider(chain.rpc, chain.chainId, { staticNetwork: true })
+      const signer = ethers.Wallet.fromPhrase(seed).connect(provider)
+      const usdt = new ethers.Contract(usdtAddress, ERC20_MIN, signer)
+      const tx = await usdt.transfer(to, ethers.parseUnits(amt || "0", 6))
+      await tx.wait()
+      onDone(`sent ${amt} USD₮ · ${tx.hash.slice(0, 10)}…`)
+      onClose()
+      setTo("")
+      setAmt("")
+    } catch (e) {
+      setErr(errMsg(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable onPress={onClose} style={st.modalOverlay}>
+        <Pressable onPress={() => {}} style={st.modalSheet}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <PixelText size={14} tracking={2}>withdraw USD₮</PixelText>
+            <Pressable onPress={onClose} hitSlop={10}>
+              <PixelText size={16} color={C.white45}>✕</PixelText>
+            </Pressable>
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
+            <ChainLogo chain={chain} size={20} />
+            <PixelText size={10} upper={false} color={C.white45}>
+              on {chain.name}
+              {chain.testnet ? " testnet" : " mainnet"}
+            </PixelText>
+          </View>
+          <TextInput value={to} onChangeText={setTo} placeholder="0x recipient address" placeholderTextColor={C.white35} autoCapitalize="none" style={st.input} />
+          <TextInput value={amt} onChangeText={setAmt} placeholder="amount (USD₮)" placeholderTextColor={C.white35} keyboardType="decimal-pad" style={st.input} />
+          {err && <PixelText size={10} upper={false} color="#e57373" style={{ marginBottom: 8 }}>{err}</PixelText>}
+          <PixelButton label={busy ? "sending…" : "send"} color={C.green} onPress={send} />
+        </Pressable>
+      </Pressable>
+    </Modal>
+  )
+}
+
+function HomeDashboard({ onSwap }: { onSwap: () => void }) {
+  const { usdt, signer, address, refresh } = useWallet()
+  const [mode, setMode] = useState<"testnet" | "mainnet">("testnet")
+  const [mainBal, setMainBal] = useState<number | null>(null)
+  const [withdrawing, setWithdrawing] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [note, setNote] = useState<string | null>(null)
+
+  const chain = mode === "testnet" ? chainByKey("sepolia")! : chainByKey("polygon")!
+  const usdtAddress = USDT_BY_CHAIN[chain.key]
+  const displayBal = mode === "testnet" ? usdt : mainBal ?? 0
+
+  useEffect(() => {
+    if (mode !== "mainnet" || !address) return
+    let alive = true
+    ;(async () => {
+      try {
+        const provider = new ethers.JsonRpcProvider(chain.rpc, chain.chainId, { staticNetwork: true })
+        const usdtC = new ethers.Contract(usdtAddress, ERC20_MIN, provider)
+        const bal: bigint = await usdtC.balanceOf(address)
+        if (alive) setMainBal(Number(ethers.formatUnits(bal, 6)))
+      } catch {
+        if (alive) setMainBal(0)
+      }
+    })()
+    return () => {
+      alive = false
+    }
+  }, [mode, address])
+
+  const addBalance = async () => {
+    setNote(null)
+    if (mode === "testnet") {
+      if (!signer || !address) return
+      setBusy(true)
+      setNote("minting test USD₮…")
+      try {
+        await mintUsdt(signer, address, 100n * CHAIN.ONE_USDT)
+        await refresh()
+        setNote("+100 USD₮ minted to your wallet")
+      } catch (e) {
+        setNote(errMsg(e))
+      } finally {
+        setBusy(false)
+      }
+    } else {
+      if (!address) return
+      setNote("opening MoonPay on-ramp…")
+      try {
+        await onRamp({ walletAddress: address, asset: "usdt", fiat: "usd", amount: 100 })
+      } catch (e) {
+        setNote(errMsg(e))
+      }
+    }
+  }
+
+  const doOfframp = async () => {
+    if (!address) return
+    setNote("opening MoonPay off-ramp…")
+    try {
+      await offRamp({ refundAddress: address, asset: "usdt", fiat: "usd" })
+    } catch (e) {
+      setNote(errMsg(e))
+    }
+  }
+
+  return (
+    <View style={{ gap: 12 }}>
+      <View style={st.modeRow}>
+        {(["testnet", "mainnet"] as const).map((m) => (
+          <Pressable key={m} onPress={() => { setMode(m); setNote(null) }} style={[st.modePill, mode === m ? st.modePillActive : null]}>
+            <PixelText size={10} color={mode === m ? C.white : C.white45} tracking={1}>{m}</PixelText>
+          </Pressable>
+        ))}
+      </View>
+
+      <Panel style={st.balCard}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <View style={{ flex: 1 }}>
+            <PixelText size={10} color={C.white45} tracking={1}>total balance</PixelText>
+            <PixelText size={32} style={{ marginTop: 6 }}>${displayBal.toFixed(2)}</PixelText>
+            <PixelText size={9} upper={false} color={C.white45} style={{ marginTop: 4 }}>
+              {displayBal.toFixed(2)} USD₮ · {chain.name}
+              {chain.testnet ? " testnet" : " mainnet"}
+            </PixelText>
+          </View>
+          <ChainLogo chain={chain} size={34} />
+        </View>
+      </Panel>
+
+      <View style={st.actionRow}>
+        <ActionBtn icon="＋" label={mode === "testnet" ? "mint" : "add"} onPress={addBalance} disabled={busy} />
+        <ActionBtn icon="⇄" label="swap" onPress={onSwap} />
+        <ActionBtn icon="↑" label="withdraw" onPress={() => setWithdrawing(true)} />
+        <ActionBtn icon="＄" label="offramp" onPress={doOfframp} />
+      </View>
+
+      {note && <PixelText size={10} upper={false} color={C.white60}>{note}</PixelText>}
+
+      <WithdrawModal
+        visible={withdrawing}
+        chain={chain}
+        usdtAddress={usdtAddress}
+        onClose={() => setWithdrawing(false)}
+        onDone={(m) => { setNote(m); refresh() }}
+      />
+    </View>
+  )
+}
+
+export function HomeScreen({ onProfile, onGame, onSwap }: { onProfile?: () => void; onGame: (id: string) => void; onSwap: () => void }) {
   const [games, setGames] = useState<Game[]>([])
   const [filter, setFilter] = useState<GameFilter>("upcoming")
   const [loading, setLoading] = useState(true)
@@ -270,26 +473,26 @@ export function HomeScreen({ onProfile, onGame }: { onProfile?: () => void; onGa
   return (
     <View style={{ flex: 1 }}>
       <WalletHeader onAvatar={onProfile} />
-      <View style={st.titleRow}>
-        <PixelText size={20} tracking={3}>world cup</PixelText>
-        <PixelText size={9} upper={false} color={C.white45}>p2p prediction market</PixelText>
-      </View>
-      <View style={st.filterRow}>
-        {(["live", "upcoming", "completed"] as GameFilter[]).map((f) => (
-          <Pressable
-            key={f}
-            onPress={() => setFilter(f)}
-            style={[st.filterTab, filter === f ? st.filterTabActive : null]}
-          >
-            <PixelText size={11} color={filter === f ? C.white : C.white45} tracking={1}>
-              {f}
-              {f === "live" && liveCount > 0 ? ` ${liveCount}` : ""}
-            </PixelText>
-          </Pressable>
-        ))}
-      </View>
-
       <ScrollView style={{ flex: 1 }} contentContainerStyle={st.scroll}>
+        <HomeDashboard onSwap={onSwap} />
+        <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", marginTop: 2 }}>
+          <PixelText size={20} tracking={3}>world cup</PixelText>
+          <PixelText size={9} upper={false} color={C.white45}>p2p prediction market</PixelText>
+        </View>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          {(["live", "upcoming", "completed"] as GameFilter[]).map((f) => (
+            <Pressable
+              key={f}
+              onPress={() => setFilter(f)}
+              style={[st.filterTab, filter === f ? st.filterTabActive : null]}
+            >
+              <PixelText size={11} color={filter === f ? C.white : C.white45} tracking={1}>
+                {f}
+                {f === "live" && liveCount > 0 ? ` ${liveCount}` : ""}
+              </PixelText>
+            </Pressable>
+          ))}
+        </View>
         {loading && <ActivityIndicator color={C.eth} style={{ marginTop: 24 }} />}
         {!loading && shown.length === 0 && (
           <PixelText size={11} upper={false} color={C.white35} style={{ textAlign: "center", marginTop: 24 }}>
@@ -1468,6 +1671,15 @@ export function SwapScreen({ onBack }: { onBack: () => void }) {
 
 const st = StyleSheet.create({
   chainBtn: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: C.panel, borderWidth: 1, borderColor: C.panelBorder, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11 },
+  modeRow: { flexDirection: "row", alignSelf: "flex-start", backgroundColor: C.panel, borderRadius: 999, padding: 3, gap: 3 },
+  modePill: { paddingHorizontal: 16, paddingVertical: 5, borderRadius: 999 },
+  modePillActive: { backgroundColor: C.eth },
+  balCard: { padding: 16, backgroundColor: C.frameDeep, borderColor: C.highlight },
+  actionRow: { flexDirection: "row", gap: 8 },
+  actionBtn: { flex: 1, alignItems: "center", gap: 6, backgroundColor: C.panel, borderWidth: 1, borderColor: C.panelBorder, borderRadius: 12, paddingVertical: 12 },
+  actionIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: C.importBlue, alignItems: "center", justifyContent: "center" },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
+  modalSheet: { backgroundColor: C.frame, borderTopLeftRadius: 18, borderTopRightRadius: 18, borderTopWidth: 1, borderTopColor: C.highlight, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 28 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 28 },
   hero: { width: 240, height: 150, marginBottom: 4 },
   sub: { textAlign: "center", marginTop: 6, marginBottom: 20 },

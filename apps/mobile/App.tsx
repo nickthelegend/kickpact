@@ -110,7 +110,11 @@ function Game() {
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
         {tab === "home" && (
-          <HomeScreen onProfile={() => setTab("profile")} onGame={(id) => setGameId(id)} />
+          <HomeScreen
+            onProfile={() => setTab("profile")}
+            onGame={(id) => setGameId(id)}
+            onSwap={() => setSwapOpen(true)}
+          />
         )}
         {tab === "pacts" && <PactsScreen />}
         {tab === "pvp" && (
