@@ -50,6 +50,15 @@ import {
   type Filter as GameFilter,
   type Game,
 } from "./football"
+import {
+  executeSwap,
+  quoteSwap,
+  SWAP_NETWORKS,
+  type Quote,
+  type SwapNetwork,
+  type Token,
+} from "./swap"
+import { ethers } from "ethers"
 
 const USDT_ICON = require("../assets/tokens/usdc-icon.png")
 const MANAGER_ICON = require("../assets/tokens/manager-usdc.png")
@@ -914,7 +923,7 @@ function PactRow({ id, onChanged, setStatus }: { id: bigint; onChanged: () => vo
 // ───────────────────────── Profile (wallet hub) ─────────────────────────
 const fmtU = (x: bigint) => (Number(x) / Number(CHAIN.ONE_USDT)).toFixed(2)
 
-export function ProfileScreen() {
+export function ProfileScreen({ onSwap }: { onSwap?: () => void }) {
   const { address, usdt, eth, signer, provider, getSeedPhrase, logout, refresh } = useWallet()
   const [phrase, setPhrase] = useState<string | null>(null)
   const [showPhrase, setShowPhrase] = useState(false)
@@ -1005,6 +1014,8 @@ export function ProfileScreen() {
             </PixelText>
           </Panel>
         </View>
+
+        <PixelButton label="⇄ swap tokens (mainnet)" color={C.importBlue} size={12} onPress={onSwap} />
 
         {msg && (
           <PixelText size={11} upper={false} color={C.white60} style={{ textAlign: "center" }}>
@@ -1296,6 +1307,145 @@ export function GameScreen({ gameId, onBack }: { gameId: string; onBack: () => v
           )}
         </ScrollView>
       )}
+    </View>
+  )
+}
+
+// ───────────────────────── Swap router (Velora, mainnet) ─────────────────────────
+export function SwapScreen({ onBack }: { onBack: () => void }) {
+  const { getSeedPhrase } = useWallet()
+  const [net, setNet] = useState<SwapNetwork>(SWAP_NETWORKS[0])
+  const [fromIdx, setFromIdx] = useState(0)
+  const [toIdx, setToIdx] = useState(1)
+  const [amount, setAmount] = useState("10")
+  const [quote, setQuote] = useState<Quote | null>(null)
+  const [busy, setBusy] = useState<"quote" | "swap" | null>(null)
+  const [status, setStatus] = useState<string | null>(null)
+
+  const tokenIn = net.tokens[fromIdx]
+  const tokenOut = net.tokens[toIdx]
+
+  useEffect(() => {
+    setFromIdx(0)
+    setToIdx(1)
+    setQuote(null)
+    setStatus(null)
+  }, [net])
+
+  const cycle = (which: "from" | "to") => {
+    setQuote(null)
+    if (which === "from") setFromIdx((i) => (i + 1) % net.tokens.length === toIdx ? (i + 2) % net.tokens.length : (i + 1) % net.tokens.length)
+    else setToIdx((i) => (i + 1) % net.tokens.length === fromIdx ? (i + 2) % net.tokens.length : (i + 1) % net.tokens.length)
+  }
+  const flip = () => {
+    setQuote(null)
+    setFromIdx(toIdx)
+    setToIdx(fromIdx)
+  }
+
+  const getQuote = async () => {
+    setBusy("quote")
+    setStatus(null)
+    setQuote(null)
+    try {
+      const amountIn = ethers.parseUnits(amount || "0", tokenIn.decimals)
+      if (amountIn <= 0n) throw new Error("enter an amount")
+      setQuote(await quoteSwap({ network: net, tokenIn, tokenOut, amountIn }))
+    } catch (e) {
+      setStatus(errMsg(e))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const doSwap = async () => {
+    if (!quote) return
+    setBusy("swap")
+    setStatus("building swap on " + net.name + "…")
+    try {
+      const seed = await getSeedPhrase()
+      if (!seed) throw new Error("no wallet")
+      const provider = new ethers.JsonRpcProvider(net.rpc, net.chainId, { staticNetwork: true })
+      const signer = ethers.Wallet.fromPhrase(seed).connect(provider)
+      const amountIn = ethers.parseUnits(amount, tokenIn.decimals)
+      const { hash } = await executeSwap({ signer, network: net, tokenIn, tokenOut, amountIn, quote })
+      setStatus(`swapped! ${hash.slice(0, 12)}…`)
+    } catch (e) {
+      setStatus(errMsg(e))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const out = quote ? ethers.formatUnits(quote.destAmount, tokenOut.decimals) : ""
+
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={st.topbar}>
+        <PixelButton label="←" color={C.importBlue} onPress={onBack} size={14} />
+        <PixelText size={16} tracking={2}>swap</PixelText>
+        <View style={{ width: 44 }} />
+      </View>
+      <ScrollView contentContainerStyle={st.scroll}>
+        <View style={st.filterRow}>
+          {SWAP_NETWORKS.map((n) => (
+            <Pressable key={n.key} onPress={() => setNet(n)} style={[st.filterTab, net.key === n.key ? st.filterTabActive : null]}>
+              <PixelText size={11} color={net.key === n.key ? C.white : C.white45} tracking={1}>{n.name}</PixelText>
+            </Pressable>
+          ))}
+        </View>
+
+        <Panel style={st.pad}>
+          <PixelText size={10} color={C.white45} tracking={1}>you pay</PixelText>
+          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}>
+            <TextInput
+              value={amount}
+              onChangeText={(t) => { setAmount(t); setQuote(null) }}
+              keyboardType="decimal-pad"
+              style={[st.input, { flex: 1, marginVertical: 0 }]}
+              placeholder="0.0"
+              placeholderTextColor={C.white35}
+            />
+            <PixelButton label={tokenIn.symbol} color={C.importBlue} size={13} onPress={() => cycle("from")} style={{ marginLeft: 8, paddingHorizontal: 14 }} />
+          </View>
+        </Panel>
+
+        <Pressable onPress={flip} style={{ alignSelf: "center" }}>
+          <PixelText size={18} color={C.eth}>⇅</PixelText>
+        </Pressable>
+
+        <Panel style={st.pad}>
+          <PixelText size={10} color={C.white45} tracking={1}>you receive</PixelText>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
+            <PixelText size={20}>{out ? Number(out).toFixed(4) : "—"}</PixelText>
+            <PixelButton label={tokenOut.symbol} color={C.importBlue} size={13} onPress={() => cycle("to")} style={{ paddingHorizontal: 14 }} />
+          </View>
+          {quote && (
+            <PixelText size={9} upper={false} color={C.white45} style={{ marginTop: 8 }}>
+              ≈ ${Number(quote.destUSD).toFixed(2)} · gas ~${Number(quote.gasCostUSD).toFixed(3)}
+            </PixelText>
+          )}
+        </Panel>
+
+        <PixelButton label={busy === "quote" ? "quoting…" : "get quote"} color={C.eth} onPress={getQuote} />
+        {quote && (
+          <PixelButton label={busy === "swap" ? "swapping…" : `swap on ${net.name}`} color={C.green} onPress={doSwap} />
+        )}
+
+        <Panel style={st.pad}>
+          <PixelText size={9} upper={false} color={C.white45} style={{ lineHeight: 14 }}>
+            real swaps via Velora (ParaSwap) aggregator. {net.name} mainnet — needs
+            funds + gas on {net.name}. this is the rail that funds the Polymarket
+            tier; testnet Pacts/Duels stay on Sepolia.
+          </PixelText>
+        </Panel>
+
+        {status && (
+          <Panel style={st.pad}>
+            <PixelText size={11} upper={false} color={C.white70}>{status}</PixelText>
+          </Panel>
+        )}
+      </ScrollView>
     </View>
   )
 }

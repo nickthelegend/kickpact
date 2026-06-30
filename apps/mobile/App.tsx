@@ -16,6 +16,7 @@ import {
   PvpScreen,
   RankScreen,
   SignInScreen,
+  SwapScreen,
 } from "./src/screens"
 
 /**
@@ -88,6 +89,7 @@ function Game() {
   const [tab, setTab] = useState<Tab>("home")
   const [duelId, setDuelId] = useState<string | null>(null)
   const [gameId, setGameId] = useState<string | null>(null)
+  const [swapOpen, setSwapOpen] = useState(false)
 
   if (status === "INITIALIZING") {
     return (
@@ -102,6 +104,7 @@ function Game() {
   // Full-screen flows (no tab bar).
   if (duelId) return <DuelScreen duelId={duelId} onExit={() => setDuelId(null)} />
   if (gameId) return <GameScreen gameId={gameId} onBack={() => setGameId(null)} />
+  if (swapOpen) return <SwapScreen onBack={() => setSwapOpen(false)} />
 
   return (
     <View style={{ flex: 1 }}>
@@ -114,7 +117,7 @@ function Game() {
           <PvpScreen onBack={() => setTab("home")} onEnterDuel={(id) => setDuelId(id)} />
         )}
         {tab === "rank" && <RankScreen />}
-        {tab === "profile" && <ProfileScreen />}
+        {tab === "profile" && <ProfileScreen onSwap={() => setSwapOpen(true)} />}
       </View>
       <BottomNav tab={tab} onTab={setTab} />
     </View>
