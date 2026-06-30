@@ -58,7 +58,10 @@ import {
   type SwapNetwork,
   type Token,
 } from "./swap"
+import { ChainLogo, ChainSwitcherModal, chainByKey, type EvmChain } from "./chains"
 import { ethers } from "ethers"
+
+const SWAP_CHAINS = SWAP_NETWORKS.map((n) => chainByKey(n.key)).filter(Boolean) as EvmChain[]
 
 const USDT_ICON = require("../assets/tokens/usdc-icon.png")
 const MANAGER_ICON = require("../assets/tokens/manager-usdc.png")
@@ -1321,7 +1324,9 @@ export function SwapScreen({ onBack }: { onBack: () => void }) {
   const [quote, setQuote] = useState<Quote | null>(null)
   const [busy, setBusy] = useState<"quote" | "swap" | null>(null)
   const [status, setStatus] = useState<string | null>(null)
+  const [chainModal, setChainModal] = useState(false)
 
+  const chain = chainByKey(net.key)
   const tokenIn = net.tokens[fromIdx]
   const tokenOut = net.tokens[toIdx]
 
@@ -1387,13 +1392,14 @@ export function SwapScreen({ onBack }: { onBack: () => void }) {
         <View style={{ width: 44 }} />
       </View>
       <ScrollView contentContainerStyle={st.scroll}>
-        <View style={st.filterRow}>
-          {SWAP_NETWORKS.map((n) => (
-            <Pressable key={n.key} onPress={() => setNet(n)} style={[st.filterTab, net.key === n.key ? st.filterTabActive : null]}>
-              <PixelText size={11} color={net.key === n.key ? C.white : C.white45} tracking={1}>{n.name}</PixelText>
-            </Pressable>
-          ))}
-        </View>
+        <Pressable onPress={() => setChainModal(true)} style={st.chainBtn}>
+          {chain && <ChainLogo chain={chain} size={26} />}
+          <View style={{ flex: 1 }}>
+            <PixelText size={9} color={C.white45} tracking={1}>network</PixelText>
+            <PixelText size={13} style={{ marginTop: 2 }}>{net.name}</PixelText>
+          </View>
+          <PixelText size={12} color={C.white45}>switch ▾</PixelText>
+        </Pressable>
 
         <Panel style={st.pad}>
           <PixelText size={10} color={C.white45} tracking={1}>you pay</PixelText>
@@ -1446,11 +1452,22 @@ export function SwapScreen({ onBack }: { onBack: () => void }) {
           </Panel>
         )}
       </ScrollView>
+      <ChainSwitcherModal
+        visible={chainModal}
+        chains={SWAP_CHAINS}
+        selectedKey={net.key}
+        onSelect={(c) => {
+          const n = SWAP_NETWORKS.find((x) => x.key === c.key)
+          if (n) setNet(n)
+        }}
+        onClose={() => setChainModal(false)}
+      />
     </View>
   )
 }
 
 const st = StyleSheet.create({
+  chainBtn: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: C.panel, borderWidth: 1, borderColor: C.panelBorder, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 28 },
   hero: { width: 240, height: 150, marginBottom: 4 },
   sub: { textAlign: "center", marginTop: 6, marginBottom: 20 },

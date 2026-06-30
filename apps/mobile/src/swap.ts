@@ -54,6 +54,42 @@ export const SWAP_NETWORKS: SwapNetwork[] = [
       { symbol: "DAI", address: "0x6B175474E89094C44Da98b954EedeAC495271d0F", decimals: 18 },
     ],
   },
+  {
+    key: "arbitrum",
+    chainId: 42161,
+    name: "Arbitrum",
+    rpc: "https://arbitrum.drpc.org",
+    explorer: "https://arbiscan.io",
+    tokens: [
+      { symbol: "USDT", address: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9", decimals: 6 },
+      { symbol: "USDC", address: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", decimals: 6 },
+      { symbol: "WETH", address: "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", decimals: 18 },
+    ],
+  },
+  {
+    key: "optimism",
+    chainId: 10,
+    name: "Optimism",
+    rpc: "https://optimism.drpc.org",
+    explorer: "https://optimistic.etherscan.io",
+    tokens: [
+      { symbol: "USDT", address: "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58", decimals: 6 },
+      { symbol: "USDC", address: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85", decimals: 6 },
+      { symbol: "WETH", address: "0x4200000000000000000000000000000000000006", decimals: 18 },
+    ],
+  },
+  {
+    key: "base",
+    chainId: 8453,
+    name: "Base",
+    rpc: "https://base.drpc.org",
+    explorer: "https://basescan.org",
+    tokens: [
+      { symbol: "USDC", address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", decimals: 6 },
+      { symbol: "WETH", address: "0x4200000000000000000000000000000000000006", decimals: 18 },
+      { symbol: "DAI", address: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb", decimals: 18 },
+    ],
+  },
 ]
 
 export interface Quote {
