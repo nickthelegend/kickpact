@@ -1,24 +1,21 @@
 /**
- * Key storage shim. On a real device the seed lives in the OS keychain /
- * keystore via expo-secure-store (true self-custody). On web (the dev preview)
- * it falls back to AsyncStorage (localStorage).
+ * Key storage — WEB / default implementation (AsyncStorage → localStorage).
+ *
+ * On a real device, Metro resolves `storage.native.ts` instead, which stores
+ * the seed in the OS keychain via @tetherto/wdk-react-native-secure-storage
+ * (the WDK self-custody key store). This file never imports native-only
+ * modules, so the web bundle stays clean.
  */
-import { Platform } from "react-native"
-import * as SecureStore from "expo-secure-store"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
-const isWeb = Platform.OS === "web"
-
 export async function loadSecret(key: string): Promise<string | null> {
-  return isWeb ? AsyncStorage.getItem(key) : SecureStore.getItemAsync(key)
+  return AsyncStorage.getItem(key)
 }
 
 export async function saveSecret(key: string, value: string): Promise<void> {
-  if (isWeb) await AsyncStorage.setItem(key, value)
-  else await SecureStore.setItemAsync(key, value)
+  await AsyncStorage.setItem(key, value)
 }
 
 export async function clearSecret(key: string): Promise<void> {
-  if (isWeb) await AsyncStorage.removeItem(key)
-  else await SecureStore.deleteItemAsync(key)
+  await AsyncStorage.removeItem(key)
 }
