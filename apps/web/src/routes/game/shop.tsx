@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import type { CSSProperties } from "react"
 import {
-  useCurrentAccount,
   useSignAndExecuteTransaction,
   useSuiClient,
 } from "@mysten/dapp-kit"
 import { useOutletContext } from "react-router"
+import { useCurrentAccount } from "@/wdk/wallet"
 
 import { PixelButton } from "@/components/pixel-button"
 import type { GameOutletContext } from "./layout"

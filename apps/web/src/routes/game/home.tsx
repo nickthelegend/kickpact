@@ -1,4 +1,4 @@
-import { useCurrentAccount } from "@mysten/dapp-kit"
+import { useCurrentAccount } from "@/wdk/wallet"
 import { MyMatchTile } from "@/components/my-match-tile"
 import { PlayerHeroCard } from "@/components/player-hero-card"
 

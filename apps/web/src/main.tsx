@@ -9,6 +9,7 @@ import "@workspace/ui/globals.css"
 import "@mysten/dapp-kit/dist/index.css"
 import { ThemeProvider } from "@/components/theme-provider.tsx"
 import { EnokiWalletsRegistrar } from "@/components/enoki-wallets-registrar.tsx"
+import { WdkWalletProvider } from "@/wdk/wallet.tsx"
 import Landing from "@/routes/landing.tsx"
 import AuthCallback from "@/routes/auth-callback.tsx"
 import Profile from "@/routes/profile.tsx"
@@ -64,7 +65,12 @@ createRoot(document.getElementById("root")!).render(
         <SuiClientProvider networks={networks} defaultNetwork="testnet">
           <EnokiWalletsRegistrar />
           <WalletProvider autoConnect>
-            <RouterProvider router={router} />
+            {/* WDK self-custodial EVM wallet — mounted alongside the Sui
+                providers during the staged Sui→WDK migration so balance hooks
+                + new wallet UI work while the duel tx layer is converted. */}
+            <WdkWalletProvider>
+              <RouterProvider router={router} />
+            </WdkWalletProvider>
           </WalletProvider>
         </SuiClientProvider>
       </QueryClientProvider>

@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react"
 import { Link, useNavigate, type NavigateFunction } from "react-router"
 import { PixelButton } from "@/components/pixel-button"
-import { CONFIG } from "@/lib/config"
+import { EVM_CONFIG } from "@/lib/evm-config"
 
 /**
  * Public homepage at `/`. A judge opens this first: it has to say "what is
@@ -35,8 +35,8 @@ function enterGameWithCrt(navigate: NavigateFunction) {
 }
 
 const GITHUB_URL = "https://github.com/nikola0x0/flicky"
-const DEEPBOOK_URL = "https://deepbook.tech"
-const contractUrl = `https://suiscan.xyz/testnet/object/${CONFIG.packageId}/tx-blocks`
+const WDK_URL = "https://wdk.tether.io"
+const contractUrl = `${EVM_CONFIG.explorer}/address/${EVM_CONFIG.duelAddress}`
 
 // Bevelled pixel panel — hard black outline, top highlight + offset drop,
 // matching the in-game tile treatment.
@@ -99,7 +99,7 @@ function TopBar() {
       </Link>
       <div className="flex items-center gap-3 sm:gap-5 2xl:gap-8">
         <span className="bg-[#0f1430] px-2.5 py-1 text-[10px] tracking-[0.12em] text-[#8fb4ff] uppercase sm:text-xs 2xl:px-4 2xl:py-2 2xl:text-base">
-          Sui testnet
+          Sepolia testnet
         </span>
         <Link
           to="/game/home"
@@ -154,9 +154,9 @@ function Hero() {
           <div className="mt-9 flex flex-wrap gap-3 2xl:mt-12 2xl:gap-4">
             <Badge
               icon="/tokens/usdc-icon.png"
-              label="Powered by DeepBook Predict"
+              label="Settled in USD₮"
             />
-            <Badge icon="/tokens/sui.png" label="Built on Sui" />
+            <Badge icon="/tokens/usdc-icon.png" label="Powered by WDK · Ethereum" />
           </div>
         </div>
 
@@ -318,15 +318,15 @@ function SiteFooter() {
       <div
         className={`flex flex-col items-center justify-between gap-2 px-5 py-4 text-[11px] text-[#8b93b4] sm:flex-row sm:px-8 sm:text-xs lg:px-12 lg:py-5 2xl:px-20 2xl:py-8 2xl:text-lg ${CONTENT_W}`}
       >
-        <span>flicky · prediction duels on Sui</span>
+        <span>flicky · prediction duels on Ethereum</span>
         <div className="flex items-center gap-4 lg:gap-6 2xl:gap-10">
           <a
-            href={DEEPBOOK_URL}
+            href={WDK_URL}
             target="_blank"
             rel="noreferrer"
             className="transition-colors hover:text-white"
           >
-            DeepBook Predict ↗
+            WDK by Tether ↗
           </a>
           <a
             href={GITHUB_URL}

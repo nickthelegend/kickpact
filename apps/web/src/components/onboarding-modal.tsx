@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react"
 import { createPortal } from "react-dom"
-import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit"
+import { useSuiClient } from "@mysten/dapp-kit"
+import { useCurrentAccount } from "@/wdk/wallet"
 import { useFlickySign } from "@/lib/use-flicky-sign"
 import {
   buildCreateManagerTx,

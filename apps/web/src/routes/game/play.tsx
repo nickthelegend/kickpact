@@ -12,7 +12,8 @@
  */
 import { useEffect, useState, type ReactNode } from "react"
 import { Navigate, useNavigate, useParams } from "react-router"
-import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit"
+import { useSuiClient } from "@mysten/dapp-kit"
+import { useCurrentAccount } from "@/wdk/wallet"
 
 import { useFlickySocket } from "@/hooks/use-flicky-socket"
 import { findPredictManager } from "@/lib/deepbook"

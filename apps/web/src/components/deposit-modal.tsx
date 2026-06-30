@@ -112,6 +112,10 @@ export function DepositModal({ open, address, onClose }: DepositModalProps) {
   // (which has its own UX, no QR).
   const paymentUri = useMemo<string | null>(() => {
     if (!receiveMeta) return null
+    // Sui Payment URIs require a 66-char Sui address. Post-migration the
+    // address is a 42-char EVM address, so skip the QR build (deposit UX is
+    // being migrated to the USD₮ mint faucet + transfer; task #8).
+    if (!address.startsWith("0x") || address.length !== 66) return null
     const parsed = parseFloat(amount)
     if (!isFinite(parsed) || parsed <= 0) return null
     try {
