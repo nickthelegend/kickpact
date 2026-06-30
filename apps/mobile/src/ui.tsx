@@ -99,9 +99,11 @@ export function Panel({
 export function BalanceChip({
   icon,
   amount,
+  onPressAdd,
 }: {
   icon: ImageSourcePropType
   amount: string
+  onPressAdd?: () => void
 }) {
   return (
     <View style={styles.chip}>
@@ -109,11 +111,17 @@ export function BalanceChip({
       <PixelText size={13} upper={false}>
         {amount}
       </PixelText>
-      <View style={styles.chipAdd}>
+      <Pressable
+        onPress={onPressAdd}
+        style={({ pressed }) => [
+          styles.chipAdd,
+          { opacity: pressed ? 0.7 : 1 },
+        ]}
+      >
         <PixelText size={12} upper={false}>
           +
         </PixelText>
-      </View>
+      </Pressable>
     </View>
   )
 }
