@@ -13,6 +13,8 @@ export const CHAIN = {
   duelAddress: "0x045Ad96EB24CE29f02C4E41542507DE26FE13895",
   pactsAddress: "0x7Fa4E76aD2BDF8939972d690b7c60ba9dbe42881",
   usdtAddress: "0x4802B35fFE360CAcF7bc22702544DDA207b950A3",
+  // Keeper/oracle that auto-settles match predictions from official results.
+  keeperAddress: "0x64a902070DBF96B1e83986db7B77faa75B377B27",
   USDT_DECIMALS: 6,
   ONE_USDT: 1_000_000n,
   PROB_SCALE: 1_000_000_000n,

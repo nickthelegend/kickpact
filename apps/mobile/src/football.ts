@@ -130,3 +130,33 @@ export function kickoffLabel(g: Game): string {
   const time = d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
   return `${day} · ${time}`
 }
+
+export type Outcome = "home" | "draw" | "away"
+
+/** The official result of a finished match, or null if not finished. */
+export function finalOutcome(g: Game): Outcome | null {
+  if (g.state !== "post") return null
+  if (g.home.winner) return "home"
+  if (g.away.winner) return "away"
+  const h = Number(g.home.score),
+    a = Number(g.away.score)
+  if (!Number.isNaN(h) && !Number.isNaN(a)) return h > a ? "home" : a > h ? "away" : "draw"
+  return "draw"
+}
+
+/** Human label for a predicted outcome — e.g. "England to beat Congo DR". */
+export function outcomeLabel(g: Game, outcome: Outcome): string {
+  if (outcome === "draw") return `Draw — ${g.home.shortName} vs ${g.away.shortName}`
+  const win = outcome === "home" ? g.home : g.away
+  const lose = outcome === "home" ? g.away : g.home
+  return `${win.shortName} to beat ${lose.shortName}`
+}
+
+/**
+ * Deterministic on-chain terms string for a prediction. The keeper recomputes
+ * this from the same ESPN game + outcome, so the keccak hash always matches —
+ * no off-chain mapping needed. Stable on game id (NOT kickoff time).
+ */
+export function predictionTerms(g: Game, outcome: Outcome): string {
+  return `${outcomeLabel(g, outcome)} · WC#${g.id}`
+}

@@ -30,8 +30,8 @@ import {
 import { loadSecret, saveSecret } from "./storage"
 import {
   acceptPact,
-  agreePact,
   addMatchPact,
+  agreePact,
   approvePacts,
   cancelPact,
   createPact,
@@ -49,9 +49,12 @@ import {
   fetchGame,
   fetchGames,
   filterGames,
+  finalOutcome,
   kickoffLabel,
+  predictionTerms,
   type Filter as GameFilter,
   type Game,
+  type Outcome,
 } from "./football"
 import {
   executeSwap,
@@ -1416,7 +1419,7 @@ export function RankScreen() {
 }
 
 // ───────────────────────── Game detail + predict ─────────────────────────
-interface MatchBet { id: string; pact: PactState; label: string }
+interface MatchBet { id: string; pact: PactState; label: string; outcome: Outcome | null }
 
 export function GameScreen({ gameId, onBack }: { gameId: string; onBack: () => void }) {
   const { signer, usdt, provider, address } = useWallet()
@@ -1429,15 +1432,23 @@ export function GameScreen({ gameId, onBack }: { gameId: string; onBack: () => v
   const [createdId, setCreatedId] = useState<string | null>(null)
   const [qrOpen, setQrOpen] = useState(false)
   const [bets, setBets] = useState<MatchBet[]>([])
+  const [settling, setSettling] = useState<string | null>(null)
 
   const loadBets = useCallback(async () => {
+    const g = await fetchGame(gameId).catch(() => null)
     const ids = await listMatchPacts(gameId)
     const out: MatchBet[] = []
     for (const id of ids) {
       try {
         const pact = await fetchPact(provider, BigInt(id))
-        const terms = (await getTermsText(id)) || "prediction"
-        out.push({ id, pact, label: terms.split(" · World Cup")[0] })
+        const terms = (await getTermsText(id)) || ""
+        let outcome: Outcome | null = null
+        if (g) {
+          for (const o of ["home", "draw", "away"] as Outcome[]) {
+            if (predictionTerms(g, o) === terms) { outcome = o; break }
+          }
+        }
+        out.push({ id, pact, label: terms.split(" · WC#")[0] || "prediction", outcome })
       } catch {}
     }
     setBets(out)
@@ -1458,14 +1469,11 @@ export function GameScreen({ gameId, onBack }: { gameId: string; onBack: () => v
     setBusy(true)
     setStatus("approving USD₮ + creating prediction…")
     try {
-      const label =
-        outcome === "draw"
-          ? `Draw — ${game.home.shortName} vs ${game.away.shortName}`
-          : `${outcome === "home" ? game.home.shortName : game.away.shortName} to beat ${outcome === "home" ? game.away.shortName : game.home.shortName}`
-      const terms = `${label} · World Cup ${kickoffLabel(game)}`
+      const terms = predictionTerms(game, outcome)
       await approvePacts(signer, stake)
       const { pactId } = await createPact(signer, {
         counterparty: counterparty.trim(),
+        arbiter: CHAIN.keeperAddress, // keeper auto-settles from the official result
         stake,
         termsText: terms,
         deadline: Math.floor(Date.now() / 1000) + 30 * 24 * 3600,
@@ -1478,6 +1486,23 @@ export function GameScreen({ gameId, onBack }: { gameId: string; onBack: () => v
       setStatus(errMsg(e))
     } finally {
       setBusy(false)
+    }
+  }
+
+  // Auto-settle assist: confirm the official ESPN result on-chain (agree).
+  // When both sides confirm the same winner, the contract pays out.
+  const settleBet = async (b: MatchBet, winner: string) => {
+    if (!signer) return
+    setSettling(b.id)
+    setStatus("confirming the official result on-chain…")
+    try {
+      await agreePact(signer, BigInt(b.id), winner)
+      setStatus("result confirmed — pays out once both sides agree")
+      await loadBets()
+    } catch (e) {
+      setStatus(errMsg(e))
+    } finally {
+      setSettling(null)
     }
   }
 
@@ -1531,18 +1556,41 @@ export function GameScreen({ gameId, onBack }: { gameId: string; onBack: () => v
                   : s === PACT_STATUS.RESOLVED ? { t: "SETTLED", c: C.greenLight }
                   : { t: "REFUNDED", c: C.white45 }
                 const stk = (Number(b.pact.stake) / Number(CHAIN.ONE_USDT)).toFixed(0)
-                const mine = !!address && [b.pact.proposer, b.pact.counterparty].some((a) => a.toLowerCase() === address.toLowerCase())
+                const lc = (a: string) => a.toLowerCase()
+                const me = address ? lc(address) : ""
+                const mine = !!me && [b.pact.proposer, b.pact.counterparty].some((a) => lc(a) === me)
+                const result = game ? finalOutcome(game) : null
+                const winner = result && b.outcome ? (b.outcome === result ? b.pact.proposer : b.pact.counterparty) : null
+                const voted = me === lc(b.pact.proposer) ? b.pact.p0Voted : b.pact.p1Voted
+                const canSettle = s === PACT_STATUS.ACTIVE && mine && !!winner && !voted
+                const winLabel = result === "draw" ? "Draw" : result === "home" ? game?.home.shortName : game?.away.shortName
                 return (
                   <View key={b.id} style={st.betRow}>
-                    <View style={{ flex: 1 }}>
-                      <PixelText size={11} upper={false}>{b.label}</PixelText>
-                      <PixelText size={9} upper={false} color={C.white45} style={{ marginTop: 3 }}>
-                        #{b.id} · {stk} USD₮ each{mine ? " · yours" : ""}
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                      <View style={{ flex: 1 }}>
+                        <PixelText size={11} upper={false}>{b.label}</PixelText>
+                        <PixelText size={9} upper={false} color={C.white45} style={{ marginTop: 3 }}>
+                          #{b.id} · {stk} USD₮ each{mine ? " · yours" : ""}
+                        </PixelText>
+                      </View>
+                      <View style={st.statusPill}>
+                        <PixelText size={9} color={meta.c} tracking={1}>{meta.t}</PixelText>
+                      </View>
+                    </View>
+                    {canSettle && (
+                      <PixelButton
+                        label={settling === b.id ? "settling…" : `official: ${winLabel} won — settle ✓`}
+                        color={C.green}
+                        size={10}
+                        onPress={() => settleBet(b, winner!)}
+                        style={{ marginTop: 8 }}
+                      />
+                    )}
+                    {s === PACT_STATUS.ACTIVE && mine && voted && (
+                      <PixelText size={9} upper={false} color={C.white45} style={{ marginTop: 6 }}>
+                        you confirmed the result — pays out when both sides agree
                       </PixelText>
-                    </View>
-                    <View style={st.statusPill}>
-                      <PixelText size={9} color={meta.c} tracking={1}>{meta.t}</PixelText>
-                    </View>
+                    )}
                   </View>
                 )
               })}
