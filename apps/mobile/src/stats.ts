@@ -8,11 +8,17 @@ import { CHAIN, FLICKY_DUEL_ABI, FLICKY_PACTS_ABI } from "./chain"
 
 const ZERO = "0x0000000000000000000000000000000000000000"
 
-function duel(p: ethers.Provider) {
-  return new ethers.Contract(CHAIN.duelAddress, FLICKY_DUEL_ABI as unknown as string[], p)
+// Dedicated provider for log queries (drpc) — see CHAIN.logsRpcUrl. The
+// `p` passed by callers is kept for API symmetry but logs go through this.
+const logsProvider = new ethers.JsonRpcProvider(CHAIN.logsRpcUrl, CHAIN.chainId, {
+  staticNetwork: true,
+})
+
+function duel(_p: ethers.Provider) {
+  return new ethers.Contract(CHAIN.duelAddress, FLICKY_DUEL_ABI as unknown as string[], logsProvider)
 }
-function pacts(p: ethers.Provider) {
-  return new ethers.Contract(CHAIN.pactsAddress, FLICKY_PACTS_ABI as unknown as string[], p)
+function pacts(_p: ethers.Provider) {
+  return new ethers.Contract(CHAIN.pactsAddress, FLICKY_PACTS_ABI as unknown as string[], logsProvider)
 }
 
 export interface HistoryItem {
@@ -28,8 +34,8 @@ export interface RankRow {
   wonUsdt: bigint
 }
 
-async function range(p: ethers.Provider, lookback: number) {
-  const latest = await p.getBlockNumber()
+async function range(_p: ethers.Provider, lookback: number) {
+  const latest = await logsProvider.getBlockNumber()
   return { from: Math.max(0, latest - lookback), to: latest }
 }
 

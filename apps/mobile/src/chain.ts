@@ -6,6 +6,9 @@
 export const CHAIN = {
   chainId: 11155111,
   rpcUrl: "https://ethereum-sepolia-rpc.publicnode.com",
+  // Dedicated RPC for eth_getLogs (history/leaderboard) — publicnode/1rpc
+  // silently return empty log sets; drpc indexes them reliably.
+  logsRpcUrl: "https://sepolia.drpc.org",
   explorer: "https://sepolia.etherscan.io",
   duelAddress: "0x045Ad96EB24CE29f02C4E41542507DE26FE13895",
   pactsAddress: "0x7Fa4E76aD2BDF8939972d690b7c60ba9dbe42881",
