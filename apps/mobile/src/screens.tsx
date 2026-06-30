@@ -6,7 +6,7 @@
  *  - Duel    : reveal deck (creator) + swipe YES/NO on each card — real txs
  */
 import { useCallback, useEffect, useState } from "react"
-import { ActivityIndicator, Image, ScrollView, StyleSheet, TextInput, View } from "react-native"
+import { ActivityIndicator, Image, Pressable, ScrollView, Share, StyleSheet, TextInput, View } from "react-native"
 
 import { C } from "./theme"
 import { BalanceChip, Panel, PixelButton, PixelText } from "./ui"
@@ -39,6 +39,7 @@ import {
   type PactState,
 } from "./pact"
 import { PACT_STATUS } from "./chain"
+import { leaderboard, myHistory, type HistoryItem, type RankRow } from "./stats"
 
 const USDT_ICON = require("../assets/tokens/usdc-icon.png")
 const MANAGER_ICON = require("../assets/tokens/manager-usdc.png")
@@ -141,7 +142,7 @@ export function SignInScreen() {
 }
 
 // ───────────────────────── Home ─────────────────────────
-export function HomeScreen({ onPlay }: { onPlay: () => void }) {
+export function HomeScreen({ onPlay, onProfile }: { onPlay: () => void; onProfile?: () => void }) {
   const { address, usdt, eth, signer, refresh } = useWallet()
   const [minting, setMinting] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
@@ -171,9 +172,9 @@ export function HomeScreen({ onPlay }: { onPlay: () => void }) {
             <PixelText size={11} color={C.white60} upper={false}>{eth.toFixed(4)} ETH</PixelText>
           </View>
         </View>
-        <View style={st.gear}>
+        <Pressable style={st.gear} onPress={onProfile}>
           <Image source={require("../assets/icons/gear.png")} style={{ width: 22, height: 22 }} resizeMode="contain" />
-        </View>
+        </Pressable>
       </View>
 
       <PixelText size={30} tracking={6} style={st.title}>home</PixelText>
@@ -750,6 +751,226 @@ function PactRow({ id, onChanged, setStatus }: { id: bigint; onChanged: () => vo
         </View>
       )}
     </Panel>
+  )
+}
+
+// ───────────────────────── Profile (wallet hub) ─────────────────────────
+const fmtU = (x: bigint) => (Number(x) / Number(CHAIN.ONE_USDT)).toFixed(2)
+
+export function ProfileScreen() {
+  const { address, usdt, eth, signer, provider, getSeedPhrase, logout, refresh } = useWallet()
+  const [phrase, setPhrase] = useState<string | null>(null)
+  const [showPhrase, setShowPhrase] = useState(false)
+  const [history, setHistory] = useState<HistoryItem[]>([])
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!address) return
+    myHistory(provider, address).then(setHistory).catch(() => {})
+  }, [provider, address])
+
+  const reveal = async () => {
+    if (showPhrase) return setShowPhrase(false)
+    setPhrase(await getSeedPhrase())
+    setShowPhrase(true)
+  }
+  const faucet = async () => {
+    if (!signer || !address) return
+    setBusy(true)
+    setMsg("minting 100 test USD₮…")
+    try {
+      await mintUsdt(signer, address, 100n * CHAIN.ONE_USDT)
+      await refresh()
+      setMsg("minted 100 USD₮")
+    } catch (e) {
+      setMsg(errMsg(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={st.header}>
+        <PixelText size={22} tracking={4}>
+          profile
+        </PixelText>
+      </View>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={st.scroll}>
+        <Panel style={[st.pad, { alignItems: "center" }]}>
+          <View style={[st.avatar, { width: 64, height: 64, marginBottom: 10 }]} />
+          <PixelText size={14} tracking={1}>
+            {address ? shortAddr(address) : "…"}
+          </PixelText>
+          <PixelText size={9} upper={false} color={C.white35} style={{ marginTop: 6, textAlign: "center" }}>
+            {address}
+          </PixelText>
+          <PixelButton
+            label="share address (receive)"
+            color={C.importBlue}
+            size={12}
+            style={{ marginTop: 12, alignSelf: "stretch" }}
+            onPress={() => address && Share.share({ message: address })}
+          />
+        </Panel>
+
+        <View style={{ flexDirection: "row", gap: 12 }}>
+          <Panel style={[st.pad, { flex: 1, alignItems: "center" }]}>
+            <PixelText size={10} color={C.white45} tracking={1}>
+              USD₮
+            </PixelText>
+            <PixelText size={20} style={{ marginTop: 4 }}>
+              {usdt.toFixed(2)}
+            </PixelText>
+          </Panel>
+          <Panel style={[st.pad, { flex: 1, alignItems: "center" }]}>
+            <PixelText size={10} color={C.white45} tracking={1}>
+              gas (ETH)
+            </PixelText>
+            <PixelText size={20} style={{ marginTop: 4 }}>
+              {eth.toFixed(4)}
+            </PixelText>
+          </Panel>
+        </View>
+
+        <PixelButton label={busy ? "…" : "+ mint 100 test USD₮"} color={C.green} onPress={faucet} size={13} />
+        {msg && (
+          <PixelText size={11} upper={false} color={C.white60}>
+            {msg}
+          </PixelText>
+        )}
+
+        {/* backup */}
+        <Panel style={st.pad}>
+          <PixelText size={12} tracking={2}>
+            recovery phrase
+          </PixelText>
+          <PixelText size={10} upper={false} color={C.white45} style={{ marginTop: 6, lineHeight: 16 }}>
+            your keys, your funds. never share these 12 words.
+          </PixelText>
+          {showPhrase && phrase && (
+            <View style={st.grid}>
+              {phrase.split(" ").map((w, i) => (
+                <View key={i} style={st.word}>
+                  <PixelText size={10} color={C.white35} upper={false}>
+                    {i + 1}{" "}
+                  </PixelText>
+                  <PixelText size={10} upper={false}>
+                    {w}
+                  </PixelText>
+                </View>
+              ))}
+            </View>
+          )}
+          <PixelButton
+            label={showPhrase ? "hide" : "reveal recovery phrase"}
+            color={C.importBlue}
+            size={12}
+            style={{ marginTop: 10 }}
+            onPress={reveal}
+          />
+        </Panel>
+
+        {/* history */}
+        <PixelText size={12} tracking={2} color={C.white45}>
+          match history
+        </PixelText>
+        {history.length === 0 && (
+          <PixelText size={11} upper={false} color={C.white35}>
+            no matches yet — start a duel or a pact.
+          </PixelText>
+        )}
+        {history.map((h) => (
+          <Panel key={`${h.kind}-${h.id}`} style={[st.pad, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}>
+            <View>
+              <PixelText size={12} tracking={1}>
+                {h.kind} #{h.id}
+              </PixelText>
+              <PixelText size={10} upper={false} color={C.white45} style={{ marginTop: 4 }}>
+                stake {fmtU(h.stake)} USD₮
+              </PixelText>
+            </View>
+            <PixelText
+              size={12}
+              color={h.outcome === "won" ? C.greenLight : h.outcome === "lost" ? "#e08a8a" : C.white45}
+            >
+              {h.outcome === "won" ? "WON 🏆" : h.outcome.toUpperCase()}
+            </PixelText>
+          </Panel>
+        ))}
+
+        <Panel style={st.pad}>
+          <PixelText size={10} upper={false} color={C.white45} style={{ lineHeight: 16 }}>
+            network: Sepolia testnet · gas in ETH · stakes in USD₮{"\n"}self-custodial wallet — secured by WDK
+          </PixelText>
+        </Panel>
+
+        <PixelButton label="log out" color="#7a2e2e" size={13} onPress={logout} style={{ marginTop: 4, marginBottom: 8 }} />
+      </ScrollView>
+    </View>
+  )
+}
+
+// ───────────────────────── Rank (leaderboard) ─────────────────────────
+export function RankScreen() {
+  const { address, provider } = useWallet()
+  const [rows, setRows] = useState<RankRow[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const load = useCallback(() => {
+    setLoading(true)
+    leaderboard(provider)
+      .then(setRows)
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [provider])
+  useEffect(() => {
+    load()
+  }, [load])
+
+  const me = address?.toLowerCase()
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={st.header}>
+        <PixelText size={22} tracking={4}>
+          rank
+        </PixelText>
+        <PixelButton label="↻" color={C.importBlue} size={13} onPress={load} />
+      </View>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={st.scroll}>
+        <PixelText size={11} upper={false} color={C.white45} style={{ lineHeight: 16 }}>
+          live leaderboard — total USD₮ won across duels + pacts (on-chain).
+        </PixelText>
+        {loading && <ActivityIndicator color={C.eth} style={{ marginTop: 10 }} />}
+        {!loading && rows.length === 0 && (
+          <PixelText size={11} upper={false} color={C.white35}>
+            no finished matches yet. be the first to win a pot.
+          </PixelText>
+        )}
+        {rows.map((r, i) => {
+          const mine = r.address.toLowerCase() === me
+          return (
+            <Panel key={r.address} style={[st.pad, { flexDirection: "row", alignItems: "center", borderColor: mine ? C.eth : C.panelBorder }]}>
+              <PixelText size={16} color={i === 0 ? C.gold : C.white} style={{ width: 36 }}>
+                {i + 1}
+              </PixelText>
+              <View style={{ flex: 1 }}>
+                <PixelText size={12} tracking={1} color={mine ? C.eth : C.white}>
+                  {shortAddr(r.address)} {mine ? "(you)" : ""}
+                </PixelText>
+                <PixelText size={10} upper={false} color={C.white45} style={{ marginTop: 4 }}>
+                  {r.wins} win{r.wins === 1 ? "" : "s"}
+                </PixelText>
+              </View>
+              <PixelText size={13} color={C.greenLight}>
+                {fmtU(r.wonUsdt)} USD₮
+              </PixelText>
+            </Panel>
+          )
+        })}
+      </ScrollView>
+    </View>
   )
 }
 

@@ -11,7 +11,9 @@ import {
   DuelScreen,
   HomeScreen,
   PactsScreen,
+  ProfileScreen,
   PvpScreen,
+  RankScreen,
   SignInScreen,
 } from "./src/screens"
 
@@ -23,12 +25,14 @@ import {
  * Premium pixel UI rebuilt natively (RN StyleSheet).
  */
 
-type Tab = "home" | "pacts" | "pvp"
+type Tab = "home" | "pacts" | "pvp" | "rank" | "profile"
 
 const TABS: { key: Tab; icon: number; label: string }[] = [
   { key: "home", icon: require("./assets/icons/main_menu.png"), label: "home" },
   { key: "pacts", icon: require("./assets/icons/link.png"), label: "pacts" },
   { key: "pvp", icon: require("./assets/icons/swords.png"), label: "pvp" },
+  { key: "rank", icon: require("./assets/icons/star.png"), label: "rank" },
+  { key: "profile", icon: require("./assets/icons/portrait.png"), label: "profile" },
 ]
 
 function BottomNav({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
@@ -99,11 +103,15 @@ function Game() {
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
-        {tab === "home" && <HomeScreen onPlay={() => setTab("pvp")} />}
+        {tab === "home" && (
+          <HomeScreen onPlay={() => setTab("pvp")} onProfile={() => setTab("profile")} />
+        )}
         {tab === "pacts" && <PactsScreen />}
         {tab === "pvp" && (
           <PvpScreen onBack={() => setTab("home")} onEnterDuel={(id) => setDuelId(id)} />
         )}
+        {tab === "rank" && <RankScreen />}
+        {tab === "profile" && <ProfileScreen />}
       </View>
       <BottomNav tab={tab} onTab={setTab} />
     </View>
