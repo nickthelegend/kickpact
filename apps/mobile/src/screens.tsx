@@ -5,7 +5,7 @@
  *  - Pvp     : create a duel (stake escrow) or join one by code — real txs
  *  - Duel    : reveal deck (creator) + swipe YES/NO on each card — real txs
  */
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { ActivityIndicator, Image, Pressable, ScrollView, Share, StyleSheet, TextInput, View } from "react-native"
 
 import { C } from "./theme"
@@ -15,6 +15,7 @@ import { CHAIN, DUEL_STATUS, shortAddr } from "./chain"
 import {
   approveUsdt,
   createDuel,
+  createDuelFree,
   deckCommitment,
   demoDeck,
   fetchDuel,
@@ -22,6 +23,7 @@ import {
   mintUsdt,
   randomSalt,
   recordSwipe,
+  revealDeck,
   type Card,
   type DuelState,
 } from "./duel"
@@ -283,6 +285,26 @@ export function PvpScreen({ onBack, onEnterDuel }: { onBack: () => void; onEnter
     }
   }
 
+  const onPractice = async () => {
+    if (!signer) return
+    setBusy("practice")
+    setStatus("creating free practice duel… (a bot will join)")
+    try {
+      const cards = demoDeck(3)
+      const salt = randomSalt()
+      const { duelId } = await createDuelFree(signer, deckCommitment(cards, salt))
+      await saveSecret(
+        `deck.${duelId}`,
+        JSON.stringify({ cards: cards.map((c) => [c.strike.toString(), c.probUp.toString()]), salt }),
+      )
+      onEnterDuel(duelId.toString())
+    } catch (e) {
+      setStatus(errMsg(e))
+    } finally {
+      setBusy(null)
+    }
+  }
+
   return (
     <View style={{ flex: 1 }}>
       <View style={st.topbar}>
@@ -291,6 +313,19 @@ export function PvpScreen({ onBack, onEnterDuel }: { onBack: () => void; onEnter
         <View style={{ width: 44 }} />
       </View>
       <ScrollView contentContainerStyle={st.scroll}>
+        <Panel style={[st.pad, { borderColor: C.green }]}>
+          <PixelText size={13} tracking={2}>practice vs bot</PixelText>
+          <PixelText size={11} upper={false} color={C.white45} style={{ marginTop: 6, lineHeight: 16 }}>
+            free solo match — reveal the deck, swipe YES/NO, see if you read the
+            market better than the bot. no stake.
+          </PixelText>
+          <PixelButton
+            label={busy === "practice" ? "…" : "▶ practice (solo)"}
+            color={C.green}
+            onPress={onPractice}
+            style={{ marginTop: 10 }}
+          />
+        </Panel>
         <Panel style={st.pad}>
           <PixelText size={13} tracking={2}>stake tier</PixelText>
           <View style={st.tiers}>
@@ -375,26 +410,34 @@ export function DuelScreen({ duelId, onExit }: { duelId: string; onExit: () => v
 
   const isCreator = !!duel && !!address && duel.creator.toLowerCase() === address.toLowerCase()
   const myNext = duel ? (isCreator ? duel.p0Next : duel.p1Next) : 0
+  const revealingRef = useRef(false)
 
-  const reveal = async () => {
-    if (!signer) return
+  const reveal = useCallback(async () => {
+    if (!signer || revealingRef.current) return
+    revealingRef.current = true
     setBusy(true)
     setStatus("revealing deck…")
     try {
       const raw = await loadSecret(`deck.${duelId}`)
       if (!raw) throw new Error("deck not found on this device (creator only)")
       const { cards, salt } = JSON.parse(raw) as { cards: [string, string][]; salt: string }
-      const c = new (await import("ethers")).ethers.Contract(CHAIN.duelAddress, (await import("./chain")).FLICKY_DUEL_ABI as unknown as string[], signer)
-      const tx = await c.revealDeck(id, cards.map(([s, p]) => [BigInt(s), BigInt(p)]), salt)
-      await tx.wait()
+      await revealDeck(signer, id, cards.map(([s, p]) => ({ strike: BigInt(s), probUp: BigInt(p) })), salt)
       setStatus("deck revealed — start swiping")
       await load()
     } catch (e) {
       setStatus(e instanceof Error ? e.message.slice(0, 90) : "reveal failed")
     } finally {
       setBusy(false)
+      revealingRef.current = false
     }
-  }
+  }, [signer, duelId, id, load])
+
+  // Auto-reveal once the opponent (bot) has joined — creator holds the deck.
+  useEffect(() => {
+    if (duel?.status === DUEL_STATUS.ACTIVE && duel.deckSize === 0 && isCreator && !revealingRef.current) {
+      reveal()
+    }
+  }, [duel?.status, duel?.deckSize, isCreator, reveal])
 
   const swipe = async (isUp: boolean) => {
     if (!signer || !duel) return
@@ -417,6 +460,25 @@ export function DuelScreen({ duelId, onExit }: { duelId: string; onExit: () => v
     : duel?.status === DUEL_STATUS.COMPLETE ? "settled" : "…"
 
   const done = duel && duel.deckSize > 0 && myNext >= duel.deckSize
+  const complete = duel?.status === DUEL_STATUS.COMPLETE
+  let resultLabel = ""
+  let resultColor: string = C.white
+  if (complete && duel) {
+    const val0 = duel.p0Payout + duel.p1Premium
+    const val1 = duel.p1Payout + duel.p0Premium
+    const myVal = isCreator ? val0 : val1
+    const oppVal = isCreator ? val1 : val0
+    if (myVal > oppVal) {
+      resultLabel = "YOU WON 🏆"
+      resultColor = C.greenLight
+    } else if (myVal < oppVal) {
+      resultLabel = "you lost"
+      resultColor = "#e08a8a"
+    } else {
+      resultLabel = "tie"
+      resultColor = C.white60
+    }
+  }
 
   return (
     <View style={{ flex: 1 }}>
@@ -453,12 +515,26 @@ export function DuelScreen({ duelId, onExit }: { duelId: string; onExit: () => v
           </Panel>
         )}
 
-        {done && (
+        {complete && (
+          <Panel style={[st.pad, { alignItems: "center", borderColor: resultColor }]}>
+            <PixelText size={22} tracking={2} color={resultColor}>
+              {resultLabel}
+            </PixelText>
+            <PixelText size={11} upper={false} color={C.white45} style={{ textAlign: "center", marginTop: 8, lineHeight: 18 }}>
+              settled on-chain ·{" "}
+              {duel!.tier === 2 ? "practice (no stake)" : `pot ${fmtU(duel!.p0Stake + duel!.p1Stake)} USD₮`}
+            </PixelText>
+            <PixelButton label="back to lobby" color={C.importBlue} size={13} style={{ marginTop: 12 }} onPress={onExit} />
+          </Panel>
+        )}
+
+        {done && !complete && (
           <Panel style={[st.pad, { alignItems: "center" }]}>
             <PixelText size={14} tracking={1}>all cards swiped</PixelText>
             <PixelText size={11} upper={false} color={C.white45} style={{ textAlign: "center", marginTop: 8, lineHeight: 18 }}>
-              waiting for the oracle/keeper to settle each card{"\n"}then the pot pays the higher PnL.
+              settling on-chain…{"\n"}the keeper resolves each card, then the higher PnL wins.
             </PixelText>
+            <ActivityIndicator color={C.eth} style={{ marginTop: 10 }} />
           </Panel>
         )}
 

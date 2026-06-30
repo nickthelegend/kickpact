@@ -26,6 +26,10 @@ export interface DuelState {
   settledCount: number
   p0Next: number
   p1Next: number
+  p0Payout: bigint
+  p0Premium: bigint
+  p1Payout: bigint
+  p1Premium: bigint
   cards: Card[]
 }
 
@@ -100,6 +104,10 @@ export async function fetchDuel(
     settledCount: Number(d.settledCount),
     p0Next: Number(d.p0Next),
     p1Next: Number(d.p1Next),
+    p0Payout: d.p0Payout as bigint,
+    p0Premium: d.p0Premium as bigint,
+    p1Payout: d.p1Payout as bigint,
+    p1Premium: d.p1Premium as bigint,
     cards: d.cards.map((c: { strike: bigint; probUp: bigint }) => ({
       strike: c.strike,
       probUp: c.probUp,
@@ -149,6 +157,44 @@ export async function createDuel(
     }
   }
   return { hash: tx.hash, duelId }
+}
+
+/** Create a free practice duel (no stake) — bot opponent + keeper settle it. */
+export async function createDuelFree(
+  signer: ethers.Signer,
+  commitment: string,
+): Promise<{ hash: string; duelId: bigint }> {
+  const c = duelContract(signer)
+  const tx = await c.createDuelFree(commitment)
+  const receipt = await tx.wait()
+  let duelId = 0n
+  for (const log of receipt!.logs) {
+    try {
+      const parsed = c.interface.parseLog(log)
+      if (parsed?.name === "DuelCreated") {
+        duelId = parsed.args.duelId as bigint
+        break
+      }
+    } catch {
+      /* not our event */
+    }
+  }
+  return { hash: tx.hash, duelId }
+}
+
+export async function revealDeck(
+  signer: ethers.Signer,
+  duelId: bigint,
+  cards: Card[],
+  salt: string,
+): Promise<string> {
+  const tx = await duelContract(signer).revealDeck(
+    duelId,
+    cards.map((c) => [c.strike, c.probUp]),
+    salt,
+  )
+  await tx.wait()
+  return tx.hash
 }
 
 export async function joinDuel(
