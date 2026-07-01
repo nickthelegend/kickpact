@@ -35,7 +35,13 @@
           }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Flicky uses the camera to scan a friend's pact or duel QR code so you can join their escrow."
+        }
+      ]
     ]
   }
 }

@@ -71,7 +71,7 @@ import { BRIDGE_CHAINS, bridge, quoteBridge, type BridgeChain } from "./bridge"
 import { offRamp, onRamp } from "./fiat"
 import { assetForStrike, fetchTickers, fromStrike, priceLabel, type Ticker } from "./prices"
 import { fetchMarkets, fmtVolume, marketUrl, toCents, type PolyMarket } from "./polymarket"
-import { QRModal } from "./qr"
+import { QRModal, QRScanner } from "./qr"
 import { ethers } from "ethers"
 
 const BRIDGE_CHAIN_LOGOS = BRIDGE_CHAINS.map((c) => chainByKey(c.key)).filter(Boolean) as EvmChain[]
@@ -79,6 +79,14 @@ const nativeSym = (key: string) => (key === "polygon" ? "POL" : "ETH")
 
 // Deep-link join targets encoded in shareable QR codes.
 export const joinLink = (type: "duel" | "pact", id: string) => `flicky://join?type=${type}&id=${id}`
+
+/** Pull a numeric id out of a scanned Flicky QR (join link, #code, or raw #). */
+export function parseJoinId(value: string): string | null {
+  const m = value.trim().match(/[?&]id=(\d+)/)
+  if (m) return m[1]
+  const n = value.replace(/[^0-9]/g, "")
+  return n || null
+}
 
 // USD₮ address per chain (for the dashboard balance + withdraw).
 const USDT_BY_CHAIN: Record<string, string> = {
@@ -1277,15 +1285,17 @@ function AcceptByCode({ onAccepted, setStatus }: { onAccepted: () => void; setSt
   const { signer, provider } = useWallet()
   const [code, setCode] = useState("")
   const [busy, setBusy] = useState(false)
-  const onAccept = async () => {
-    if (!signer || !code) return
+  const [scanOpen, setScanOpen] = useState(false)
+
+  const acceptById = async (id: string) => {
+    if (!signer || !id) return
     setBusy(true)
-    setStatus("approving + accepting pact…")
+    setStatus(`joining pact #${id}…`)
     try {
-      const p = await fetchPact(provider, BigInt(code))
+      const p = await fetchPact(provider, BigInt(id))
       await approvePacts(signer, p.stake)
-      await acceptPact(signer, BigInt(code))
-      setStatus(`accepted pact #${code} — stake locked`)
+      await acceptPact(signer, BigInt(id))
+      setStatus(`joined pact #${id} — your stake is locked in escrow, winner takes the pot`)
       setCode("")
       onAccepted()
     } catch (e) {
@@ -1294,20 +1304,38 @@ function AcceptByCode({ onAccepted, setStatus }: { onAccepted: () => void; setSt
       setBusy(false)
     }
   }
+
   return (
     <Panel style={st.pad}>
-      <PixelText size={13} tracking={2}>
-        accept by code
+      <PixelText size={13} tracking={2}>join a friend's pact</PixelText>
+      <PixelText size={10} upper={false} color={C.white45} style={{ marginTop: 6, lineHeight: 14 }}>
+        scan their QR (or enter the code) to take the other side — your stake locks
+        in the same escrow, released to whoever wins.
       </PixelText>
-      <TextInput
-        value={code}
-        onChangeText={setCode}
-        placeholder="pact #"
-        placeholderTextColor={C.white35}
-        keyboardType="number-pad"
-        style={st.input}
+      <PixelButton label={busy ? "…" : "⛶ scan friend's QR"} color={C.green} onPress={() => setScanOpen(true)} style={{ marginTop: 12 }} />
+      <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+        <TextInput
+          value={code}
+          onChangeText={setCode}
+          placeholder="or enter pact #"
+          placeholderTextColor={C.white35}
+          keyboardType="number-pad"
+          style={[st.input, { flex: 1, marginVertical: 0 }]}
+        />
+        <PixelButton label={busy ? "…" : "join"} color={C.eth} onPress={() => acceptById(code)} style={{ paddingHorizontal: 18 }} />
+      </View>
+      <QRScanner
+        visible={scanOpen}
+        title="scan pact QR"
+        hint="point at your friend's pact QR to join their escrow"
+        onScan={(v) => {
+          setScanOpen(false)
+          const id = parseJoinId(v)
+          if (id) acceptById(id)
+          else setStatus("that QR isn't a Flicky pact code")
+        }}
+        onClose={() => setScanOpen(false)}
       />
-      <PixelButton label={busy ? "…" : "accept pact"} color={C.eth} onPress={onAccept} />
     </Panel>
   )
 }
