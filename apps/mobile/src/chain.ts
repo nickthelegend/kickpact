@@ -11,13 +11,13 @@ export const CHAIN = {
   logsRpcUrl: "https://sepolia.drpc.org",
   explorer: "https://sepolia.etherscan.io",
   duelAddress: "0x045Ad96EB24CE29f02C4E41542507DE26FE13895",
-  pactsAddress: "0x7Fa4E76aD2BDF8939972d690b7c60ba9dbe42881",
+  // FlickyPacts v2 — open-room support (counterparty == 0 = anyone joins).
+  pactsAddress: "0xc84a624109e6406d1a5Aa8413B19a1CFFCFe7f5A",
   usdtAddress: "0x4802B35fFE360CAcF7bc22702544DDA207b950A3",
   // Keeper/oracle that auto-settles match predictions from official results.
-  keeperAddress: "0x64a902070DBF96B1e83986db7B77faa75B377B27",
-  // Flip to true once FlickyPacts (open-room support) is redeployed + the
-  // pactsAddress above is updated. The deployed contract is named-only for now.
-  openRoomsLive: false,
+  keeperAddress: "0x72AE77B55A9195526170bb4D8D2B6f20d37b8262",
+  // Open rooms live on the v2 contract above.
+  openRoomsLive: true,
   USDT_DECIMALS: 6,
   ONE_USDT: 1_000_000n,
   PROB_SCALE: 1_000_000_000n,

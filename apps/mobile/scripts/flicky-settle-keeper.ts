@@ -15,9 +15,13 @@ import { ethers } from "ethers"
 import { CHAIN, FLICKY_PACTS_ABI, PACT_STATUS } from "../src/chain"
 import { fetchGames, finalOutcome, predictionTerms, type Outcome } from "../src/football"
 
-const GAS = { gasPrice: 1_200_000_000n } // legacy gas — survives a low balance
 const POLL_MS = 30_000
-const LOOKBACK = 100_000
+// Sepolia gas is volatile — price each resolve at 2× the current network rate.
+async function gas() {
+  const fd = await tx.getFeeData()
+  return { gasPrice: (fd.gasPrice ?? 2_000_000_000n) * 2n }
+}
+const LOOKBACK = 5_000 // v2 contract is fresh; all its pacts are recent (fast on drpc)
 const hashTerms = (t: string) => ethers.keccak256(ethers.toUtf8Bytes(t)).toLowerCase()
 
 const tx = new ethers.JsonRpcProvider(CHAIN.rpcUrl, CHAIN.chainId, { staticNetwork: true })
@@ -72,7 +76,7 @@ async function main() {
       const winner = m.outcome === m.result ? p.proposer : p.counterparty
       console.log(`#${pactId}: predicted ${m.outcome}, official ${m.result} → winner ${winner}`)
       try {
-        const t = await pactsW.resolveByArbiter(pactId, winner, GAS)
+        const t = await pactsW.resolveByArbiter(pactId, winner, await gas())
         console.log("  resolve tx", t.hash, "…")
         await t.wait()
         console.log("  ✓ settled — pot paid to", winner)

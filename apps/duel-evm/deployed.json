@@ -5,7 +5,8 @@
   "explorer": "https://sepolia.etherscan.io",
   "contracts": {
     "FlickyDuel": "0x045Ad96EB24CE29f02C4E41542507DE26FE13895",
-    "FlickyPacts": "0x7Fa4E76aD2BDF8939972d690b7c60ba9dbe42881",
+    "FlickyPacts": "0xc84a624109e6406d1a5Aa8413B19a1CFFCFe7f5A",
+    "FlickyPacts_v1_namedOnly": "0x7Fa4E76aD2BDF8939972d690b7c60ba9dbe42881",
     "MockUSDT": "0x4802B35fFE360CAcF7bc22702544DDA207b950A3"
   },
   "stakeToken": {
@@ -14,7 +15,7 @@
     "decimals": 6,
     "note": "Mock test USD₮ with an open public mint() faucet — testnet only."
   },
-  "oracleKeeper": "0x64a902070DBF96B1e83986db7B77faa75B377B27",
-  "deployedAt": "2026-06-30",
-  "notes": "Deployer/oracle is a throwaway key (scratchpad). Stakes & payouts in USD₮ (6dp); gas in Sepolia ETH. See src/FlickyDuel.sol for the duel lifecycle."
+  "oracleKeeper": "0x72AE77B55A9195526170bb4D8D2B6f20d37b8262",
+  "deployedAt": "2026-07-01",
+  "notes": "Deployer/oracle is a throwaway key (scratchpad). FlickyPacts v2 adds open rooms (counterparty==0). oracleKeeper also auto-settles match predictions. Stakes & payouts in USD₮ (6dp); gas in Sepolia ETH."
 }
