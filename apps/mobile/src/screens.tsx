@@ -543,7 +543,7 @@ export function HomeScreen({ onProfile, onGame, onSwap, onBridge, onMarkets }: {
 }
 
 // ───────────────────────── PvP lobby ─────────────────────────
-export function PvpScreen({ onBack, onEnterDuel }: { onBack: () => void; onEnterDuel: (id: string) => void }) {
+export function PvpScreen({ onBack, onEnterDuel, onSolo }: { onBack: () => void; onEnterDuel: (id: string) => void; onSolo: () => void }) {
   const { signer, address, usdt } = useWallet()
   const [tier, setTier] = useState(2) // index into stakeTiers (5 USD₮)
   const [joinId, setJoinId] = useState("")
@@ -596,72 +596,53 @@ export function PvpScreen({ onBack, onEnterDuel }: { onBack: () => void; onEnter
     }
   }
 
-  const onPractice = async () => {
-    if (!signer) return
-    setBusy("practice")
-    setStatus("creating free practice duel… (a bot will join)")
-    try {
-      const cards = await cryptoDeck(3)
-      const salt = randomSalt()
-      const { duelId } = await createDuelFree(signer, deckCommitment(cards, salt))
-      await saveSecret(
-        `deck.${duelId}`,
-        JSON.stringify({ cards: cards.map((c) => [c.strike.toString(), c.probUp.toString()]), salt }),
-      )
-      onEnterDuel(duelId.toString())
-    } catch (e) {
-      setStatus(errMsg(e))
-    } finally {
-      setBusy(null)
-    }
-  }
-
   return (
     <View style={{ flex: 1 }}>
       <View style={st.topbar}>
         <PixelButton label="←" color={C.importBlue} onPress={onBack} size={14} />
-        <PixelText size={18} tracking={3}>pvp duel</PixelText>
+        <PixelText size={18} tracking={3}>pvp arena</PixelText>
         <View style={{ width: 44 }} />
       </View>
       <ScrollView contentContainerStyle={st.scroll}>
-        <Panel style={[st.pad, { borderColor: C.green }]}>
-          <PixelText size={13} tracking={2}>practice vs bot</PixelText>
-          <PixelText size={11} upper={false} color={C.white45} style={{ marginTop: 6, lineHeight: 16 }}>
-            free solo match — reveal the deck, swipe YES/NO, see if you read the
-            market better than the bot. no stake.
-          </PixelText>
-          <PixelButton
-            label={busy === "practice" ? "…" : "▶ practice (solo)"}
-            color={C.green}
-            onPress={onPractice}
-            style={{ marginTop: 10 }}
-          />
-        </Panel>
-        <Panel style={st.pad}>
-          <PixelText size={13} tracking={2}>stake tier</PixelText>
+        {/* SOLO — local, instant, no stake */}
+        <PixelText size={11} tracking={2} color={C.white45}>solo</PixelText>
+        <Pressable onPress={onSolo}>
+          <Panel style={[st.pad, { borderColor: C.green, paddingVertical: 18 }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <View style={{ flex: 1, paddingRight: 10 }}>
+                <PixelText size={15} tracking={1}>practice vs bot</PixelText>
+                <PixelText size={10} upper={false} color={C.white45} style={{ marginTop: 6, lineHeight: 15 }}>
+                  read the live crypto market against a bot. free, instant, no
+                  stake — a perfect warm-up.
+                </PixelText>
+              </View>
+              <PixelText size={30}>🤖</PixelText>
+            </View>
+            <PixelButton label="▶ play solo" color={C.green} onPress={onSolo} style={{ marginTop: 12 }} />
+          </Panel>
+        </Pressable>
+
+        {/* divider */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginVertical: 2 }}>
+          <View style={{ flex: 1, height: 1, backgroundColor: C.white15 }} />
+          <PixelText size={9} color={C.white35} tracking={1}>or stake vs a friend</PixelText>
+          <View style={{ flex: 1, height: 1, backgroundColor: C.white15 }} />
+        </View>
+
+        {/* PVP — on-chain, staked, vs a real player */}
+        <PixelText size={11} tracking={2} color={C.white45}>pvp · real player</PixelText>
+        <Panel style={[st.pad, { borderColor: C.eth }]}>
+          <PixelText size={13} tracking={1}>1. pick your stake</PixelText>
           <View style={st.tiers}>
             {CHAIN.stakeTiers.map((t, i) => (
-              <PixelButton
-                key={i}
-                label={`${Number(t) / Number(CHAIN.ONE_USDT)}`}
-                color={i === tier ? C.eth : C.importBlue}
-                onPress={() => setTier(i)}
-                style={st.tier}
-                size={14}
-              />
+              <PixelButton key={i} label={`${Number(t) / Number(CHAIN.ONE_USDT)}`} color={i === tier ? C.eth : C.importBlue} onPress={() => setTier(i)} style={st.tier} size={14} />
             ))}
           </View>
-          <PixelText size={11} upper={false} color={C.white45} style={{ marginTop: 8 }}>
-            balance: {usdt.toFixed(2)} USD₮ · stake {stakeHuman} USD₮ per player
+          <PixelText size={10} upper={false} color={C.white45} style={{ marginTop: 8, lineHeight: 15 }}>
+            balance {usdt.toFixed(2)} USD₮ · {stakeHuman} each · winner takes {stakeHuman * 2}. settled on real prices.
           </PixelText>
-        </Panel>
-
-        <Panel style={st.pad}>
-          <PixelText size={13} tracking={2}>create a duel</PixelText>
-          <PixelText size={11} upper={false} color={C.white45} style={{ marginTop: 6, lineHeight: 18 }}>
-            escrow your stake and get a code to share with your opponent.
-          </PixelText>
-          <PixelButton label={busy === "create" ? "…" : "create duel"} color={C.green} onPress={onCreate} style={{ marginTop: 12 }} />
+          <PixelText size={13} tracking={1} style={{ marginTop: 16 }}>2. create + share the code</PixelText>
+          <PixelButton label={busy === "create" ? "creating…" : "create duel"} color={C.green} onPress={onCreate} style={{ marginTop: 8 }} />
           {createdId && (
             <View style={st.codeBox}>
               <PixelText size={11} color={C.white45}>duel code</PixelText>
@@ -675,16 +656,11 @@ export function PvpScreen({ onBack, onEnterDuel }: { onBack: () => void; onEnter
         </Panel>
 
         <Panel style={st.pad}>
-          <PixelText size={13} tracking={2}>join by code</PixelText>
-          <TextInput
-            value={joinId}
-            onChangeText={setJoinId}
-            placeholder="duel #"
-            placeholderTextColor={C.white35}
-            keyboardType="number-pad"
-            style={st.input}
-          />
-          <PixelButton label={busy === "join" ? "…" : "join duel"} color={C.eth} onPress={onJoin} style={{ marginTop: 4 }} />
+          <PixelText size={13} tracking={1}>join a friend's duel</PixelText>
+          <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+            <TextInput value={joinId} onChangeText={setJoinId} placeholder="duel #" placeholderTextColor={C.white35} keyboardType="number-pad" style={[st.input, { flex: 1, marginVertical: 0 }]} />
+            <PixelButton label={busy === "join" ? "…" : "join"} color={C.eth} onPress={onJoin} style={{ paddingHorizontal: 18 }} />
+          </View>
         </Panel>
 
         {status && (
@@ -710,7 +686,177 @@ export function PvpScreen({ onBack, onEnterDuel }: { onBack: () => void; onEnter
   )
 }
 
-// ───────────────────────── Duel / swipe ─────────────────────────
+// ───────────────────────── Solo practice (local, instant) ─────────────────────────
+// A fully client-side duel vs a bot — real crypto cards, real-price settlement,
+// no chain / gas / daemon, so it always works. On-chain staking is PvP only.
+interface PracticeRow { asset: string; strike: number; live: number; actualUp: boolean; mine: boolean; bot: boolean }
+
+export function PracticeScreen({ onExit }: { onExit: () => void }) {
+  const [deck, setDeck] = useState<{ strike: bigint; probUp: bigint }[]>([])
+  const [tickers, setTickers] = useState<Map<string, Ticker>>(new Map())
+  const [idx, setIdx] = useState(0)
+  const [swipes, setSwipes] = useState<boolean[]>([])
+  const [phase, setPhase] = useState<"loading" | "play" | "watching" | "result">("loading")
+  const [rows, setRows] = useState<PracticeRow[]>([])
+  const [outcome, setOutcome] = useState<"win" | "lose" | "tie">("tie")
+
+  const start = useCallback(async () => {
+    setPhase("loading")
+    setIdx(0)
+    setSwipes([])
+    setRows([])
+    try {
+      const t = await fetchTickers()
+      const d = await cryptoDeck(3)
+      setTickers(t)
+      setDeck(d)
+      setPhase("play")
+    } catch {
+      setPhase("play")
+    }
+  }, [])
+  useEffect(() => { start() }, [start])
+
+  // live prices while playing / watching
+  useEffect(() => {
+    if (phase !== "play" && phase !== "watching") return
+    const iv = setInterval(() => fetchTickers().then(setTickers).catch(() => {}), 4000)
+    return () => clearInterval(iv)
+  }, [phase])
+
+  const settle = async (mine: boolean[]) => {
+    setPhase("watching")
+    await new Promise((r) => setTimeout(r, 5000)) // watch the market settle
+    const fresh = await fetchTickers().catch(() => tickers)
+    const SCALE = 1e9
+    let myScore = 0, botScore = 0
+    const out: PracticeRow[] = deck.map((card, i) => {
+      const asset = assetForStrike(card.strike, fresh)
+      const sym = asset?.symbol ?? "?"
+      const strike = fromStrike(card.strike)
+      const live = asset ? fresh.get(sym)?.price ?? strike : strike
+      const actualUp = live > strike
+      const probUp = Number(card.probUp) / SCALE
+      const bot = Math.random() < probUp // bot leans on the implied prob
+      const myPay = mine[i] === actualUp ? 1 : 0
+      const botPay = bot === actualUp ? 1 : 0
+      const myPrem = mine[i] ? probUp : 1 - probUp
+      const botPrem = bot ? probUp : 1 - probUp
+      // subtraction-less PnL (mirrors FlickyDuel.finalize)
+      myScore += myPay + botPrem
+      botScore += botPay + myPrem
+      return { asset: sym, strike, live, actualUp, mine: mine[i], bot }
+    })
+    setRows(out)
+    setOutcome(myScore > botScore ? "win" : myScore < botScore ? "lose" : "tie")
+    setPhase("result")
+  }
+
+  const onSwipe = (isUp: boolean) => {
+    const next = [...swipes, isUp]
+    setSwipes(next)
+    if (next.length >= deck.length) settle(next)
+    else setIdx((i) => i + 1)
+  }
+
+  const card = deck[idx]
+  const asset = card ? assetForStrike(card.strike, tickers) : null
+  const strikePrice = card ? fromStrike(card.strike) : 0
+  const live = asset ? tickers.get(asset.symbol)?.price : undefined
+  const delta = live != null && strikePrice > 0 ? ((live - strikePrice) / strikePrice) * 100 : null
+
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={st.topbar}>
+        <PixelButton label="←" color={C.importBlue} onPress={onExit} size={14} />
+        <PixelText size={16} tracking={2}>solo · vs bot</PixelText>
+        <View style={{ width: 44 }} />
+      </View>
+      <ScrollView contentContainerStyle={st.scroll}>
+        {phase === "loading" && (
+          <Panel style={[st.pad, { alignItems: "center" }]}>
+            <ActivityIndicator color={C.eth} />
+            <PixelText size={11} upper={false} color={C.white45} style={{ marginTop: 10 }}>dealing live crypto cards…</PixelText>
+          </Panel>
+        )}
+
+        {phase === "play" && card && (
+          <>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 4 }}>
+              <PixelText size={10} color={C.white45} tracking={1}>card {idx + 1} / {deck.length}</PixelText>
+              <PixelText size={10} color={C.white45} tracking={1}>free · no stake</PixelText>
+            </View>
+            <Panel style={[st.pad, { alignItems: "center", paddingVertical: 22 }]}>
+              <PixelText size={40}>{asset?.symbol ?? "—"}</PixelText>
+              <PixelText size={10} upper={false} color={C.white45} style={{ marginTop: 2 }}>{asset?.name ?? "market"}</PixelText>
+              <PixelText size={11} upper={false} color={C.white60} style={{ marginTop: 16 }}>strike {priceLabel(strikePrice)}</PixelText>
+              {live != null && (
+                <PixelText size={17} color={delta != null && delta >= 0 ? C.greenLight : "#e08a8a"} style={{ marginTop: 4 }}>
+                  live {priceLabel(live)} {delta != null ? `(${delta >= 0 ? "+" : ""}${delta.toFixed(2)}%)` : ""}
+                </PixelText>
+              )}
+              <PixelText size={10} upper={false} color={C.white45} style={{ marginVertical: 16, textAlign: "center", lineHeight: 15 }}>
+                will {asset?.symbol ?? "it"} be UP from the strike when it settles?
+              </PixelText>
+              <View style={st.swipeRow}>
+                <PixelButton label="↓ DOWN" color="#b3434f" onPress={() => onSwipe(false)} style={st.swipeBtn} size={15} />
+                <PixelButton label="↑ UP" color={C.green} onPress={() => onSwipe(true)} style={st.swipeBtn} size={15} />
+              </View>
+            </Panel>
+          </>
+        )}
+
+        {phase === "watching" && (
+          <Panel style={[st.pad, { alignItems: "center", paddingVertical: 28 }]}>
+            <PixelText size={14} tracking={1}>watching the market…</PixelText>
+            <ActivityIndicator color={C.eth} style={{ marginVertical: 14 }} />
+            <PixelText size={10} upper={false} color={C.white45} style={{ textAlign: "center" }}>
+              settling every card on the real live price.
+            </PixelText>
+          </Panel>
+        )}
+
+        {phase === "result" && (
+          <>
+            <Panel style={[st.pad, { alignItems: "center", borderColor: outcome === "win" ? C.greenLight : outcome === "lose" ? "#e08a8a" : C.white45 }]}>
+              <PixelText size={24} color={outcome === "win" ? C.greenLight : outcome === "lose" ? "#e08a8a" : C.white60}>
+                {outcome === "win" ? "YOU WON 🏆" : outcome === "lose" ? "bot won" : "tie"}
+              </PixelText>
+              <PixelText size={10} upper={false} color={C.white45} style={{ marginTop: 6 }}>
+                you read {rows.filter((r) => r.mine === r.actualUp).length}/{rows.length} moves right
+              </PixelText>
+            </Panel>
+            {rows.map((r, i) => {
+              const iWon = r.mine === r.actualUp
+              return (
+                <Panel key={i} style={st.pad}>
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                    <View>
+                      <PixelText size={13}>{r.asset}</PixelText>
+                      <PixelText size={9} upper={false} color={C.white45} style={{ marginTop: 2 }}>
+                        {priceLabel(r.strike)} → {priceLabel(r.live)} · {r.actualUp ? "UP" : "DOWN"}
+                      </PixelText>
+                    </View>
+                    <View style={{ alignItems: "flex-end" }}>
+                      <PixelText size={11} color={iWon ? C.greenLight : "#e08a8a"}>
+                        you {r.mine ? "UP" : "DOWN"} {iWon ? "✓" : "✗"}
+                      </PixelText>
+                      <PixelText size={9} upper={false} color={C.white45} style={{ marginTop: 2 }}>bot {r.bot ? "UP" : "DOWN"}</PixelText>
+                    </View>
+                  </View>
+                </Panel>
+              )
+            })}
+            <PixelButton label="▶ play again" color={C.green} onPress={start} />
+            <PixelButton label="back to arena" color={C.importBlue} onPress={onExit} size={12} />
+          </>
+        )}
+      </ScrollView>
+    </View>
+  )
+}
+
+// ───────────────────────── Duel / swipe (on-chain PvP) ─────────────────────────
 export function DuelScreen({ duelId, onExit }: { duelId: string; onExit: () => void }) {
   const { signer, address, provider } = useWallet()
   const [duel, setDuel] = useState<DuelState | null>(null)

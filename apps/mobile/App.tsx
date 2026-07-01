@@ -14,6 +14,7 @@ import {
   HomeScreen,
   MarketsScreen,
   PactsScreen,
+  PracticeScreen,
   ProfileScreen,
   PvpScreen,
   RankScreen,
@@ -94,6 +95,7 @@ function Game() {
   const [swapOpen, setSwapOpen] = useState(false)
   const [bridgeOpen, setBridgeOpen] = useState(false)
   const [marketsOpen, setMarketsOpen] = useState(false)
+  const [soloOpen, setSoloOpen] = useState(false)
 
   if (status === "INITIALIZING") {
     return (
@@ -111,6 +113,7 @@ function Game() {
   if (swapOpen) return <SwapScreen onBack={() => setSwapOpen(false)} />
   if (bridgeOpen) return <BridgeScreen onBack={() => setBridgeOpen(false)} />
   if (marketsOpen) return <MarketsScreen onBack={() => setMarketsOpen(false)} />
+  if (soloOpen) return <PracticeScreen onExit={() => setSoloOpen(false)} />
 
   return (
     <View style={{ flex: 1 }}>
@@ -126,7 +129,11 @@ function Game() {
         )}
         {tab === "pacts" && <PactsScreen />}
         {tab === "pvp" && (
-          <PvpScreen onBack={() => setTab("home")} onEnterDuel={(id) => setDuelId(id)} />
+          <PvpScreen
+            onBack={() => setTab("home")}
+            onEnterDuel={(id) => setDuelId(id)}
+            onSolo={() => setSoloOpen(true)}
+          />
         )}
         {tab === "rank" && <RankScreen />}
         {tab === "profile" && <ProfileScreen onSwap={() => setSwapOpen(true)} />}
