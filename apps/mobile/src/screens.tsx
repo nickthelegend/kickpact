@@ -16,8 +16,8 @@ import {
   approveUsdt,
   createDuel,
   createDuelFree,
+  cryptoDeck,
   deckCommitment,
-  demoDeck,
   fetchDuel,
   joinDuel,
   mintUsdt,
@@ -69,6 +69,7 @@ import {
 import { ChainLogo, ChainSwitcherModal, chainByKey, type EvmChain } from "./chains"
 import { BRIDGE_CHAINS, bridge, quoteBridge, type BridgeChain } from "./bridge"
 import { offRamp, onRamp } from "./fiat"
+import { assetForStrike, fetchTickers, fromStrike, priceLabel, type Ticker } from "./prices"
 import { fetchMarkets, fmtVolume, marketUrl, toCents, type PolyMarket } from "./polymarket"
 import { QRModal } from "./qr"
 import { ethers } from "ethers"
@@ -561,7 +562,7 @@ export function PvpScreen({ onBack, onEnterDuel }: { onBack: () => void; onEnter
     try {
       await approveUsdt(signer, stake)
       setStatus("creating duel on-chain…")
-      const cards = demoDeck(3)
+      const cards = await cryptoDeck(3)
       const salt = randomSalt()
       const commitment = deckCommitment(cards, salt)
       const { duelId } = await createDuel(signer, stake, commitment)
@@ -600,7 +601,7 @@ export function PvpScreen({ onBack, onEnterDuel }: { onBack: () => void; onEnter
     setBusy("practice")
     setStatus("creating free practice duel… (a bot will join)")
     try {
-      const cards = demoDeck(3)
+      const cards = await cryptoDeck(3)
       const salt = randomSalt()
       const { duelId } = await createDuelFree(signer, deckCommitment(cards, salt))
       await saveSecret(
@@ -715,7 +716,18 @@ export function DuelScreen({ duelId, onExit }: { duelId: string; onExit: () => v
   const [duel, setDuel] = useState<DuelState | null>(null)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState<string | null>(null)
+  const [tickers, setTickers] = useState<Map<string, Ticker>>(new Map())
   const id = BigInt(duelId)
+
+  // live crypto prices — map each card's strike back to its asset + show the
+  // price moving vs the strike in real time.
+  useEffect(() => {
+    let alive = true
+    const tick = () => fetchTickers().then((t) => alive && setTickers(t)).catch(() => {})
+    tick()
+    const iv = setInterval(tick, 8000)
+    return () => { alive = false; clearInterval(iv) }
+  }, [])
 
   const load = useCallback(async () => {
     try {
@@ -825,18 +837,35 @@ export function DuelScreen({ duelId, onExit }: { duelId: string; onExit: () => v
           <PixelButton label={busy ? "…" : "reveal deck & start"} color={C.green} onPress={reveal} />
         )}
 
-        {duel && duel.deckSize > 0 && !done && (
-          <Panel style={[st.pad, { alignItems: "center" }]}>
-            <PixelText size={13} tracking={1}>card {myNext + 1} of {duel.deckSize}</PixelText>
-            <PixelText size={11} upper={false} color={C.white45} style={{ marginVertical: 10 }}>
-              will it settle above the strike?
-            </PixelText>
-            <View style={st.swipeRow}>
-              <PixelButton label="NO" color="#b3434f" onPress={() => swipe(false)} style={st.swipeBtn} size={18} />
-              <PixelButton label="YES" color={C.green} onPress={() => swipe(true)} style={st.swipeBtn} size={18} />
-            </View>
-          </Panel>
-        )}
+        {duel && duel.deckSize > 0 && !done && (() => {
+          const card = duel.cards[myNext]
+          const asset = card ? assetForStrike(card.strike, tickers) : null
+          const strikePrice = card ? fromStrike(card.strike) : 0
+          const live = asset ? tickers.get(asset.symbol)?.price : undefined
+          const delta = live != null && strikePrice > 0 ? ((live - strikePrice) / strikePrice) * 100 : null
+          return (
+            <Panel style={[st.pad, { alignItems: "center" }]}>
+              <PixelText size={10} color={C.white45} tracking={1}>card {myNext + 1} of {duel.deckSize}</PixelText>
+              <PixelText size={34} style={{ marginTop: 10 }}>{asset?.symbol ?? "—"}</PixelText>
+              <PixelText size={10} upper={false} color={C.white45} style={{ marginTop: 2 }}>{asset?.name ?? "market"}</PixelText>
+              <PixelText size={11} upper={false} color={C.white60} style={{ marginTop: 14 }}>
+                strike {priceLabel(strikePrice)}
+              </PixelText>
+              {live != null && (
+                <PixelText size={15} color={delta != null && delta >= 0 ? C.greenLight : "#e08a8a"} style={{ marginTop: 4 }}>
+                  live {priceLabel(live)} {delta != null ? `(${delta >= 0 ? "+" : ""}${delta.toFixed(2)}%)` : ""}
+                </PixelText>
+              )}
+              <PixelText size={10} upper={false} color={C.white45} style={{ marginVertical: 14, textAlign: "center", lineHeight: 15 }}>
+                will {asset?.symbol ?? "it"} be UP from the strike when the oracle settles?
+              </PixelText>
+              <View style={st.swipeRow}>
+                <PixelButton label="↓ DOWN" color="#b3434f" onPress={() => swipe(false)} style={st.swipeBtn} size={15} />
+                <PixelButton label="↑ UP" color={C.green} onPress={() => swipe(true)} style={st.swipeBtn} size={15} />
+              </View>
+            </Panel>
+          )
+        })()}
 
         {complete && (
           <Panel style={[st.pad, { alignItems: "center", borderColor: resultColor }]}>

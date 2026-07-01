@@ -9,13 +9,16 @@
  */
 import { ethers } from "ethers"
 import { CHAIN, FLICKY_DUEL_ABI, DUEL_STATUS } from "../src/chain"
+import { assetForStrike, fetchTickers, toStrike } from "../src/prices"
 
 const ZERO = "0x0000000000000000000000000000000000000000"
 const TIER_FREE = 2
 const POLL_MS = 7000
-// Cheap legacy gas so the bot keeps working on a low balance (ethers' default
-// EIP-1559 maxFeePerGas estimate can exceed a near-empty wallet's balance).
-const GAS = { gasPrice: 1_200_000_000n }
+// Sepolia gas is volatile — price each tx at 2× the current network rate.
+async function gasOpts() {
+  const fd = await tx.getFeeData()
+  return { gasPrice: (fd.gasPrice ?? 1_500_000_000n) * 2n }
+}
 
 const tx = new ethers.JsonRpcProvider(CHAIN.rpcUrl, CHAIN.chainId, { staticNetwork: true })
 const logs = new ethers.JsonRpcProvider(CHAIN.logsRpcUrl, CHAIN.chainId, { staticNetwork: true })
@@ -56,7 +59,7 @@ async function main() {
     // 1) join as bot
     if (status === DUEL_STATUS.PENDING && d.challenger === ZERO) {
       console.log(`#${id}: joining as bot…`)
-      await (await duelW.joinDuel(id, GAS)).wait()
+      await (await duelW.joinDuel(id, await gasOpts())).wait()
       return
     }
     if (status !== DUEL_STATUS.ACTIVE) return
@@ -69,26 +72,30 @@ async function main() {
     while (p1Next < deckSize) {
       const isUp = Math.random() > 0.5
       console.log(`#${id}: bot swipes card ${p1Next} ${isUp ? "YES" : "NO"}`)
-      await (await duelW.recordSwipe(id, p1Next, isUp, GAS)).wait()
+      await (await duelW.recordSwipe(id, p1Next, isUp, await gasOpts())).wait()
       p1Next++
     }
 
-    // 3) settle once both finished
+    // 3) settle once both finished — with the REAL current price of each card's
+    //    asset (recovered from the on-chain strike by nearest magnitude).
     const p0Next = Number(d.p0Next)
     if (p0Next < deckSize) return // player still swiping
     const settled = Number(d.settledCount)
     if (settled < deckSize) {
+      const tickers = await fetchTickers().catch(() => new Map())
       for (let i = 0; i < deckSize; i++) {
         const already = await duelR.cardSettled(id, i).catch(() => false)
         if (already) continue
         const strike = d.cards[i].strike as bigint
-        const price = strike + (Math.random() > 0.5 ? 25n : -25n) // random outcome
-        console.log(`#${id}: settle card ${i} @ ${price}`)
-        await (await duelW.settleCard(id, i, price, GAS)).wait()
+        const asset = assetForStrike(strike, tickers)
+        const live = asset ? tickers.get(asset.symbol) : undefined
+        const price = live ? toStrike(live.price) : strike // real settlement price
+        console.log(`#${id}: settle card ${i} [${asset?.symbol ?? "?"}] strike ${strike} -> ${price}`)
+        await (await duelW.settleCard(id, i, price, await gasOpts())).wait()
       }
     }
     console.log(`#${id}: finalize`)
-    await (await duelW.finalize(id, GAS)).wait()
+    await (await duelW.finalize(id, await gasOpts())).wait()
     done.add(id.toString())
     console.log(`#${id}: done ✓\n`)
   }

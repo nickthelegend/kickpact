@@ -7,6 +7,7 @@
 import { ethers } from "ethers"
 
 import { CHAIN, FLICKY_DUEL_ABI, USDT_ABI } from "./chain"
+import { ASSETS, fetchTickers, toStrike } from "./prices"
 
 export interface Card {
   strike: bigint
@@ -54,14 +55,35 @@ export function randomSalt(): string {
   return ethers.hexlify(ethers.randomBytes(32))
 }
 
-/** A simple demo deck of N binary cards (strike/prob are illustrative until
- *  the server/oracle feeds real markets). */
+/** A simple demo deck of N binary cards (strike/prob are illustrative). */
 export function demoDeck(n = 3): Card[] {
   const probs = [300_000_000n, 800_000_000n, 550_000_000n, 250_000_000n, 700_000_000n]
   return Array.from({ length: n }, (_, i) => ({
     strike: BigInt(100 + i * 50),
     probUp: probs[i % probs.length],
   }))
+}
+
+/**
+ * A LIVE deck of N real crypto binary cards — "will <asset> be UP from its
+ * current price?" Strike = live spot price in cents; probUp leans on 24h
+ * momentum. The oracle settles each card with the real price at settle time, so
+ * the outcome is a genuine short-term market move (no Math.random). The
+ * card→asset mapping is recovered from the on-chain strike (see prices.ts
+ * assetForStrike), so nothing extra needs to be committed or shared.
+ */
+export async function cryptoDeck(n = 3): Promise<Card[]> {
+  const tickers = await fetchTickers()
+  const pool = ASSETS.filter((a) => tickers.has(a.symbol))
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[pool[i], pool[j]] = [pool[j], pool[i]]
+  }
+  return pool.slice(0, Math.min(n, pool.length)).map((a) => {
+    const t = tickers.get(a.symbol)!
+    const lean = 0.5 + Math.max(-0.3, Math.min(0.3, t.changePct / 100))
+    return { strike: toStrike(t.price), probUp: BigInt(Math.round(lean * 1e9)) }
+  })
 }
 
 // ── reads ──
