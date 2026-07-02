@@ -72,6 +72,7 @@ import { offRamp, onRamp } from "./fiat"
 import { assetForStrike, fetchTickers, fromStrike, priceLabel, type Ticker } from "./prices"
 import { fetchMarkets, fmtVolume, marketUrl, toCents, type PolyMarket } from "./polymarket"
 import { QRModal, QRScanner } from "./qr"
+import { MatchRoom, type RoomMsg } from "./room"
 import { ethers } from "ethers"
 
 const BRIDGE_CHAIN_LOGOS = BRIDGE_CHAINS.map((c) => chainByKey(c.key)).filter(Boolean) as EvmChain[]
@@ -1694,6 +1695,254 @@ export function RankScreen() {
 // ───────────────────────── Game detail + predict ─────────────────────────
 interface MatchBet { id: string; pact: PactState; label: string; outcome: Outcome | null }
 
+// ───────────────────────── Match Room (P2P watch party · Pears track) ─────────────────────────
+function MatchRoomPanel({ gameId, game, onBetsChanged }: { gameId: string; game: Game | null; onBetsChanged?: () => void }) {
+  const { signer, address, provider } = useWallet()
+  const [joined, setJoined] = useState(false)
+  const [peers, setPeers] = useState(0)
+  const [msgs, setMsgs] = useState<RoomMsg[]>([])
+  const [input, setInput] = useState("")
+  const [note, setNote] = useState<string | null>(null)
+  const [proposeOpen, setProposeOpen] = useState(false)
+  const [propOutcome, setPropOutcome] = useState<Outcome>("home")
+  const [propTier, setPropTier] = useState(0)
+  const [busyPact, setBusyPact] = useState<string | null>(null)
+  const roomRef = useRef<MatchRoom | null>(null)
+
+  const push = useCallback((m: RoomMsg) => {
+    setMsgs((prev) => [...prev.slice(-59), m])
+  }, [])
+
+  const join = async () => {
+    if (!signer || !address || roomRef.current) return
+    setNote("joining the swarm…")
+    try {
+      const room = new MatchRoom(
+        gameId,
+        { address, nick: shortAddr(address) },
+        signer,
+        {
+          onReady: () => setNote("live on the DHT — waiting for fans…"),
+          onPeers: (n) => setPeers(n),
+          onJoined: (nick) => push({ type: "msg", from: "", nick: "", text: `${nick} joined the room`, ts: Date.now(), sig: "", verified: true }),
+          onMsg: (m) => push(m),
+        },
+      )
+      roomRef.current = room
+      await room.start()
+      setJoined(true)
+    } catch (e) {
+      setNote(errMsg(e))
+      roomRef.current = null
+    }
+  }
+
+  const leave = useCallback(() => {
+    roomRef.current?.stop()
+    roomRef.current = null
+    setJoined(false)
+    setPeers(0)
+    setMsgs([])
+    setNote(null)
+  }, [])
+  useEffect(() => leave, [leave]) // teardown on unmount
+
+  const send = async () => {
+    const text = input.trim()
+    if (!text || !roomRef.current) return
+    setInput("")
+    try {
+      push(await roomRef.current.send(text))
+    } catch (e) {
+      setNote(errMsg(e))
+    }
+  }
+
+  // Propose a bet to the room: lock your stake in the FlickyPacts escrow as an
+  // OPEN pact (keeper auto-settles from the result), then broadcast it P2P.
+  const proposeBet = async () => {
+    if (!signer || !game || !roomRef.current) return
+    const stake = CHAIN.stakeTiers[propTier]
+    setBusyPact("propose")
+    setNote("locking your stake in escrow…")
+    try {
+      const terms = predictionTerms(game, propOutcome)
+      await approvePacts(signer, stake)
+      const { pactId } = await createPact(signer, {
+        counterparty: ZERO, // open — anyone in the room can take it
+        arbiter: CHAIN.keeperAddress,
+        stake,
+        termsText: terms,
+        deadline: Math.floor(Date.now() / 1000) + 30 * 24 * 3600,
+      })
+      await addMatchPact(gameId, pactId)
+      const label = terms.split(" · WC#")[0]
+      const stakeUsd = Number(stake) / Number(CHAIN.ONE_USDT)
+      push(
+        await roomRef.current.send(label, {
+          type: "pact",
+          pactId: pactId.toString(),
+          stakeUsd,
+          outcome: propOutcome,
+        }),
+      )
+      setNote(`bet #${pactId} escrowed + broadcast to the room`)
+      setProposeOpen(false)
+      onBetsChanged?.()
+    } catch (e) {
+      setNote(errMsg(e))
+    } finally {
+      setBusyPact(null)
+    }
+  }
+
+  // Take the other side of a bet proposed in the room (join its escrow).
+  const joinBet = async (m: RoomMsg) => {
+    if (!signer || !m.pactId) return
+    setBusyPact(m.pactId)
+    setNote(`joining bet #${m.pactId}…`)
+    try {
+      const p = await fetchPact(provider, BigInt(m.pactId))
+      await approvePacts(signer, p.stake)
+      await acceptPact(signer, BigInt(m.pactId))
+      setNote(`you took the other side of #${m.pactId} — escrow live, auto-settles on the result`)
+      onBetsChanged?.()
+    } catch (e) {
+      setNote(errMsg(e))
+    } finally {
+      setBusyPact(null)
+    }
+  }
+
+  if (!joined) {
+    return (
+      <Panel style={[st.pad, { borderColor: C.gold }]}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <View style={{ flex: 1, paddingRight: 10 }}>
+            <PixelText size={13} tracking={2}>match room</PixelText>
+            <PixelText size={10} upper={false} color={C.white45} style={{ marginTop: 6, lineHeight: 15 }}>
+              peer-to-peer watch party over Hyperswarm — fans find each other on
+              the DHT, no server. messages signed by your wallet.
+            </PixelText>
+          </View>
+          <PixelText size={26}>🏟️</PixelText>
+        </View>
+        <PixelButton label="⚡ join the room (p2p)" color={C.gold} textColor="#1b2548" onPress={join} style={{ marginTop: 12 }} />
+        {note && <PixelText size={10} upper={false} color={C.white60} style={{ marginTop: 8 }}>{note}</PixelText>}
+      </Panel>
+    )
+  }
+
+  return (
+    <Panel style={[st.pad, { borderColor: C.gold }]}>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <PixelText size={13} tracking={2}>match room</PixelText>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <View style={[st.statusPill, { backgroundColor: peers > 0 ? C.green : undefined }]}>
+            <PixelText size={9} color={peers > 0 ? C.white : C.white60} tracking={1}>
+              ● {peers} peer{peers === 1 ? "" : "s"}
+            </PixelText>
+          </View>
+          <Pressable onPress={leave} hitSlop={8}>
+            <PixelText size={11} color={C.white45}>✕ leave</PixelText>
+          </Pressable>
+        </View>
+      </View>
+
+      <View style={st.roomLog}>
+        {msgs.length === 0 && (
+          <PixelText size={10} upper={false} color={C.white35} style={{ textAlign: "center", marginVertical: 12 }}>
+            {note ?? "you're in — say something to the stands"}
+          </PixelText>
+        )}
+        {msgs.map((m, i) =>
+          !m.from ? (
+            <PixelText key={i} size={9} upper={false} color={C.white35} style={{ textAlign: "center", marginVertical: 4 }}>
+              {m.text}
+            </PixelText>
+          ) : m.type === "pact" ? (
+            <View key={i} style={[st.roomMsg, { borderWidth: 1, borderColor: C.gold, alignSelf: "stretch", maxWidth: "100%" }]}>
+              <PixelText size={9} color={C.gold} tracking={1}>
+                ⚔ bet proposal · {m.nick} {m.verified ? "✓" : "⚠"}
+              </PixelText>
+              <PixelText size={11} upper={false} style={{ marginTop: 4, lineHeight: 16 }}>
+                {m.text}
+              </PixelText>
+              <PixelText size={9} upper={false} color={C.white45} style={{ marginTop: 3 }}>
+                #{m.pactId} · {m.stakeUsd} USD₮ each · winner takes {(m.stakeUsd ?? 0) * 2} · auto-settles
+              </PixelText>
+              {!m.mine && (
+                <PixelButton
+                  label={busyPact === m.pactId ? "joining…" : "join bet →"}
+                  color={C.green}
+                  size={11}
+                  onPress={() => joinBet(m)}
+                  style={{ marginTop: 8 }}
+                />
+              )}
+            </View>
+          ) : (
+            <View key={i} style={[st.roomMsg, m.mine ? st.roomMsgMine : null]}>
+              <PixelText size={9} color={m.mine ? C.ethLight : C.amber}>
+                {m.nick} {m.verified ? "✓" : "⚠ unverified"}
+              </PixelText>
+              <PixelText size={11} upper={false} style={{ marginTop: 3, lineHeight: 16 }}>
+                {m.text}
+              </PixelText>
+            </View>
+          ),
+        )}
+      </View>
+
+      <View style={{ flexDirection: "row", gap: 8 }}>
+        <TextInput
+          value={input}
+          onChangeText={setInput}
+          placeholder={`cheer for ${game?.home.shortName ?? "your team"}…`}
+          placeholderTextColor={C.white35}
+          style={[st.input, { flex: 1, marginVertical: 0 }]}
+          onSubmitEditing={send}
+        />
+        <PixelButton label="send" color={C.eth} onPress={send} style={{ paddingHorizontal: 14 }} />
+      </View>
+
+      {game && !game.completed && (
+        <View style={{ marginTop: 10 }}>
+          {!proposeOpen ? (
+            <PixelButton label="⚔ propose a bet to the room" color={C.importBlue} size={11} onPress={() => setProposeOpen(true)} />
+          ) : (
+            <View style={{ backgroundColor: C.panel, borderRadius: 10, borderWidth: 1, borderColor: C.gold, padding: 10 }}>
+              <PixelText size={10} color={C.white45} tracking={1}>your pick</PixelText>
+              <View style={{ flexDirection: "row", gap: 6, marginTop: 8 }}>
+                {([["home", game.home.shortName], ["draw", "draw"], ["away", game.away.shortName]] as [Outcome, string][]).map(([o, label]) => (
+                  <PixelButton key={o} label={label} color={propOutcome === o ? C.eth : C.importBlue} size={10} style={{ flex: 1 }} onPress={() => setPropOutcome(o)} />
+                ))}
+              </View>
+              <PixelText size={10} color={C.white45} tracking={1} style={{ marginTop: 10 }}>stake (USD₮ each)</PixelText>
+              <View style={{ flexDirection: "row", gap: 6, marginTop: 8 }}>
+                {CHAIN.stakeTiers.map((t, i) => (
+                  <PixelButton key={i} label={`${Number(t) / Number(CHAIN.ONE_USDT)}`} color={i === propTier ? C.eth : C.importBlue} size={11} style={{ flex: 1 }} onPress={() => setPropTier(i)} />
+                ))}
+              </View>
+              <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+                <PixelButton label="✕" color={C.importBlue} size={11} onPress={() => setProposeOpen(false)} style={{ paddingHorizontal: 14 }} />
+                <PixelButton
+                  label={busyPact === "propose" ? "escrowing…" : "lock + broadcast"}
+                  color={C.gold}
+                  textColor="#1b2548"
+                  size={11}
+                  style={{ flex: 1 }}
+                  onPress={proposeBet}
+                />
+              </View>
+            </View>
+          )}
+        </View>
+      )}
+    </Panel>
+  )
+}
+
 export function GameScreen({ gameId, onBack }: { gameId: string; onBack: () => void }) {
   const { signer, usdt, provider, address } = useWallet()
   const [game, setGame] = useState<Game | null>(null)
@@ -1869,6 +2118,8 @@ export function GameScreen({ gameId, onBack }: { gameId: string; onBack: () => v
               })}
             </Panel>
           )}
+
+          <MatchRoomPanel gameId={gameId} game={game} onBetsChanged={loadBets} />
 
           {done ? (
             <Panel style={st.pad}>
@@ -2364,6 +2615,9 @@ export function MarketsScreen({ onBack }: { onBack: () => void }) {
 
 const st = StyleSheet.create({
   chainBtn: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: C.panel, borderWidth: 1, borderColor: C.panelBorder, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11 },
+  roomLog: { backgroundColor: C.frameDeep, borderRadius: 10, borderWidth: 1, borderColor: C.panelBorder, padding: 10, marginVertical: 12, minHeight: 90, maxHeight: 260, gap: 6 },
+  roomMsg: { backgroundColor: C.panel, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7, alignSelf: "flex-start", maxWidth: "88%" },
+  roomMsgMine: { backgroundColor: C.importBlue, alignSelf: "flex-end" },
   modeRow: { flexDirection: "row", alignSelf: "flex-start", backgroundColor: C.panel, borderRadius: 999, padding: 3, gap: 3 },
   modePill: { paddingHorizontal: 16, paddingVertical: 5, borderRadius: 999 },
   modePillActive: { backgroundColor: C.eth },
