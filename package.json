@@ -24,6 +24,7 @@
   "workspaces": [
     "apps/*",
     "!apps/mobile",
+    "!apps/pear",
     "packages/*"
   ]
 }

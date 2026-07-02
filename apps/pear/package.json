@@ -1,0 +1,28 @@
+{
+  "name": "flicky-watchparty",
+  "version": "1.0.0",
+  "description": "Flicky Match Rooms — P2P World Cup watch-party over Hyperswarm (Pears track). Same rooms as the Flicky mobile app.",
+  "type": "module",
+  "main": "index.html",
+  "pear": {
+    "name": "flicky-watchparty",
+    "type": "desktop",
+    "gui": {
+      "backgroundColor": "#1b2548",
+      "width": 460,
+      "height": 700
+    }
+  },
+  "scripts": {
+    "dev": "pear run --dev .",
+    "cli": "bare cli.js"
+  },
+  "dependencies": {
+    "b4a": "^1.6.7",
+    "hypercore-crypto": "^3.6.1",
+    "hyperswarm": "^4.17.0"
+  },
+  "devDependencies": {
+    "bare": "^1.30.0"
+  }
+}
