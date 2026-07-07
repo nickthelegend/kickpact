@@ -25,10 +25,23 @@ pear run --dev .     # opens the watch-party window
 
 ## Ship a pear:// link
 
+Staged + published (Pear 2.x flow):
+
 ```bash
-pear stage main      # bundle into a local Hypercore
-pear seed main       # announce it — prints pear://<key>
-pear run pear://<key>   # anyone runs it straight from the swarm
+pear touch                 # mint the app link
+pear stage <link> .        # sync the app onto its Hypercore
+pear seed <link>           # keep announcing it to the swarm
+```
+
+**This app:**
+
+- `pear://57r918r9s67o5djs1c1ta4po5gj5wcfrxy1agxptu5k5utmd6n4y` (latest)
+- `pear://0.916.57r918r9s67o5djs1c1ta4po5gj5wcfrxy1agxptu5k5utmd6n4y` (pinned v916 snapshot)
+
+Run it straight from the swarm (while a seeder is online):
+
+```bash
+pear run pear://57r918r9s67o5djs1c1ta4po5gj5wcfrxy1agxptu5k5utmd6n4y
 ```
 
 ## Headless / terminal peer

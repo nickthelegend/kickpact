@@ -8,9 +8,17 @@
  */
 import { Worklet } from "react-native-bare-kit"
 import { ethers } from "ethers"
-// Bundle produced by `bun run pack:room` (bare-pack) — addons load from the APK.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const bundle = require("./room.bundle.js")
+// Bundle produced by `bun run pack:room` (bare-pack → base64) — addons load
+// from the APK. Decoded to bytes: passing the serialized bundle as a JS string
+// through JSI segfaults native-side, so it MUST go in as a Uint8Array.
+import bundleB64 from "./room.bundle"
+
+function bundleBytes(): Uint8Array {
+  const bin = globalThis.atob(bundleB64)
+  const out = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i)
+  return out
+}
 
 export interface RoomMsg {
   type: "msg" | "pact"
@@ -52,7 +60,7 @@ export class MatchRoom {
   async start(): Promise<void> {
     const w = new Worklet()
     this.worklet = w
-    await w.start("/room.bundle", bundle)
+    await w.start("/room.bundle", bundleBytes())
     const { IPC } = w as unknown as { IPC: { on: (e: string, f: (d: Uint8Array) => void) => void; write: (d: Uint8Array) => void } }
     IPC.on("data", (data) => this.onData(data))
     this.cmd({ cmd: "join", gameId: this.gameId, id: this.me.address, nick: this.me.nick })
