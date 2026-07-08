@@ -63,7 +63,8 @@ Open any match and **join the room**: a serverless watch party where fans of the
 - **Real P2P.** A **Bare** worklet (`react-native-bare-kit`) runs **Hyperswarm** on the phone and joins a topic derived from the match id — `hash("kickpact/match/<gameId>")` — so everyone watching the same game lands in the same swarm (`apps/mobile/src/room.ts`).
 - **Signed identity = wallet identity.** Every message is signed with your WDK key and verified with `ethers.verifyMessage`; verified peers render ✓, unsigned ones ⚠.
 - **Bet from the room.** Propose a wager in‑chat and it opens an on‑chain `KickpactPacts` escrow (open room, keeper arbiter); other fans tap *join bet* to take the other side. QR "join‑escrow" flows through the same contract.
-- **Desktop companion.** `apps/pear/` is a **Pears** (`pear run`) "Watch Party" window plus a headless `bare cli.js` peer — the same rooms, on the same swarm, on desktop.
+- **Desktop companion.** `apps/pear/` ships an **interactive terminal peer on Bare** (the Pears runtime): `bare cli.js <gameId> <nick>` — type to chat, same rooms, same swarm, on desktop.
+- **Verified live, end‑to‑end.** A phone running the release app and multiple Mac Bare peers met in match room `760510` over the public DHT — desktop messages rendered on the phone, and the phone's reply arrived on every desktop peer as `[0x287B…D4d9 ✓signed]`, verified against the WDK wallet key. No server anywhere.
 
 ---
 
@@ -90,8 +91,10 @@ Stakes and payouts are in **USD₮** (6 decimals); gas is Sepolia ETH. On Polygo
 | **Self‑custodial onboarding** — a real 12‑word wallet via WDK. | **Home** — USD₮ balance on Sepolia, WDK actions, live World Cup fixtures. | **Match** — join the P2P watch party or lock a prediction vs a friend. |
 | ![Pacts](https://raw.githubusercontent.com/nickthelegend/kickpact/main/docs/media/screens/shot-05-pacts.png) | ![PvP](https://raw.githubusercontent.com/nickthelegend/kickpact/main/docs/media/screens/shot-06-pvp.png) | ![Duel](https://raw.githubusercontent.com/nickthelegend/kickpact/main/docs/media/screens/shot-07-duel-game.png) |
 | **Pacts** — escrow a bet, no custodian, no KYC. | **PvP Arena** — practice free or stake a 1v1 Duel. | **Duel** — swipe UP/DOWN on live‑price cards. |
-| ![Profile](https://raw.githubusercontent.com/nickthelegend/kickpact/main/docs/media/screens/shot-08-profile.png) | ![Swap](https://raw.githubusercontent.com/nickthelegend/kickpact/main/docs/media/screens/shot-09-swap.png) | |
-| **Profile** — keys never leave the device. | **Swap** — the rail that funds the Polymarket tier. | |
+| ![Profile](https://raw.githubusercontent.com/nickthelegend/kickpact/main/docs/media/screens/shot-08-profile.png) | ![Swap](https://raw.githubusercontent.com/nickthelegend/kickpact/main/docs/media/screens/shot-09-swap.png) | ![P2P room live](https://raw.githubusercontent.com/nickthelegend/kickpact/main/docs/media/screens/shot-10-p2p-room-live.png) |
+| **Profile** — keys never leave the device. | **Swap** — the rail that funds the Polymarket tier. | **Match Room, live** — 3 P2P peers over the DHT. |
+| ![Wallet-signed chat](https://raw.githubusercontent.com/nickthelegend/kickpact/main/docs/media/screens/shot-11-p2p-signed.png) | | |
+| **Wallet‑signed chat** — desktops verify the phone's message: `✓signed`. | | |
 
 ---
 

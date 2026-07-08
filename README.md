@@ -43,6 +43,11 @@
   <tr>
     <td width="33%"><img src="docs/media/screens/shot-08-profile.png" alt="Profile" /><br/><sub><b>Profile</b> — your address + receive QR, USD₮/ETH balances, and reveal‑recovery‑phrase. Keys never leave the device.</sub></td>
     <td width="33%"><img src="docs/media/screens/shot-09-swap.png" alt="Swap" /><br/><sub><b>Swap</b> — real on‑chain USD₮→USDC via the Velora/ParaSwap aggregator on Polygon: the rail that funds the Polymarket tier.</sub></td>
+    <td width="33%"><img src="docs/media/screens/shot-10-p2p-room-live.png" alt="P2P match room live" /><br/><sub><b>Match Room, live P2P</b> — the release app in a Hyperswarm room with three desktop Bare peers (<code>● 3 PEERS</code>), their messages arriving serverlessly over the public DHT.</sub></td>
+  </tr>
+  <tr>
+    <td width="33%"><img src="docs/media/screens/shot-11-p2p-signed.png" alt="Wallet-signed P2P chat" /><br/><sub><b>Wallet‑signed chat</b> — the phone's message goes out signed by the WDK key; desktop peers verify it (<code>[0x287B…D4d9 ✓signed]</code>).</sub></td>
+    <td width="33%"></td>
     <td width="33%"></td>
   </tr>
 </table>
@@ -92,7 +97,8 @@ Open any match and you can **join the room**: a serverless watch party where fan
 - **Real P2P.** A **Bare** worklet (`react-native-bare-kit`) runs **Hyperswarm** on the phone and joins a topic derived from the match id — `hash("kickpact/match/<gameId>")` — so everyone watching the same game lands in the same swarm. `apps/mobile/src/room.ts`.
 - **Signed identity = wallet identity.** Every message is signed with your WDK key and verified with `ethers.verifyMessage`; verified peers render ✓, unsigned ones ⚠.
 - **Bet from the room.** Propose a wager in‑chat and it opens an on‑chain `KickpactPacts` escrow (open room, keeper arbiter); other fans tap *join bet* to take the other side. QR "join‑escrow" flows through the same contract.
-- **Desktop companion.** `apps/pear/` is a **Pears** (`pear run`) "Watch Party" window plus a headless `bare cli.js` peer — the same rooms, on the same swarm, on desktop.
+- **Desktop companion.** `apps/pear/` ships an **interactive terminal peer on Bare** (the Pears runtime): `bare cli.js <gameId> <nick>` — type to chat, same rooms, same swarm. (The HTML GUI is the Pear‑1 desktop format, kept as reference — Pear 2.x dropped HTML entrypoints; migration path in [`apps/pear/README.md`](apps/pear/README.md).)
+- **Verified live, end‑to‑end.** A phone (release app, Bare worklet) and two Mac Bare peers met in room `760510` over the public DHT: desktop messages rendered on the phone, and the phone's reply arrived at both desktops as `[0x287B…D4d9 ✓signed]` — wallet‑verified, no server anywhere. Screenshots above.
 
 ---
 
