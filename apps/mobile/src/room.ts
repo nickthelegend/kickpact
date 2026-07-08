@@ -12,6 +12,7 @@ import { ethers } from "ethers"
 // from the APK. Decoded to bytes: passing the serialized bundle as a JS string
 // through JSI segfaults native-side, so it MUST go in as a Uint8Array.
 import bundleB64 from "./room.bundle"
+import { encodeLine, makeLineDecoder, signedPayload } from "./room-protocol"
 
 function bundleBytes(): Uint8Array {
   const bin = globalThis.atob(bundleB64)
@@ -43,12 +44,9 @@ export interface RoomEvents {
   onLog?: (text: string) => void
 }
 
-const signedPayload = (m: { from: string; text: string; ts: number }) =>
-  `kickpact-room:${m.from.toLowerCase()}:${m.ts}:${m.text}`
-
 export class MatchRoom {
   private worklet: Worklet | null = null
-  private buf = ""
+  private feed = makeLineDecoder((o) => this.onEvent(o))
 
   constructor(
     private gameId: string,
@@ -67,16 +65,7 @@ export class MatchRoom {
   }
 
   private onData(data: Uint8Array) {
-    this.buf += new TextDecoder().decode(data)
-    let i
-    while ((i = this.buf.indexOf("\n")) >= 0) {
-      const line = this.buf.slice(0, i)
-      this.buf = this.buf.slice(i + 1)
-      if (!line.trim()) continue
-      try {
-        this.onEvent(JSON.parse(line))
-      } catch {}
-    }
+    this.feed(new TextDecoder().decode(data))
   }
 
   private async onEvent(o: any) {
@@ -99,7 +88,7 @@ export class MatchRoom {
   private cmd(o: unknown) {
     const w = this.worklet as unknown as { IPC: { write: (d: Uint8Array) => void } } | null
     if (!w) return
-    w.IPC.write(new TextEncoder().encode(JSON.stringify(o) + "\n"))
+    w.IPC.write(new TextEncoder().encode(encodeLine(o)))
   }
 
   /** Sign + broadcast a chat message. Returns the local echo. */

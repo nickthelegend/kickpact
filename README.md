@@ -47,7 +47,7 @@
   </tr>
   <tr>
     <td width="33%"><img src="docs/media/screens/shot-11-p2p-signed.png" alt="Wallet-signed P2P chat" /><br/><sub><b>Wallet‑signed chat</b> — the phone's message goes out signed by the WDK key; desktop peers verify it (<code>[0x287B…D4d9 ✓signed]</code>).</sub></td>
-    <td width="33%"></td>
+    <td width="33%"><img src="docs/media/screens/shot-12-desktop-app.png" alt="Kickpact Watch Party desktop app" /><br/><sub><b>Desktop app (Mac/Win/Linux)</b> — Electron + <code>pear-runtime</code> Bare worker, same pixel UI, same swarm: the phone's <code>✓ SIGNED</code> message rendering live next to desktop peers.</sub></td>
     <td width="33%"></td>
   </tr>
 </table>
@@ -97,8 +97,8 @@ Open any match and you can **join the room**: a serverless watch party where fan
 - **Real P2P.** A **Bare** worklet (`react-native-bare-kit`) runs **Hyperswarm** on the phone and joins a topic derived from the match id — `hash("kickpact/match/<gameId>")` — so everyone watching the same game lands in the same swarm. `apps/mobile/src/room.ts`.
 - **Signed identity = wallet identity.** Every message is signed with your WDK key and verified with `ethers.verifyMessage`; verified peers render ✓, unsigned ones ⚠.
 - **Bet from the room.** Propose a wager in‑chat and it opens an on‑chain `KickpactPacts` escrow (open room, keeper arbiter); other fans tap *join bet* to take the other side. QR "join‑escrow" flows through the same contract.
-- **Desktop companion.** `apps/pear/` ships an **interactive terminal peer on Bare** (the Pears runtime): `bare cli.js <gameId> <nick>` — type to chat, same rooms, same swarm. (The HTML GUI is the Pear‑1 desktop format, kept as reference — Pear 2.x dropped HTML entrypoints; migration path in [`apps/pear/README.md`](apps/pear/README.md).)
-- **Verified live, end‑to‑end.** A phone (release app, Bare worklet) and two Mac Bare peers met in room `760510` over the public DHT: desktop messages rendered on the phone, and the phone's reply arrived at both desktops as `[0x287B…D4d9 ✓signed]` — wallet‑verified, no server anywhere. Screenshots above.
+- **Desktop app (Mac / Windows / Linux).** [`apps/desktop`](apps/desktop) is the Watch Party as a real desktop app — the same pixel UI, built on the Pears stack: an Electron shell whose P2P layer runs in a **Bare worker** spawned by `pear-runtime` (the [hello-pear-electron](https://github.com/holepunchto/hello-pear-electron) architecture). `apps/pear/` additionally ships an **interactive terminal peer on Bare**: `bare cli.js <gameId> <nick>` — type to chat, same rooms.
+- **Verified live, end‑to‑end.** The Android release build, the Electron desktop app, and Bare CLI peers all met in room `760510` over the **public DHT**: messages flowed every direction, and the phone's reply rendered everywhere as `0x287B…D4d9 ✓ signed` — wallet‑verified, no server anywhere. Screenshots above.
 
 ---
 
@@ -124,7 +124,8 @@ kickpact/
 ├── apps/
 │   ├── mobile     # Expo / React Native — the app (WDK wallet, 3 bet tiers, Hyperswarm rooms)
 │   ├── duel-evm   # Solidity + Foundry — KickpactDuel, KickpactPacts, MockUSDT (Sepolia)
-│   ├── pear       # Pears / Bare desktop "Watch Party" companion + headless CLI peer
+│   ├── desktop    # Watch Party for Mac/Win/Linux — Electron + pear-runtime Bare worker
+│   ├── pear       # Bare terminal peer (interactive CLI) + legacy Pear-1 GUI
 │   └── server     # Bun — oracle/settlement keeper
 └── videos/
     └── kickpact-launch   # the HyperFrames project for the 60s launch video
@@ -149,11 +150,26 @@ bun install                       # install all workspaces (Bun ≥ 1.3)
 bun --filter mobile start         # Expo dev server
 #   → build a dev/release APK from apps/mobile/android, or run on a device
 
+# desktop watch party (Mac/Win/Linux)
+cd apps/desktop && bun install && bun run start
+
 # contracts
 cd apps/duel-evm && forge test    # Solidity test suite
 ```
 
 The self‑custodial wallet generates a real seed on first launch — on a testnet build, mint USD₮ from the in‑app faucet (Sepolia) and you're ready to bet.
+
+## Tests
+
+Three layers, all runnable offline:
+
+| Suite | What it covers | Run |
+| --- | --- | --- |
+| **Contracts** | 27 Foundry tests — duel lifecycle, pact escrow, refunds, timeouts | `cd apps/duel-evm && forge test` |
+| **Android app — unit** | Room wire protocol (framing, signed payloads, ethers verify), deterministic pact terms + keccak parity with the contract, ESPN fixture parser | `cd apps/mobile && bun test src` |
+| **Android app — integration** | The app's exact P2P wire end‑to‑end over a **hermetic in‑process DHT** (`hyperdht` testnet): join → hello → wallet‑signed message verified by the peer, forged messages rejected, in‑room pact proposals | `cd apps/mobile && npm run test:integration` |
+| **Desktop app — unit** | Room core: topic derivation (cross‑platform constant), chunk‑safe framing, message shapes, signed/unsigned badges | `cd apps/desktop && npm test` |
+| **Desktop app — integration** | Real Hyperswarm rooms on the hermetic DHT: peers meet + chat, room isolation, wallet‑signature verification, pact passthrough | `cd apps/desktop && npm run test:integration` |
 
 ---
 

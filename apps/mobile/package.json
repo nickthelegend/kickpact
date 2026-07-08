@@ -42,7 +42,9 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "pack:room": "node scripts/pack-room.mjs"
+    "pack:room": "node scripts/pack-room.mjs",
+    "test": "bun test src",
+    "test:integration": "node --test 'tests/integration/*.test.mjs'"
   },
   "private": true
 }

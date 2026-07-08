@@ -51,7 +51,7 @@ function parseTeam(c: any): Team {
   }
 }
 
-function parseEvent(e: any, leagueName: string): Game | null {
+export function parseEvent(e: any, leagueName: string): Game | null {
   const comp = e.competitions?.[0]
   if (!comp) return null
   const comps = comp.competitors ?? []

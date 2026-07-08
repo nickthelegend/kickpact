@@ -16,7 +16,8 @@ Guidance for Claude Code / agents working in this repository.
 apps/
 ├── mobile     # ⭐ the app — Expo / React Native. WDK wallet, 3 bet tiers, Hyperswarm rooms.
 ├── duel-evm   # ⭐ Solidity + Foundry — KickpactDuel, KickpactPacts, MockUSDT (Sepolia).
-└── pear       # ⭐ Pears / Bare desktop "Watch Party" companion + headless CLI peer.
+├── desktop    # ⭐ Watch Party for Mac/Win/Linux — Electron + pear-runtime Bare worker, Kickpact UI.
+└── pear       # ⭐ Bare terminal peer (interactive CLI) + legacy Pear-1 GUI.
 videos/
 └── kickpact-launch   # HyperFrames project for the 60s launch video (docs/media/kickpact-launch.mp4)
 packages/ui, apps/server, apps/web, apps/contracts …   # legacy Sui scaffold (see warning above)
@@ -42,9 +43,21 @@ Solidity 0.8.28, Foundry. Deployed to **Sepolia** — addresses in `deployed.jso
 ```bash
 bun install                       # install all workspaces (Bun ≥ 1.3)
 bun --filter mobile start         # Expo dev server for the app
-cd apps/duel-evm && forge test    # Solidity test suite
+cd apps/duel-evm && forge test    # Solidity test suite (27 tests)
 cd apps/duel-evm && forge build   # compile contracts
+
+# tests (all offline; integration uses a hermetic in-process hyperdht testnet)
+cd apps/mobile  && bun test src && npm run test:integration
+cd apps/desktop && npm test     && npm run test:integration
+
+# desktop watch party
+cd apps/desktop && bun install && bun run start
 ```
+
+Note: hyperswarm's udx-native crashes under `bun test` — that's why integration
+tests run under `node --test` (plain .mjs). In P2P integration tests, peers must
+join the swarm SEQUENTIALLY (await each announce) or simultaneous first lookups
+race to an empty topic and stall on hyperswarm's long refresh timer.
 
 Prebuilt Android release APK: `apps/mobile/android/app/build/outputs/apk/release/app-release.apk` (app id `io.kickpact.app`).
 
