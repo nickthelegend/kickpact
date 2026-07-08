@@ -22,7 +22,8 @@
 </p>
 
 <p align="center">
-  <sub>▶️ <b><a href="https://github.com/nickthelegend/kickpact/releases/download/v1.0.0/kickpact-launch.mp4">Watch the full 60‑second launch video, with sound</a></b> — the loop above is a silent preview.</sub>
+  <sub>▶️ <b><a href="https://github.com/nickthelegend/kickpact/releases/download/v1.0.0/kickpact-launch.mp4">Watch the full 60‑second launch video, with sound</a></b> — the loop above is a silent preview.<br/>
+  🎬 <b><a href="https://github.com/nickthelegend/kickpact/releases/download/v1.0.0/kickpact-demo.mp4">Full product demo (2:17)</a></b> — launch film + live walkthrough + the 3‑platform P2P room recorded live.</sub>
 </p>
 
 ---
