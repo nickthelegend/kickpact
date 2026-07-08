@@ -2,11 +2,11 @@
 pragma solidity 0.8.28;
 
 import {Test} from "forge-std/Test.sol";
-import {FlickyDuel} from "../src/FlickyDuel.sol";
+import {KickpactDuel} from "../src/KickpactDuel.sol";
 import {MockUSDT} from "../src/MockUSDT.sol";
 
-contract FlickyDuelTest is Test {
-    FlickyDuel duel;
+contract KickpactDuelTest is Test {
+    KickpactDuel duel;
     MockUSDT usdt;
 
     address oracle = address(0x0AC1E);
@@ -20,7 +20,7 @@ contract FlickyDuelTest is Test {
 
     function setUp() public {
         usdt = new MockUSDT();
-        duel = new FlickyDuel(oracle, address(usdt));
+        duel = new KickpactDuel(oracle, address(usdt));
         _fund(alice);
         _fund(bob);
     }
@@ -35,19 +35,19 @@ contract FlickyDuelTest is Test {
 
     /// 2-card deck. Card 0: strike 100, probUp 0.30 (contrarian YES). Card 1:
     /// strike 200, probUp 0.80 (consensus YES).
-    function _deck() internal pure returns (FlickyDuel.Card[] memory cards) {
-        cards = new FlickyDuel.Card[](2);
-        cards[0] = FlickyDuel.Card({strike: 100, probUp: 300_000_000});
-        cards[1] = FlickyDuel.Card({strike: 200, probUp: 800_000_000});
+    function _deck() internal pure returns (KickpactDuel.Card[] memory cards) {
+        cards = new KickpactDuel.Card[](2);
+        cards[0] = KickpactDuel.Card({strike: 100, probUp: 300_000_000});
+        cards[1] = KickpactDuel.Card({strike: 200, probUp: 800_000_000});
     }
 
     // Pure local hash — must NOT call the contract, or it would consume a
     // pending vm.prank when used as a call argument.
-    function _commit(FlickyDuel.Card[] memory cards) internal pure returns (bytes32) {
+    function _commit(KickpactDuel.Card[] memory cards) internal pure returns (bytes32) {
         return keccak256(abi.encode(cards, SALT));
     }
 
-    function _createJoinReveal() internal returns (uint256 id, FlickyDuel.Card[] memory cards) {
+    function _createJoinReveal() internal returns (uint256 id, KickpactDuel.Card[] memory cards) {
         cards = _deck();
         bytes32 c = _commit(cards);
         vm.prank(alice);
@@ -130,7 +130,7 @@ contract FlickyDuelTest is Test {
         vm.prank(bob);
         duel.recordSwipe(id, 0, false);
 
-        vm.expectRevert(FlickyDuel.SwipesNotComplete.selector);
+        vm.expectRevert(KickpactDuel.SwipesNotComplete.selector);
         duel.finalize(id);
 
         vm.warp(block.timestamp + 601);
@@ -142,7 +142,7 @@ contract FlickyDuelTest is Test {
     }
 
     function test_PendingCreatorRefund() public {
-        FlickyDuel.Card[] memory cards = _deck();
+        KickpactDuel.Card[] memory cards = _deck();
         bytes32 c = _commit(cards);
         vm.prank(alice);
         uint256 id = duel.createDuel(STAKE, c);
@@ -153,7 +153,7 @@ contract FlickyDuelTest is Test {
     }
 
     function test_ClaimRevealTimeout() public {
-        FlickyDuel.Card[] memory cards = _deck();
+        KickpactDuel.Card[] memory cards = _deck();
         bytes32 c = _commit(cards);
         vm.prank(alice);
         uint256 id = duel.createDuel(STAKE, c);
@@ -169,7 +169,7 @@ contract FlickyDuelTest is Test {
     // --- reverts ---
 
     function test_RevertWhen_DeckHashMismatch() public {
-        FlickyDuel.Card[] memory cards = _deck();
+        KickpactDuel.Card[] memory cards = _deck();
         bytes32 c = _commit(cards);
         vm.prank(alice);
         uint256 id = duel.createDuel(STAKE, c);
@@ -177,36 +177,36 @@ contract FlickyDuelTest is Test {
         duel.joinDuel(id);
         cards[0].strike = 999; // tamper
         vm.prank(oracle);
-        vm.expectRevert(FlickyDuel.DeckHashMismatch.selector);
+        vm.expectRevert(KickpactDuel.DeckHashMismatch.selector);
         duel.revealDeck(id, cards, SALT);
     }
 
     function test_RevertWhen_CreatorJoinsOwnDuel() public {
-        FlickyDuel.Card[] memory cards = _deck();
+        KickpactDuel.Card[] memory cards = _deck();
         bytes32 c = _commit(cards);
         vm.prank(alice);
         uint256 id = duel.createDuel(STAKE, c);
         vm.prank(alice);
-        vm.expectRevert(FlickyDuel.CreatorCannotJoin.selector);
+        vm.expectRevert(KickpactDuel.CreatorCannotJoin.selector);
         duel.joinDuel(id);
     }
 
     function test_RevertWhen_SwipeOutOfTurn() public {
         (uint256 id, ) = _createJoinReveal();
         vm.prank(alice);
-        vm.expectRevert(FlickyDuel.OutOfTurn.selector);
+        vm.expectRevert(KickpactDuel.OutOfTurn.selector);
         duel.recordSwipe(id, 1, true);
     }
 
     function test_RevertWhen_NonOracleSettles() public {
         (uint256 id, ) = _createJoinReveal();
         vm.prank(alice);
-        vm.expectRevert(FlickyDuel.NotOracle.selector);
+        vm.expectRevert(KickpactDuel.NotOracle.selector);
         duel.settleCard(id, 0, 150);
     }
 
     function test_FreeTier_NoStake() public {
-        FlickyDuel.Card[] memory cards = _deck();
+        KickpactDuel.Card[] memory cards = _deck();
         bytes32 c = _commit(cards);
         vm.prank(alice);
         uint256 id = duel.createDuelFree(c);

@@ -16,8 +16,8 @@ interface DeployedJson {
   packageId: string | null
 }
 
-function loadFlickyPackageId(): string | null {
-  const override = process.env.FLICKY_PACKAGE_ID
+function loadKickpactPackageId(): string | null {
+  const override = process.env.KICKPACT_PACKAGE_ID
   if (override) return override
   try {
     const path = resolve(import.meta.dir, "../../contracts/deployed.json")
@@ -34,8 +34,8 @@ export const env = {
   network: (process.env.SUI_NETWORK ?? "testnet") as Network,
   rpcUrl: process.env.SUI_RPC_URL,
 
-  // Flicky package (from deployed.json unless overridden).
-  flickyPackageId: loadFlickyPackageId(),
+  // Kickpact package (from deployed.json unless overridden).
+  kickpactPackageId: loadKickpactPackageId(),
 
   // DeepBook Predict (testnet defaults).
   deepbookPredictPackageId:
@@ -48,7 +48,7 @@ export const env = {
     process.env.DUSDC_COIN_TYPE ??
     "0xe95040085976bfd54a1a07225cd46c8a2b4e8e2b6732f140a0fc49850ba73e1a::dusdc::DUSDC",
 
-  // SUI ↔ dUSDC AMM swap module (separate package from flicky duel —
+  // SUI ↔ dUSDC AMM swap module (separate package from kickpact duel —
   // published from apps/contracts/swap/). Sponsor allowlists the two
   // player-facing AMM functions (swap_x_for_y / swap_y_for_x); the
   // pool / liquidity admin functions are NOT sponsored.

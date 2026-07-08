@@ -24,7 +24,7 @@ async function loadSpec(): Promise<string> {
 const SCALAR_HTML = `<!doctype html>
 <html>
   <head>
-    <title>Flicky API</title>
+    <title>Kickpact API</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
   </head>

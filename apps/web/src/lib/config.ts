@@ -1,14 +1,14 @@
 /**
- * Deployed flicky package + the DeepBook Predict targets on testnet. Override
+ * Deployed kickpact package + the DeepBook Predict targets on testnet. Override
  * at build time via VITE_* env if you redeploy.
  */
 
 export const CONFIG = {
   /**
-   * Flicky package on testnet. Source of truth is
+   * Kickpact package on testnet. Source of truth is
    * `apps/contracts/deployed.json`; if that drifts from this default,
    * update here so fresh checkouts without
-   * `VITE_FLICKY_PACKAGE_ID_TESTNET` in `.env.local` still work.
+   * `VITE_KICKPACT_PACKAGE_ID_TESTNET` in `.env.local` still work.
    *
    * Settlement: per-card `settle_card(card_idx, &oracle)` × `deck_size`
    * accumulates payout/premium onto the Duel, then `finalize` distributes
@@ -16,7 +16,7 @@ export const CONFIG = {
    * `predict::get_trade_amounts` inside the swipe PTB.
    */
   packageId:
-    import.meta.env.VITE_FLICKY_PACKAGE_ID_TESTNET ??
+    import.meta.env.VITE_KICKPACT_PACKAGE_ID_TESTNET ??
     "0xaed053fcc146abd1da507eae72b4f3e9c838d83c83c7b68b230a3c9a2601a522",
 
   /** DeepBook Predict package on testnet (provides `oracle::OracleSVI`). */

@@ -11,7 +11,7 @@
 # workspace `package.json` live). Built via the Dockerfile builder on
 # Railway (see railway.json `dockerfilePath`), or locally:
 #
-#   docker build -f apps/server/Dockerfile -t flicky-server .
+#   docker build -f apps/server/Dockerfile -t kickpact-server .
 #
 # State lives in Postgres (DATABASE_URL) — the container is stateless, so
 # no volume is needed. Inject env via Railway service variables (or a

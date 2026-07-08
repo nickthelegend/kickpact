@@ -1,13 +1,13 @@
-// Copyright (c) Flicky Labs
+// Copyright (c) Kickpact Labs
 // SPDX-License-Identifier: Apache-2.0
 
 #[test_only]
-module flicky::duel_tests;
+module kickpact::duel_tests;
 
 use deepbook_predict::oracle::{Self as db_oracle, OracleSVI};
 use deepbook_predict::predict::{Self as db_predict, Predict};
 use deepbook_predict::predict_manager::{Self, PredictManager};
-use flicky::duel::{Self, Duel};
+use kickpact::duel::{Self, Duel};
 use std::hash;
 use std::unit_test::{assert_eq, destroy};
 use sui::bcs;

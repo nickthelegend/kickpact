@@ -1,5 +1,5 @@
 /**
- * FlickyDuel settlement keeper (reusable). Reads a duel, settles each card
+ * KickpactDuel settlement keeper (reusable). Reads a duel, settles each card
  * with a settlement price (oracle-only), then finalizes so the pot pays the
  * winner. This is the logic the server will run on a schedule; here it runs
  * once for a given duelId.
@@ -11,13 +11,13 @@
  * card's underlying at expiry.
  */
 import { ethers } from "ethers"
-import { CHAIN, FLICKY_DUEL_ABI } from "../src/chain"
+import { CHAIN, KICKPACT_DUEL_ABI } from "../src/chain"
 import { fetchDuel } from "../src/duel"
 
 const provider = new ethers.JsonRpcProvider(CHAIN.rpcUrl, CHAIN.chainId, { staticNetwork: true })
 
 export async function settleDuel(signer: ethers.Signer, duelId: bigint, prices?: bigint[]) {
-  const duel = new ethers.Contract(CHAIN.duelAddress, FLICKY_DUEL_ABI as unknown as string[], signer)
+  const duel = new ethers.Contract(CHAIN.duelAddress, KICKPACT_DUEL_ABI as unknown as string[], signer)
   const state = await fetchDuel(provider, duelId)
   if (state.deckSize === 0) throw new Error("deck not revealed yet")
 

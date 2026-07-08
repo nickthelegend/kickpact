@@ -1,6 +1,6 @@
-# @flicky/contracts
+# @kickpact/contracts
 
-Move 2024 smart contract package for **Flicky** — a Tinder-style PvP prediction duel built on top of **DeepBook Predict** on Sui testnet.
+Move 2024 smart contract package for **Kickpact** — a Tinder-style PvP prediction duel built on top of **DeepBook Predict** on Sui testnet.
 
 ---
 
@@ -40,13 +40,13 @@ Two tiers share the same engine:
 
 ## 📍 Deployed Addresses (Testnet)
 
-> Last updated: **2026-05-29**. Single source of truth — paste these into your `.env.local` files. When the contract is republished, only the **Flicky** rows change; DeepBook addresses are external and stable.
+> Last updated: **2026-05-29**. Single source of truth — paste these into your `.env.local` files. When the contract is republished, only the **Kickpact** rows change; DeepBook addresses are external and stable.
 
-### Flicky (our package)
+### Kickpact (our package)
 
 | Item | ID | Role |
 |---|---|---|
-| **Package ID** (current) | `0xaed053fcc146abd1da507eae72b4f3e9c838d83c83c7b68b230a3c9a2601a522` | Active version — call all `flicky::duel::*` entries against this |
+| **Package ID** (current) | `0xaed053fcc146abd1da507eae72b4f3e9c838d83c83c7b68b230a3c9a2601a522` | Active version — call all `kickpact::duel::*` entries against this |
 | **Original Package ID** | `0xaed053fcc146abd1da507eae72b4f3e9c838d83c83c7b68b230a3c9a2601a522` | Type identity — stable across upgrades (currently == current) |
 | **UpgradeCap** | `0x98e26cadfc6907b8030668facfeb604f86184c031873f91f98497c9d4e1edc90` | Authorizes `bun run upgrade`. Held by deployer wallet |
 | **Deployer** | `0x9c08a74cca711f45a176765e9db499f01def450fa90320a4c23934b2082aa882` | The publisher account |
@@ -100,9 +100,9 @@ Source of truth: [`deployed.json`](./deployed.json).
 
 | Address | B | F | C | Env var(s) |
 |---|:-:|:-:|:-:|---|
-| Flicky **Package ID** | ✅ | ✅ | ✅ | Backend: `FLICKY_PACKAGE_ID` · Frontend web: `VITE_FLICKY_PACKAGE_ID_TESTNET` · Frontend playground: `VITE_FLICKY_PACKAGE_ID` · Contracts: written into `deployed.json` |
-| Flicky **UpgradeCap** | — | — | ✅ | `scripts/upgrade.ts` reads from `deployed.json` |
-| Flicky **Deployer** | ✅ | — | ✅ | Backend keeper key matches this address if the same wallet runs `finalize`. Contracts: `SUI_DEPLOYER_PRIVATE_KEY` in `apps/contracts/.env.local` |
+| Kickpact **Package ID** | ✅ | ✅ | ✅ | Backend: `KICKPACT_PACKAGE_ID` · Frontend web: `VITE_KICKPACT_PACKAGE_ID_TESTNET` · Frontend playground: `VITE_KICKPACT_PACKAGE_ID` · Contracts: written into `deployed.json` |
+| Kickpact **UpgradeCap** | — | — | ✅ | `scripts/upgrade.ts` reads from `deployed.json` |
+| Kickpact **Deployer** | ✅ | — | ✅ | Backend keeper key matches this address if the same wallet runs `finalize`. Contracts: `SUI_DEPLOYER_PRIVATE_KEY` in `apps/contracts/.env.local` |
 | DeepBook Predict **Package ID** | ✅ | ✅ | — | Backend: `PREDICT_PACKAGE_ID` · Frontend: `VITE_PREDICT_PACKAGE_ID` |
 | DeepBook Predict **Predict object** | ✅ | ✅ | — | Backend: `PREDICT_OBJECT_ID` · Frontend: `VITE_PREDICT_OBJECT_ID` — passed as `&Predict` arg to `record_swipe`, `mint`, `redeem`, `get_trade_amounts` |
 | DeepBook Predict **Registry** | — | ✅ | — | Frontend only (oracle creation panel): `VITE_REGISTRY_ID` |
@@ -112,15 +112,15 @@ Source of truth: [`deployed.json`](./deployed.json).
 | **Clock** `0x6` | ✅ | ✅ | — | Hardcoded — both sides reference `'0x6'` as the system clock object |
 | Swap package | — | ✅ | — | Frontend swap panel only |
 
-### 🔁 What to do when Flicky is republished
+### 🔁 What to do when Kickpact is republished
 
 A fresh `bun run publish` (vs `upgrade`) creates a **new** Package ID and orphans existing `Duel<T>` shared objects.
 
 Each team must update:
 
 - **Contracts**: nothing — `deployed.json` is auto-written, `apps/web/.env.local` is auto-patched by `publish.ts`.
-- **Backend**: update `FLICKY_PACKAGE_ID` in `apps/server/.env`, restart server.
-- **Frontend playground**: paste new id into `apps/playground/.env.local` → `VITE_FLICKY_PACKAGE_ID`. Restart Vite.
+- **Backend**: update `KICKPACT_PACKAGE_ID` in `apps/server/.env`, restart server.
+- **Frontend playground**: paste new id into `apps/playground/.env.local` → `VITE_KICKPACT_PACKAGE_ID`. Restart Vite.
 
 When it's just an `upgrade`, **type IDs stay** but the dispatch `packageId` changes — update env vars on backend + frontend, no need to recreate duels.
 
@@ -160,7 +160,7 @@ Output `deployed.json` carries:
 
 ### 4. Fast end-to-end test in the playground
 
-After `publish`, the script writes `VITE_FLICKY_PACKAGE_ID_TESTNET` into `apps/web/.env.local`. For the standalone duel playground, also paste it into `apps/playground/.env.local` as `VITE_FLICKY_PACKAGE_ID`.
+After `publish`, the script writes `VITE_KICKPACT_PACKAGE_ID_TESTNET` into `apps/web/.env.local`. For the standalone duel playground, also paste it into `apps/playground/.env.local` as `VITE_KICKPACT_PACKAGE_ID`.
 
 Then from repo root:
 
@@ -299,7 +299,7 @@ See [Deployed Addresses](#-deployed-addresses-testnet) for the ID values.
 ```
 SUI_RPC_URL=https://fullnode.testnet.sui.io:443
 SUI_KEEPER_PRIVATE_KEY=suiprivkey1q...   # signs finalize
-FLICKY_PACKAGE_ID=0x4ab5...              # Flicky Package ID (current)
+KICKPACT_PACKAGE_ID=0x4ab5...              # Kickpact Package ID (current)
 PREDICT_PACKAGE_ID=0xf5ea2b37...         # DeepBook Predict package
 PREDICT_OBJECT_ID=0xc8736204...          # Predict shared object
 DUSDC_COIN_TYPE=0xe95040...::dusdc::DUSDC
@@ -317,7 +317,7 @@ DUSDC_COIN_TYPE=0xe95040...::dusdc::DUSDC
 | `DuelRefunded` | mark duel as cancelled in history |
 | `DuelForfeited` | mark host griefing; bump challenger score |
 
-Subscribe via `subscribeEvents` filtered by `{ MoveEventModule: { package: FLICKY_PACKAGE_ID, module: "duel" } }` or per event type.
+Subscribe via `subscribeEvents` filtered by `{ MoveEventModule: { package: KICKPACT_PACKAGE_ID, module: "duel" } }` or per event type.
 
 ### Server-admin actions
 
@@ -330,7 +330,7 @@ The server keeper holds a hot key + dUSDC for gas. It should:
    const tx = new Transaction()
    duelDetails.cards.forEach((c, idx) => {
      tx.moveCall({
-       target: `${FLICKY_PACKAGE_ID}::duel::settle_card`,
+       target: `${KICKPACT_PACKAGE_ID}::duel::settle_card`,
        typeArguments: [COIN_TYPE],
        arguments: [
          tx.object(duelId),
@@ -342,7 +342,7 @@ The server keeper holds a hot key + dUSDC for gas. It should:
      })
    })
    tx.moveCall({
-     target: `${FLICKY_PACKAGE_ID}::duel::finalize`,
+     target: `${KICKPACT_PACKAGE_ID}::duel::finalize`,
      typeArguments: [COIN_TYPE],
      arguments: [tx.object(duelId), tx.object('0x6')], // Clock
    })
@@ -355,19 +355,19 @@ The server keeper holds a hot key + dUSDC for gas. It should:
 
 5. **Sponsored gas** — all player-signed PTBs (create/join/reveal/swipe) should go through your sponsor service. The sponsor's allowlist must include:
    ```
-   ${FLICKY_PACKAGE_ID}::duel::create_duel
-   ${FLICKY_PACKAGE_ID}::duel::create_duel_free
-   ${FLICKY_PACKAGE_ID}::duel::join_duel
-   ${FLICKY_PACKAGE_ID}::duel::join_duel_free
-   ${FLICKY_PACKAGE_ID}::duel::reveal_deck
-   ${FLICKY_PACKAGE_ID}::duel::record_swipe
-   ${FLICKY_PACKAGE_ID}::duel::record_swipe_free
-   ${FLICKY_PACKAGE_ID}::duel::settle_card        # keeper or anyone can call
-   ${FLICKY_PACKAGE_ID}::duel::settle_card_free
-   ${FLICKY_PACKAGE_ID}::duel::finalize
-   ${FLICKY_PACKAGE_ID}::duel::finalize_free
-   ${FLICKY_PACKAGE_ID}::duel::finalize_test_one_oracle
-   ${FLICKY_PACKAGE_ID}::duel::claim_reveal_timeout
+   ${KICKPACT_PACKAGE_ID}::duel::create_duel
+   ${KICKPACT_PACKAGE_ID}::duel::create_duel_free
+   ${KICKPACT_PACKAGE_ID}::duel::join_duel
+   ${KICKPACT_PACKAGE_ID}::duel::join_duel_free
+   ${KICKPACT_PACKAGE_ID}::duel::reveal_deck
+   ${KICKPACT_PACKAGE_ID}::duel::record_swipe
+   ${KICKPACT_PACKAGE_ID}::duel::record_swipe_free
+   ${KICKPACT_PACKAGE_ID}::duel::settle_card        # keeper or anyone can call
+   ${KICKPACT_PACKAGE_ID}::duel::settle_card_free
+   ${KICKPACT_PACKAGE_ID}::duel::finalize
+   ${KICKPACT_PACKAGE_ID}::duel::finalize_free
+   ${KICKPACT_PACKAGE_ID}::duel::finalize_test_one_oracle
+   ${KICKPACT_PACKAGE_ID}::duel::claim_reveal_timeout
    ${PREDICT_PACKAGE_ID}::predict::mint           # paired with record_swipe
    ```
 
@@ -389,7 +389,7 @@ Full ID values are in [Deployed Addresses](#-deployed-addresses-testnet).
 `apps/playground/.env.local`:
 ```
 VITE_NETWORK=testnet
-VITE_FLICKY_PACKAGE_ID=0xaed053fcc146abd1da507eae72b4f3e9c838d83c83c7b68b230a3c9a2601a522
+VITE_KICKPACT_PACKAGE_ID=0xaed053fcc146abd1da507eae72b4f3e9c838d83c83c7b68b230a3c9a2601a522
 VITE_PREDICT_PACKAGE_ID=0xf5ea2b3749c65d6e56507cc35388719aadb28f9cab873696a2f8687f5c785138
 VITE_PREDICT_OBJECT_ID=0xc8736204d12f0a7277c86388a68bf8a194b0a14c5538ad13f22cbd8e2a38028a
 VITE_REGISTRY_ID=0x43af14fed5480c20ff77e2263d5f794c35b9fab7e221290312706244e2a6e64
@@ -400,13 +400,13 @@ VITE_SERVER_HTTP_URL=http://localhost:3001
 VITE_SERVER_WS_URL=ws://localhost:3001/ws
 ```
 
-`apps/web/.env.local` (web app — same IDs, different var name for Flicky):
+`apps/web/.env.local` (web app — same IDs, different var name for Kickpact):
 ```
-VITE_FLICKY_PACKAGE_ID_TESTNET=0xaed053fcc146abd1da507eae72b4f3e9c838d83c83c7b68b230a3c9a2601a522
+VITE_KICKPACT_PACKAGE_ID_TESTNET=0xaed053fcc146abd1da507eae72b4f3e9c838d83c83c7b68b230a3c9a2601a522
 # + the rest of the VITE_* vars above
 ```
 
-> After every `bun run publish` / `bun run upgrade`, the script **auto-updates** `VITE_FLICKY_PACKAGE_ID_TESTNET` in `apps/web/.env.local` but **not** the playground's `.env.local` — paste manually each time (or symlink the file).
+> After every `bun run publish` / `bun run upgrade`, the script **auto-updates** `VITE_KICKPACT_PACKAGE_ID_TESTNET` in `apps/web/.env.local` but **not** the playground's `.env.local` — paste manually each time (or symlink the file).
 
 ### PTB helpers
 
@@ -532,7 +532,7 @@ Compatible upgrades cover: adding new entry functions, new events, new public re
 
 ## 📦 Stub Packages
 
-Local Move packages under `deepbook_predict_min/`, `deepbook_min/`, `token_min/` mirror the on-chain ABI signatures of the upstream packages so flicky can link at build time:
+Local Move packages under `deepbook_predict_min/`, `deepbook_min/`, `token_min/` mirror the on-chain ABI signatures of the upstream packages so kickpact can link at build time:
 
 | Stub | Bound to | Notes |
 |---|---|---|

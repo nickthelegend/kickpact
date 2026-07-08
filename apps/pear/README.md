@@ -1,18 +1,18 @@
-# Flicky Watch Party — Pear desktop companion (Pears track)
+# Kickpact Watch Party — Pear desktop companion (Pears track)
 
 P2P World Cup watch-party rooms over **Hyperswarm**. Fans who open the same
 match land in the same room and chat **directly, peer-to-peer — no server**.
-These are the *same rooms* as the Flicky mobile app's "match room" (identical
+These are the *same rooms* as the Kickpact mobile app's "match room" (identical
 topic derivation + wire protocol), so phones and laptops mingle in one swarm.
 
-- **Topic**: `hash("flicky/match/<gameId>")` — the ESPN match id shown on the
-  Flicky game page.
+- **Topic**: `hash("kickpact/match/<gameId>")` — the ESPN match id shown on the
+  Kickpact game page.
 - **Wire**: newline-JSON `{type: "hello" | "msg" | "pact"}` over encrypted
   Hyperswarm sockets (full mesh).
 - **Identity**: mobile peers sign every message with their WDK wallet key —
   phones verify and render ✓; desktop peers are unsigned ("⚠ unverified"),
   which is the honest split between the WDK and Pears tracks.
-- **Bets**: `pact` messages are on-chain escrow proposals (FlickyPacts on
+- **Bets**: `pact` messages are on-chain escrow proposals (KickpactPacts on
   Sepolia). Desktop shows them; taking a side happens in the mobile app.
 
 ## Run (dev)

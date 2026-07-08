@@ -15,9 +15,9 @@ import { Navigate, useNavigate, useParams } from "react-router"
 import { useSuiClient } from "@mysten/dapp-kit"
 import { useCurrentAccount } from "@/wdk/wallet"
 
-import { useFlickySocket } from "@/hooks/use-flicky-socket"
+import { useKickpactSocket } from "@/hooks/use-kickpact-socket"
 import { findPredictManager } from "@/lib/deepbook"
-import { fetchDuel } from "@/lib/flicky"
+import { fetchDuel } from "@/lib/kickpact"
 import { ActiveDuel } from "./active-duel"
 
 type Load =
@@ -31,7 +31,7 @@ export default function PlayDuel() {
   const navigate = useNavigate()
   const account = useCurrentAccount()
   const client = useSuiClient()
-  const { wsOpen, send, onMessage } = useFlickySocket(account?.address)
+  const { wsOpen, send, onMessage } = useKickpactSocket(account?.address)
   const [load, setLoad] = useState<Load>({ kind: "loading" })
 
   useEffect(() => {

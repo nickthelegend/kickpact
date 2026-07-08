@@ -23,10 +23,10 @@ import {
 } from "./src/screens"
 
 /**
- * Flicky mobile — Expo / React Native. Self-custodial WDK wallet (seed in the
+ * Kickpact mobile — Expo / React Native. Self-custodial WDK wallet (seed in the
  * device keychain) + real on-chain features on Sepolia:
- *   • PvP prediction duels (FlickyDuel)
- *   • Pacts — P2P friend bets in escrow (FlickyPacts)
+ *   • PvP prediction duels (KickpactDuel)
+ *   • Pacts — P2P friend bets in escrow (KickpactPacts)
  * Premium pixel UI rebuilt natively (RN StyleSheet).
  */
 
@@ -145,8 +145,8 @@ function Game() {
 
 export default function App() {
   const [fontsLoaded] = useFonts({
-    FlickyPixel: require("./assets/fonts/pixel.ttf"),
-    FlickyDisplay: require("./assets/fonts/landing.ttf"),
+    KickpactPixel: require("./assets/fonts/pixel.ttf"),
+    KickpactDisplay: require("./assets/fonts/landing.ttf"),
   })
 
   if (!fontsLoaded) return <View style={{ flex: 1, backgroundColor: C.frame }} />

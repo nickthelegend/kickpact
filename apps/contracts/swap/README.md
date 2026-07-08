@@ -1,6 +1,6 @@
 # Standalone Constant Product AMM Swap Contract
 
-This directory contains the standalone constant product AMM swap pool contract for the Flicky DeFi ecosystem, deployed on **Sui Testnet**.
+This directory contains the standalone constant product AMM swap pool contract for the Kickpact DeFi ecosystem, deployed on **Sui Testnet**.
 
 ## Deployed Contract Addresses (Sui Testnet)
 

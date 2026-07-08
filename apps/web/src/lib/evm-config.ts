@@ -1,5 +1,5 @@
 /**
- * EVM / Sepolia config for the WDK-powered Flicky.
+ * EVM / Sepolia config for the WDK-powered Kickpact.
  *
  * Replaces the old Sui `config.ts`. Source of truth for the deployed
  * addresses is `apps/duel-evm/deployed.json`. Override via VITE_* env.
@@ -16,7 +16,7 @@ export const EVM_CONFIG = {
     "https://ethereum-sepolia-rpc.publicnode.com",
   explorer: "https://sepolia.etherscan.io",
 
-  /** FlickyDuel escrow contract. */
+  /** KickpactDuel escrow contract. */
   duelAddress:
     import.meta.env.VITE_DUEL_ADDRESS ??
     "0x045Ad96EB24CE29f02C4E41542507DE26FE13895",
@@ -34,7 +34,7 @@ export const EVM_CONFIG = {
   USDT_DECIMALS: 6,
   ONE_USDT: 1_000_000n,
 
-  /** On-chain probability scale (PROB_SCALE in FlickyDuel). 1.0 == 1e9. */
+  /** On-chain probability scale (PROB_SCALE in KickpactDuel). 1.0 == 1e9. */
   PROB_SCALE: 1_000_000_000n,
 
   /** Stake tiers in USD₮ base units (1 / 3 / 5 / 10 USD₮). */
@@ -48,4 +48,4 @@ export const EVM_CONFIG = {
 export const DERIVATION_PATH = "0'/0/0"
 
 /** localStorage key for the (testnet) WDK seed phrase. */
-export const SEED_STORAGE_KEY = "flicky.wdk.seed"
+export const SEED_STORAGE_KEY = "kickpact.wdk.seed"

@@ -10,7 +10,7 @@
  *   CREATOR_KEY=0x… ORACLE_KEY=0x… bun scripts/demo-duel.ts
  */
 import { ethers } from "ethers"
-import { CHAIN, FLICKY_DUEL_ABI, USDT_ABI } from "../src/chain"
+import { CHAIN, KICKPACT_DUEL_ABI, USDT_ABI } from "../src/chain"
 import { cryptoDeck, deckCommitment, randomSalt } from "../src/duel"
 import { assetForStrike, fetchTickers, fromStrike, priceLabel, toStrike } from "../src/prices"
 
@@ -19,12 +19,12 @@ const STAKE = 2_000_000n // 2 USD₮/side
 const human = (x: bigint) => (Number(x) / Number(CHAIN.ONE_USDT)).toFixed(2)
 let GP = 15_000_000_000n
 const g = () => ({ gasPrice: GP })
-const duel = (s: ethers.ContractRunner) => new ethers.Contract(CHAIN.duelAddress, FLICKY_DUEL_ABI as unknown as string[], s)
+const duel = (s: ethers.ContractRunner) => new ethers.Contract(CHAIN.duelAddress, KICKPACT_DUEL_ABI as unknown as string[], s)
 const usdt = (s: ethers.ContractRunner) => new ethers.Contract(CHAIN.usdtAddress, USDT_ABI as unknown as string[], s)
 
 async function main() {
   const A = new ethers.Wallet(process.env.CREATOR_KEY!, provider) // creator
-  const O = new ethers.Wallet(process.env.ORACLE_KEY!, provider) // FlickyDuel oracle
+  const O = new ethers.Wallet(process.env.ORACLE_KEY!, provider) // KickpactDuel oracle
   const B = ethers.Wallet.createRandom().connect(provider) // challenger
   GP = (((await provider.getFeeData()).gasPrice ?? 12_000_000_000n) * 13n) / 10n
   console.log("creator A:", A.address, "\noracle  O:", O.address, "\nchallenger B:", B.address)

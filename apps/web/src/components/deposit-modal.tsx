@@ -27,7 +27,7 @@ import {
   resolveCreatedManagerId,
   writeManagerCache,
 } from "@/lib/deepbook"
-import { useFlickySign } from "@/lib/use-flicky-sign"
+import { useKickpactSign } from "@/lib/use-kickpact-sign"
 import { PixelButton } from "@/components/pixel-button"
 
 const BLUE_BRAND_STYLE = {
@@ -462,7 +462,7 @@ function AddressRow({
 /**
  * On-chain deposit from the zk-wallet dUSDC into the player's
  * PredictManager. Different UX from the receive-into-wallet flow:
- * amount input + signed deposit tx (sponsored via useFlickySign).
+ * amount input + signed deposit tx (sponsored via useKickpactSign).
  * Creates the manager on-the-fly if the user doesn't have one yet.
  */
 function ManagerDepositTab({
@@ -473,7 +473,7 @@ function ManagerDepositTab({
   walletDusdc: number
 }) {
   const client = useSuiClient()
-  const sign = useFlickySign()
+  const sign = useKickpactSign()
   const invalidateBalances = useInvalidateWalletBalances()
   const { data: managerInfo, refetch: refetchManager } = useManagerBalance()
   const managerBalance = managerInfo?.balance ?? 0

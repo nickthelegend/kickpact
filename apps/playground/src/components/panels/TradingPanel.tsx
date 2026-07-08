@@ -36,7 +36,7 @@ export default function TradingPanel({ onOutput }: TradingPanelProps) {
 
   // Load saved manager ID from localStorage
   const [managerId, setManagerId] = useState<string>(() => {
-    return localStorage.getItem('flicky_predict_manager_id') || ''
+    return localStorage.getItem('kickpact_predict_manager_id') || ''
   })
   const [oracleId, setOracleId] = useState<string>(CONFIG.marketOracleId)
   const [pythSourceId, setPythSourceId] = useState<string>(CONFIG.pythSourceId)
@@ -86,7 +86,7 @@ export default function TradingPanel({ onOutput }: TradingPanelProps) {
   // Sync manager ID if changed in localStorage
   useEffect(() => {
     const handleStorageChange = () => {
-      setManagerId(localStorage.getItem('flicky_predict_manager_id') || '')
+      setManagerId(localStorage.getItem('kickpact_predict_manager_id') || '')
     }
     window.addEventListener('storage', handleStorageChange)
     return () => window.removeEventListener('storage', handleStorageChange)

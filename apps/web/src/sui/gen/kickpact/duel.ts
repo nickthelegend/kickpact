@@ -4,7 +4,7 @@
 
 
 /**
- * Flicky duel: a two-player, N-card prediction match escrowing stakes in a shared
+ * Kickpact duel: a two-player, N-card prediction match escrowing stakes in a shared
  * object, consuming DeepBook Predict positions for correctness and computing
  * payout. Each card pins its OWN DeepBook `OracleSVI`, so a deck of 5 cards can
  * span 5 different oracle expiries / strikes.
@@ -39,7 +39,7 @@ import { MoveStruct, normalizeMoveArguments, type RawTransactionArgument } from 
 import { bcs } from '@mysten/sui/bcs';
 import { type Transaction, type TransactionArgument } from '@mysten/sui/transactions';
 import * as balance from './deps/sui/balance.js';
-const $moduleName = 'flicky::duel';
+const $moduleName = 'kickpact::duel';
 export const Card = new MoveStruct({ name: `${$moduleName}::Card`, fields: {
         oracle_id: bcs.Address,
         strike: bcs.u64()
@@ -170,7 +170,7 @@ export interface NewCardOptions {
     ];
 }
 export function newCard(options: NewCardOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null,
         'u64'
@@ -193,7 +193,7 @@ export interface CardOracleIdOptions {
     ];
 }
 export function cardOracleId(options: CardOracleIdOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null
     ] satisfies (string | null)[];
@@ -215,7 +215,7 @@ export interface CardStrikeOptions {
     ];
 }
 export function cardStrike(options: CardStrikeOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null
     ] satisfies (string | null)[];
@@ -244,7 +244,7 @@ export interface CreateDuelOptions {
     ];
 }
 export function createDuel(options: CreateDuelOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null,
         'vector<u8>',
@@ -275,7 +275,7 @@ export interface CreateDuelFreeOptions {
 }
 /** Free / Social tier: no Predict mint, no dUSDC escrow. Same engine. */
 export function createDuelFree(options: CreateDuelFreeOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         'vector<u8>',
         'u64'
@@ -304,7 +304,7 @@ export interface RevealDeckOptions {
     ];
 }
 export function revealDeck(options: RevealDeckOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null,
         'vector<null>'
@@ -333,7 +333,7 @@ export interface JoinDuelOptions {
     ];
 }
 export function joinDuel(options: JoinDuelOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null,
         null,
@@ -361,7 +361,7 @@ export interface JoinDuelFreeOptions {
     ];
 }
 export function joinDuelFree(options: JoinDuelFreeOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null,
         '0x2::clock::Clock'
@@ -406,7 +406,7 @@ export interface RecordSwipeOptions {
  * position at the current SVI price.
  */
 export function recordSwipe(options: RecordSwipeOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null,
         null,
@@ -452,7 +452,7 @@ export interface RecordSwipeFreeOptions {
  * stays consistent with Staked tier. Uses normalized quantity = `PROB_SCALE`.
  */
 export function recordSwipeFree(options: RecordSwipeFreeOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null,
         null,
@@ -503,7 +503,7 @@ export interface SettleCardOptions {
  * off-chain) but their premium still counts against them.
  */
 export function settleCard(options: SettleCardOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null,
         null,
@@ -541,7 +541,7 @@ export interface SettleCardFreeOptions {
  * PredictManager anti-replay (free swipes never minted positions).
  */
 export function settleCardFree(options: SettleCardFreeOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null,
         null,
@@ -575,7 +575,7 @@ export interface FinalizeOptions {
  * `settle_card`). Permissionless.
  */
 export function finalize(options: FinalizeOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null,
         '0x2::clock::Clock'
@@ -603,7 +603,7 @@ export interface FinalizeFreeOptions {
 }
 /** Free-tier counterpart to `finalize`. */
 export function finalizeFree(options: FinalizeFreeOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null,
         '0x2::clock::Clock'
@@ -638,7 +638,7 @@ export interface FinalizeTestOneOracleOptions {
  * never use on mainnet.
  */
 export function finalizeTestOneOracle(options: FinalizeTestOneOracleOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null,
         null,
@@ -674,7 +674,7 @@ export interface RefundDuelOptions {
  *   (anyone can call it, so a losing player cannot dodge).
  */
 export function refundDuel(options: RefundDuelOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null,
         '0x2::clock::Clock'
@@ -708,7 +708,7 @@ export interface ClaimRevealTimeoutOptions {
  * "win" is symbolic).
  */
 export function claimRevealTimeout(options: ClaimRevealTimeoutOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null,
         '0x2::clock::Clock'
@@ -735,7 +735,7 @@ export interface StatusOptions {
     ];
 }
 export function status(options: StatusOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null
     ] satisfies (string | null)[];
@@ -761,7 +761,7 @@ export interface IsCompleteOptions {
     ];
 }
 export function isComplete(options: IsCompleteOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null
     ] satisfies (string | null)[];
@@ -787,7 +787,7 @@ export interface TierOptions {
     ];
 }
 export function tier(options: TierOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null
     ] satisfies (string | null)[];
@@ -813,7 +813,7 @@ export interface CreatorOptions {
     ];
 }
 export function creator(options: CreatorOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null
     ] satisfies (string | null)[];
@@ -839,7 +839,7 @@ export interface ChallengerOptions {
     ];
 }
 export function challenger(options: ChallengerOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null
     ] satisfies (string | null)[];
@@ -865,7 +865,7 @@ export interface StartedAtMsOptions {
     ];
 }
 export function startedAtMs(options: StartedAtMsOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null
     ] satisfies (string | null)[];
@@ -891,7 +891,7 @@ export interface DeckOptions {
     ];
 }
 export function deck(options: DeckOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null
     ] satisfies (string | null)[];
@@ -917,7 +917,7 @@ export interface DeckHashOptions {
     ];
 }
 export function deckHash(options: DeckHashOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null
     ] satisfies (string | null)[];
@@ -943,7 +943,7 @@ export interface P0PayoutOptions {
     ];
 }
 export function p0Payout(options: P0PayoutOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null
     ] satisfies (string | null)[];
@@ -969,7 +969,7 @@ export interface P0PremiumOptions {
     ];
 }
 export function p0Premium(options: P0PremiumOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null
     ] satisfies (string | null)[];
@@ -995,7 +995,7 @@ export interface P1PayoutOptions {
     ];
 }
 export function p1Payout(options: P1PayoutOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null
     ] satisfies (string | null)[];
@@ -1021,7 +1021,7 @@ export interface P1PremiumOptions {
     ];
 }
 export function p1Premium(options: P1PremiumOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null
     ] satisfies (string | null)[];
@@ -1047,7 +1047,7 @@ export interface P0StakeValueOptions {
     ];
 }
 export function p0StakeValue(options: P0StakeValueOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null
     ] satisfies (string | null)[];
@@ -1073,7 +1073,7 @@ export interface P1StakeValueOptions {
     ];
 }
 export function p1StakeValue(options: P1StakeValueOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null
     ] satisfies (string | null)[];
@@ -1099,7 +1099,7 @@ export interface P0NextCardIdxOptions {
     ];
 }
 export function p0NextCardIdx(options: P0NextCardIdxOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null
     ] satisfies (string | null)[];
@@ -1125,7 +1125,7 @@ export interface P1NextCardIdxOptions {
     ];
 }
 export function p1NextCardIdx(options: P1NextCardIdxOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null
     ] satisfies (string | null)[];
@@ -1144,7 +1144,7 @@ export interface StatusPendingOptions {
     ];
 }
 export function statusPending(options: StatusPendingOptions = {}) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'duel',
@@ -1157,7 +1157,7 @@ export interface StatusActiveOptions {
     ];
 }
 export function statusActive(options: StatusActiveOptions = {}) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'duel',
@@ -1170,7 +1170,7 @@ export interface StatusCompleteOptions {
     ];
 }
 export function statusComplete(options: StatusCompleteOptions = {}) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'duel',
@@ -1183,7 +1183,7 @@ export interface TierStakedOptions {
     ];
 }
 export function tierStaked(options: TierStakedOptions = {}) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'duel',
@@ -1196,7 +1196,7 @@ export interface TierFreeOptions {
     ];
 }
 export function tierFree(options: TierFreeOptions = {}) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'duel',
@@ -1216,7 +1216,7 @@ export interface DeckSizeOptions {
     ];
 }
 export function deckSize(options: DeckSizeOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null
     ] satisfies (string | null)[];
@@ -1242,7 +1242,7 @@ export interface SettledCountOptions {
     ];
 }
 export function settledCount(options: SettledCountOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null
     ] satisfies (string | null)[];
@@ -1270,7 +1270,7 @@ export interface IsCardSettledOptions {
     ];
 }
 export function isCardSettled(options: IsCardSettledOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null,
         'u64'
@@ -1299,7 +1299,7 @@ export interface CardSettlementPriceOptions {
     ];
 }
 export function cardSettlementPrice(options: CardSettlementPriceOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null,
         'u64'
@@ -1319,7 +1319,7 @@ export interface ProbScaleOptions {
     ];
 }
 export function probScale(options: ProbScaleOptions = {}) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     return (tx: Transaction) => tx.moveCall({
         package: packageAddress,
         module: 'duel',
@@ -1336,7 +1336,7 @@ export interface DummyDepsOptions {
     ];
 }
 export function dummyDeps(options: DummyDepsOptions) {
-    const packageAddress = options.package ?? 'flicky';
+    const packageAddress = options.package ?? 'kickpact';
     const argumentsTypes = [
         null
     ] satisfies (string | null)[];

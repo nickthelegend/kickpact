@@ -2,7 +2,7 @@
  * Move-level DeepBook integration demo.
  *
  * Picks a settled BTC `OracleSVI` from DeepBook Predict on testnet, builds a
- * flicky duel referencing it, both players swipe via `record_swipe`, and we
+ * kickpact duel referencing it, both players swipe via `record_swipe`, and we
  * settle + finalize using DeepBook's `settlement_price()`. Proves the full
  * Move-level integration: our `duel.move` reads `&deepbook_predict::oracle::OracleSVI`
  * spot/forward via the on-chain package, and our `settle_card` pulls the
@@ -86,13 +86,13 @@ async function findLatestOracle(): Promise<OracleSVIInfo> {
 }
 
 async function main() {
-  const packageId = requireEnv("FLICKY_PACKAGE_ID")
+  const packageId = requireEnv("KICKPACT_PACKAGE_ID")
   const client = getSuiClient()
   const admin = getAdminKeypair()
   const adminAddr = admin.toSuiAddress()
   const challenger = new Ed25519Keypair()
   const challengerAddr = challenger.toSuiAddress()
-  console.log(`flicky package:  ${packageId}`)
+  console.log(`kickpact package:  ${packageId}`)
   console.log(`admin (creator): ${adminAddr}`)
   console.log(`challenger:      ${challengerAddr}`)
 

@@ -1,7 +1,7 @@
 /**
  * Chat + WebSocket test panel.
  *
- * Connects to the Flicky backend at `CONFIG.serverWsUrl` and exposes:
+ * Connects to the Kickpact backend at `CONFIG.serverWsUrl` and exposes:
  *
  *   - Connection state (auto-reconnect on wallet change)
  *   - Global chat: `chat_send` + `chat_history` backfill + live broadcasts

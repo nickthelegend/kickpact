@@ -1,7 +1,7 @@
 # Auto-deploy the `staging` branch to Railway.
 #
 # Why CI instead of Railway's native GitHub integration: connecting a repo in
-# Railway needs the Railway GitHub App installed on `nikola0x0/flicky`, which
+# Railway needs the Railway GitHub App installed on `nikola0x0/kickpact`, which
 # only the repo owner can authorize. This path uses a project-scoped
 # RAILWAY_TOKEN (repo secret) + `railway up`, so no GitHub App is required.
 #
@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [flicky-server, flicky-web]
+        service: [kickpact-server, kickpact-web]
     # Per-service group so server + web deploy in parallel, but a newer push
     # supersedes an in-flight deploy of the same service.
     concurrency:

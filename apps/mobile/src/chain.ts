@@ -1,5 +1,5 @@
 /**
- * On-chain config for the mobile app — Sepolia + the deployed FlickyDuel /
+ * On-chain config for the mobile app — Sepolia + the deployed KickpactDuel /
  * MockUSDT (same contracts as the web app). Source of truth:
  * apps/duel-evm/deployed.json.
  */
@@ -11,7 +11,7 @@ export const CHAIN = {
   logsRpcUrl: "https://sepolia.drpc.org",
   explorer: "https://sepolia.etherscan.io",
   duelAddress: "0x045Ad96EB24CE29f02C4E41542507DE26FE13895",
-  // FlickyPacts v2 — open-room support (counterparty == 0 = anyone joins).
+  // KickpactPacts v2 — open-room support (counterparty == 0 = anyone joins).
   pactsAddress: "0xc84a624109e6406d1a5Aa8413B19a1CFFCFe7f5A",
   usdtAddress: "0x4802B35fFE360CAcF7bc22702544DDA207b950A3",
   // Keeper/oracle that auto-settles match predictions from official results.
@@ -25,7 +25,7 @@ export const CHAIN = {
   stakeTiers: [1_000_000n, 3_000_000n, 5_000_000n, 10_000_000n] as const,
 } as const
 
-export const FLICKY_DUEL_ABI = [
+export const KICKPACT_DUEL_ABI = [
   "function createDuel(uint128 stake, bytes32 deckCommitment) returns (uint256 duelId)",
   "function createDuelFree(bytes32 deckCommitment) returns (uint256 duelId)",
   "function joinDuel(uint256 duelId)",
@@ -54,7 +54,7 @@ export const USDT_ABI = [
 
 export const DUEL_STATUS = { PENDING: 1, ACTIVE: 2, COMPLETE: 3 } as const
 
-export const FLICKY_PACTS_ABI = [
+export const KICKPACT_PACTS_ABI = [
   "function createPact(address counterparty, address arbiter, uint128 stake, bytes32 terms, uint64 deadline) returns (uint256 pactId)",
   "function acceptPact(uint256 pactId)",
   "function agree(uint256 pactId, address winner)",

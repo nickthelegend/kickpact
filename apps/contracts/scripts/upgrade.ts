@@ -1,5 +1,5 @@
 /**
- * Upgrade the deployed flicky package, preserving `originalPackageId`.
+ * Upgrade the deployed kickpact package, preserving `originalPackageId`.
  *
  *   bun run upgrade
  *
@@ -127,7 +127,7 @@ async function main() {
   // without a manual paste step. originalPackageId never changes — only the
   // bumped packageId is written here.
   const envPath = resolve(import.meta.dir, "../../web/.env.local");
-  const envKey = `VITE_FLICKY_PACKAGE_ID_${NETWORK.toUpperCase()}`;
+  const envKey = `VITE_KICKPACT_PACKAGE_ID_${NETWORK.toUpperCase()}`;
   const wrote = upsertEnvVar(envPath, envKey, packageChange.packageId);
   console.log(`Wrote env:               ${envPath} :: ${envKey} (${wrote})`);
 }

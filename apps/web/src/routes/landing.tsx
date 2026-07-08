@@ -5,7 +5,7 @@ import { EVM_CONFIG } from "@/lib/evm-config"
 
 /**
  * Public homepage at `/`. A judge opens this first: it has to say "what is
- * Flicky" in one glance and route into the game. Hybrid direction — a
+ * Kickpact" in one glance and route into the game. Hybrid direction — a
  * readable explainer structure wearing the game's pixel/arcade skin
  * (checker-navy ground, hard black borders + bevels, `font-pixel` headers,
  * the green `<PixelButton>` cabinet CTA, pixel-art icons).
@@ -34,7 +34,7 @@ function enterGameWithCrt(navigate: NavigateFunction) {
   }, CRT_DURATION_MS)
 }
 
-const GITHUB_URL = "https://github.com/nikola0x0/flicky"
+const GITHUB_URL = "https://github.com/nikola0x0/kickpact"
 const WDK_URL = "https://wdk.tether.io"
 const contractUrl = `${EVM_CONFIG.explorer}/address/${EVM_CONFIG.duelAddress}`
 
@@ -85,14 +85,14 @@ function AssetImage({
 function TopBar() {
   return (
     <header className="flex shrink-0 items-center justify-between gap-3 border-b-2 border-black bg-[#151837] px-4 py-2.5 shadow-[0_2px_0_#3a4f8a] sm:px-8 lg:px-12 lg:py-3 2xl:px-20 2xl:py-4">
-      <Link to="/" aria-label="flicky home" className="flex items-center">
+      <Link to="/" aria-label="kickpact home" className="flex items-center">
         <AssetImage
           src="/logo-mark.png"
-          alt="flicky"
+          alt="kickpact"
           className="h-12 w-auto [image-rendering:pixelated] sm:h-14 lg:h-20 2xl:h-24"
           fallback={
             <span className="text-4xl font-bold [text-shadow:2px_2px_0_#000,4px_4px_0_#00ad45] sm:text-5xl lg:text-6xl 2xl:text-7xl">
-              flicky
+              kickpact
             </span>
           }
         />
@@ -205,7 +205,7 @@ function HeroPreview() {
         // phone frame), so no border, bevel or drop shadow is added here.
         <img
           src="/home/shot-swipe.png"
-          alt="Flicky duel — swiping YES or NO through a deck of market predictions"
+          alt="Kickpact duel — swiping YES or NO through a deck of market predictions"
           onError={() => setShotFailed(true)}
           className={`block object-contain ${sizing}`}
         />
@@ -318,7 +318,7 @@ function SiteFooter() {
       <div
         className={`flex flex-col items-center justify-between gap-2 px-5 py-4 text-[11px] text-[#8b93b4] sm:flex-row sm:px-8 sm:text-xs lg:px-12 lg:py-5 2xl:px-20 2xl:py-8 2xl:text-lg ${CONTENT_W}`}
       >
-        <span>flicky · prediction duels on Ethereum</span>
+        <span>kickpact · prediction duels on Ethereum</span>
         <div className="flex items-center gap-4 lg:gap-6 2xl:gap-10">
           <a
             href={WDK_URL}

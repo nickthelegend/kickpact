@@ -12,7 +12,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test"
 let sponsor: typeof import("./sponsor")
 
 const originalAllowedOrigin = process.env.ALLOWED_ORIGIN
-const originalFlickyMainnet = process.env.FLICKY_PACKAGE_MAINNET
+const originalKickpactMainnet = process.env.KICKPACT_PACKAGE_MAINNET
 const originalDeepbookMainnet = process.env.DEEPBOOK_PREDICT_PACKAGE_MAINNET
 
 beforeAll(async () => {
@@ -24,17 +24,17 @@ beforeAll(async () => {
 afterAll(() => {
   if (originalAllowedOrigin === undefined) delete process.env.ALLOWED_ORIGIN
   else process.env.ALLOWED_ORIGIN = originalAllowedOrigin
-  if (originalFlickyMainnet === undefined) delete process.env.FLICKY_PACKAGE_MAINNET
-  else process.env.FLICKY_PACKAGE_MAINNET = originalFlickyMainnet
+  if (originalKickpactMainnet === undefined) delete process.env.KICKPACT_PACKAGE_MAINNET
+  else process.env.KICKPACT_PACKAGE_MAINNET = originalKickpactMainnet
   if (originalDeepbookMainnet === undefined) delete process.env.DEEPBOOK_PREDICT_PACKAGE_MAINNET
   else process.env.DEEPBOOK_PREDICT_PACKAGE_MAINNET = originalDeepbookMainnet
 })
 
 describe("buildAllowedTargets", () => {
-  test("testnet — covers every flicky duel entry + every DeepBook fn", () => {
+  test("testnet — covers every kickpact duel entry + every DeepBook fn", () => {
     const targets = sponsor.buildAllowedTargets("testnet")
-    // flicky duel functions (swap is a separate package — checked below)
-    const expectedFlickyFns = [
+    // kickpact duel functions (swap is a separate package — checked below)
+    const expectedKickpactFns = [
       "duel::new_card",
       "duel::create_duel",
       "duel::create_duel_free",
@@ -51,7 +51,7 @@ describe("buildAllowedTargets", () => {
       "duel::finalize_free",
       "duel::finalize_test_one_oracle",
     ]
-    for (const fn of expectedFlickyFns) {
+    for (const fn of expectedKickpactFns) {
       const matching = targets.filter((t) => t.endsWith(`::${fn}`))
       expect(matching).toHaveLength(1)
     }
@@ -88,34 +88,34 @@ describe("buildAllowedTargets", () => {
 
   test("mainnet — throws clearly when DEEPBOOK_PREDICT_PACKAGE_MAINNET unset", () => {
     delete process.env.DEEPBOOK_PREDICT_PACKAGE_MAINNET
-    // Also need a flicky mainnet override or it throws first on that.
-    process.env.FLICKY_PACKAGE_MAINNET = "0xdeadbeef"
+    // Also need a kickpact mainnet override or it throws first on that.
+    process.env.KICKPACT_PACKAGE_MAINNET = "0xdeadbeef"
     expect(() => sponsor.buildAllowedTargets("mainnet")).toThrow(
       /DEEPBOOK_PREDICT_PACKAGE_MAINNET/,
     )
   })
 
-  test("mainnet — throws clearly when FLICKY_PACKAGE_MAINNET unset", () => {
-    delete process.env.FLICKY_PACKAGE_MAINNET
+  test("mainnet — throws clearly when KICKPACT_PACKAGE_MAINNET unset", () => {
+    delete process.env.KICKPACT_PACKAGE_MAINNET
     expect(() => sponsor.buildAllowedTargets("mainnet")).toThrow(
-      /FLICKY_PACKAGE_MAINNET/,
+      /KICKPACT_PACKAGE_MAINNET/,
     )
   })
 
   test("mainnet — succeeds when both env overrides are set", () => {
-    process.env.FLICKY_PACKAGE_MAINNET = "0xflickymainnetpkg"
+    process.env.KICKPACT_PACKAGE_MAINNET = "0xkickpactmainnetpkg"
     process.env.DEEPBOOK_PREDICT_PACKAGE_MAINNET = "0xdeepbookmainnetpkg"
     const targets = sponsor.buildAllowedTargets("mainnet")
     expect(targets.length).toBeGreaterThan(0)
-    expect(targets.some((t) => t.startsWith("0xflickymainnetpkg::"))).toBe(true)
+    expect(targets.some((t) => t.startsWith("0xkickpactmainnetpkg::"))).toBe(true)
     expect(targets.some((t) => t.startsWith("0xdeepbookmainnetpkg::"))).toBe(true)
   })
 })
 
 describe("sponsorCorsHeaders", () => {
   test("ALLOWED_ORIGIN unset → echoes request origin, falls back to '*'", () => {
-    const h = sponsor.sponsorCorsHeaders("https://flicky.app")
-    expect(h["Access-Control-Allow-Origin"]).toBe("https://flicky.app")
+    const h = sponsor.sponsorCorsHeaders("https://kickpact.app")
+    expect(h["Access-Control-Allow-Origin"]).toBe("https://kickpact.app")
     const h2 = sponsor.sponsorCorsHeaders(null)
     expect(h2["Access-Control-Allow-Origin"]).toBe("*")
   })

@@ -1,9 +1,9 @@
 {
-  "name": "@flicky/contracts",
+  "name": "@kickpact/contracts",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Flicky Move package (Sui testnet) + TypeScript deploy/upgrade/codegen scripts.",
+  "description": "Kickpact Move package (Sui testnet) + TypeScript deploy/upgrade/codegen scripts.",
   "scripts": {
     "test": "sui move test --gas-limit 100000000000",
     "build": "sui move build",

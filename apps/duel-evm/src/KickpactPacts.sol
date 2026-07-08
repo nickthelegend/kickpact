@@ -6,7 +6,7 @@ interface IERC20 {
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
 }
 
-/// @title FlickyPacts — self-custodial P2P friend bets on any outcome
+/// @title KickpactPacts — self-custodial P2P friend bets on any outcome
 /// @notice "If Brazil scores first, you owe me 2 USD₮." Two friends each lock
 ///         an equal USD₮ stake in escrow against a stated outcome. When the
 ///         outcome is known, the winner is paid the whole pot and the loser's
@@ -20,7 +20,7 @@ interface IERC20 {
 ///      time calls `resolveByArbiter(winner)`.
 /// Safety: proposer can `cancel` before it's accepted; after `deadline` an
 /// unresolved pact is refundable to both.
-contract FlickyPacts {
+contract KickpactPacts {
     uint8 constant STATUS_PROPOSED = 1;
     uint8 constant STATUS_ACTIVE = 2;
     uint8 constant STATUS_RESOLVED = 3;

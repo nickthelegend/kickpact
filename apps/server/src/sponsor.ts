@@ -16,7 +16,7 @@
  * `apps/web/src/lib/sponsor.ts` so a server outage degrades gracefully.
  *
  * Allowlist:
- *   Every entry function flicky's PTBs issue is listed below. Enoki
+ *   Every entry function kickpact's PTBs issue is listed below. Enoki
  *   rejects any transaction whose MoveCalls escape this list — protects
  *   the sponsor wallet from being drained by an attacker crafting
  *   arbitrary transactions through the public sponsor route.
@@ -31,11 +31,11 @@ const log = makeLogger("sponsor")
 // ─── Allowlist of MoveCall targets ──────────────────────────────────────────
 
 /**
- * Functions sponsored from the **flicky duel package** (the one in
+ * Functions sponsored from the **kickpact duel package** (the one in
  * `apps/contracts/sources/duel.move`). The swap module is published
  * SEPARATELY (`apps/contracts/swap/`) — see SWAP_FNS below.
  */
-const FLICKY_FNS = [
+const KICKPACT_FNS = [
   "duel::new_card",
   "duel::create_duel",
   "duel::create_duel_free",
@@ -104,12 +104,12 @@ function resolveDeepbookPackage(network: EnokiNetwork): string {
   )
 }
 
-function resolveFlickyPackage(network: EnokiNetwork): string {
-  const override = process.env[`FLICKY_PACKAGE_${network.toUpperCase()}`]
+function resolveKickpactPackage(network: EnokiNetwork): string {
+  const override = process.env[`KICKPACT_PACKAGE_${network.toUpperCase()}`]
   if (override) return override
-  if (network === "testnet" && env.flickyPackageId) return env.flickyPackageId
+  if (network === "testnet" && env.kickpactPackageId) return env.kickpactPackageId
   throw new Error(
-    `Cannot resolve flicky package for ${network} — set FLICKY_PACKAGE_${network.toUpperCase()} ` +
+    `Cannot resolve kickpact package for ${network} — set KICKPACT_PACKAGE_${network.toUpperCase()} ` +
       `(or publish via apps/contracts on testnet to populate deployed.json).`,
   )
 }
@@ -124,11 +124,11 @@ function resolveSwapPackage(network: EnokiNetwork): string | null {
 }
 
 export function buildAllowedTargets(network: EnokiNetwork): string[] {
-  const flicky = resolveFlickyPackage(network)
+  const kickpact = resolveKickpactPackage(network)
   const deepbook = resolveDeepbookPackage(network)
   const swap = resolveSwapPackage(network)
   const targets = [
-    ...FLICKY_FNS.map((fn) => `${flicky}::${fn}`),
+    ...KICKPACT_FNS.map((fn) => `${kickpact}::${fn}`),
     ...DEEPBOOK_PREDICT_FNS.map((fn) => `${deepbook}::${fn}`),
   ]
   if (swap) targets.push(...SWAP_FNS.map((fn) => `${swap}::${fn}`))

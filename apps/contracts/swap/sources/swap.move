@@ -1,4 +1,4 @@
-// Copyright (c) Flicky Labs
+// Copyright (c) Kickpact Labs
 // SPDX-License-Identifier: Apache-2.0
 
 module swap::swap;

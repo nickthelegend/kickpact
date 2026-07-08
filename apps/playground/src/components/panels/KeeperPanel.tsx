@@ -27,7 +27,7 @@ export default function KeeperPanel({ onOutput }: KeeperPanelProps) {
   // IDs
   const [oracleId, setOracleId] = useState<string>(CONFIG.marketOracleId)
   const [managerId, setManagerId] = useState<string>(() => {
-    return localStorage.getItem('flicky_predict_manager_id') || ''
+    return localStorage.getItem('kickpact_predict_manager_id') || ''
   })
   const [sviCapId, setSviCapId] = useState<string>('')
 
@@ -72,7 +72,7 @@ export default function KeeperPanel({ onOutput }: KeeperPanelProps) {
   // Sync manager ID if changed in localStorage
   useEffect(() => {
     const handleStorageChange = () => {
-      setManagerId(localStorage.getItem('flicky_predict_manager_id') || '')
+      setManagerId(localStorage.getItem('kickpact_predict_manager_id') || '')
     }
     window.addEventListener('storage', handleStorageChange)
     fetchActivities()

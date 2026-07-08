@@ -9,12 +9,12 @@ export const txCreateDuel = (
   deckSize: number,
   coinType: string
 ) => {
-  if (!CONFIG.flickyPackageId) {
-    throw new Error('FLICKY_PACKAGE_ID not configured')
+  if (!CONFIG.kickpactPackageId) {
+    throw new Error('KICKPACT_PACKAGE_ID not configured')
   }
 
   return tx.moveCall({
-    target: `${CONFIG.flickyPackageId}::duel::create_duel`,
+    target: `${CONFIG.kickpactPackageId}::duel::create_duel`,
     typeArguments: [coinType],
     arguments: [
       stakeCoin,
@@ -30,11 +30,11 @@ export const txCreateDuelFree = (
   deckSize: number,
   coinType: string = '0x2::sui::SUI'
 ) => {
-  if (!CONFIG.flickyPackageId) {
-    throw new Error('FLICKY_PACKAGE_ID not configured')
+  if (!CONFIG.kickpactPackageId) {
+    throw new Error('KICKPACT_PACKAGE_ID not configured')
   }
   return tx.moveCall({
-    target: `${CONFIG.flickyPackageId}::duel::create_duel_free`,
+    target: `${CONFIG.kickpactPackageId}::duel::create_duel_free`,
     typeArguments: [coinType],
     arguments: [
       tx.pure.vector('u8', deckHash),
@@ -50,12 +50,12 @@ export const txJoinDuel = (
   stakeCoin: any,
   coinType: string
 ) => {
-  if (!CONFIG.flickyPackageId) {
-    throw new Error('FLICKY_PACKAGE_ID not configured')
+  if (!CONFIG.kickpactPackageId) {
+    throw new Error('KICKPACT_PACKAGE_ID not configured')
   }
 
   return tx.moveCall({
-    target: `${CONFIG.flickyPackageId}::duel::join_duel`,
+    target: `${CONFIG.kickpactPackageId}::duel::join_duel`,
     typeArguments: [coinType],
     arguments: [
       tx.object(duelId),
@@ -70,11 +70,11 @@ export const txJoinDuelFree = (
   duelId: string,
   coinType: string = '0x2::sui::SUI'
 ) => {
-  if (!CONFIG.flickyPackageId) {
-    throw new Error('FLICKY_PACKAGE_ID not configured')
+  if (!CONFIG.kickpactPackageId) {
+    throw new Error('KICKPACT_PACKAGE_ID not configured')
   }
   return tx.moveCall({
-    target: `${CONFIG.flickyPackageId}::duel::join_duel_free`,
+    target: `${CONFIG.kickpactPackageId}::duel::join_duel_free`,
     typeArguments: [coinType],
     arguments: [tx.object(duelId), tx.object(CONFIG.CLOCK_ID)],
   })
@@ -93,13 +93,13 @@ export const txRevealDeck = (
   cards: DuelCard[],
   coinType: string
 ) => {
-  if (!CONFIG.flickyPackageId) {
-    throw new Error('FLICKY_PACKAGE_ID not configured')
+  if (!CONFIG.kickpactPackageId) {
+    throw new Error('KICKPACT_PACKAGE_ID not configured')
   }
 
   const cardObjects = cards.map(card => {
     return tx.moveCall({
-      target: `${CONFIG.flickyPackageId}::duel::new_card`,
+      target: `${CONFIG.kickpactPackageId}::duel::new_card`,
       arguments: [
         tx.object(card.oracleId),
         tx.pure.u64(card.strike)
@@ -108,12 +108,12 @@ export const txRevealDeck = (
   })
 
   const cardsVec = tx.makeMoveVec({
-    type: `${CONFIG.flickyPackageId}::duel::Card`,
+    type: `${CONFIG.kickpactPackageId}::duel::Card`,
     elements: cardObjects
   })
 
   return tx.moveCall({
-    target: `${CONFIG.flickyPackageId}::duel::reveal_deck`,
+    target: `${CONFIG.kickpactPackageId}::duel::reveal_deck`,
     typeArguments: [coinType],
     arguments: [
       tx.object(duelId),
@@ -136,12 +136,12 @@ export const txRecordSwipe = (
   quantity: bigint,
   coinType: string = '0x2::sui::SUI'
 ) => {
-  if (!CONFIG.flickyPackageId) {
-    throw new Error('FLICKY_PACKAGE_ID not configured')
+  if (!CONFIG.kickpactPackageId) {
+    throw new Error('KICKPACT_PACKAGE_ID not configured')
   }
 
   return tx.moveCall({
-    target: `${CONFIG.flickyPackageId}::duel::record_swipe`,
+    target: `${CONFIG.kickpactPackageId}::duel::record_swipe`,
     typeArguments: [coinType],
     arguments: [
       tx.object(duelId),
@@ -165,11 +165,11 @@ export const txRecordSwipeFree = (
   isUp: boolean,
   coinType: string = '0x2::sui::SUI'
 ) => {
-  if (!CONFIG.flickyPackageId) {
-    throw new Error('FLICKY_PACKAGE_ID not configured')
+  if (!CONFIG.kickpactPackageId) {
+    throw new Error('KICKPACT_PACKAGE_ID not configured')
   }
   return tx.moveCall({
-    target: `${CONFIG.flickyPackageId}::duel::record_swipe_free`,
+    target: `${CONFIG.kickpactPackageId}::duel::record_swipe_free`,
     typeArguments: [coinType],
     arguments: [
       tx.object(duelId),
@@ -197,11 +197,11 @@ export const txSettleCard = (
   cardIdx: number,
   coinType: string = '0x2::sui::SUI'
 ) => {
-  if (!CONFIG.flickyPackageId) {
-    throw new Error('FLICKY_PACKAGE_ID not configured')
+  if (!CONFIG.kickpactPackageId) {
+    throw new Error('KICKPACT_PACKAGE_ID not configured')
   }
   return tx.moveCall({
-    target: `${CONFIG.flickyPackageId}::duel::settle_card`,
+    target: `${CONFIG.kickpactPackageId}::duel::settle_card`,
     typeArguments: [coinType],
     arguments: [
       tx.object(duelId),
@@ -220,11 +220,11 @@ export const txSettleCardFree = (
   cardIdx: number,
   coinType: string = '0x2::sui::SUI'
 ) => {
-  if (!CONFIG.flickyPackageId) {
-    throw new Error('FLICKY_PACKAGE_ID not configured')
+  if (!CONFIG.kickpactPackageId) {
+    throw new Error('KICKPACT_PACKAGE_ID not configured')
   }
   return tx.moveCall({
-    target: `${CONFIG.flickyPackageId}::duel::settle_card_free`,
+    target: `${CONFIG.kickpactPackageId}::duel::settle_card_free`,
     typeArguments: [coinType],
     arguments: [
       tx.object(duelId),
@@ -243,11 +243,11 @@ export const txFinalizeDuel = (
   duelId: string,
   coinType: string = '0x2::sui::SUI'
 ) => {
-  if (!CONFIG.flickyPackageId) {
-    throw new Error('FLICKY_PACKAGE_ID not configured')
+  if (!CONFIG.kickpactPackageId) {
+    throw new Error('KICKPACT_PACKAGE_ID not configured')
   }
   return tx.moveCall({
-    target: `${CONFIG.flickyPackageId}::duel::finalize`,
+    target: `${CONFIG.kickpactPackageId}::duel::finalize`,
     typeArguments: [coinType],
     arguments: [
       tx.object(duelId),
@@ -266,11 +266,11 @@ export const txFinalizeDuelTestOneOracle = (
   oracleId: string,
   coinType: string = '0x2::sui::SUI'
 ) => {
-  if (!CONFIG.flickyPackageId) {
-    throw new Error('FLICKY_PACKAGE_ID not configured')
+  if (!CONFIG.kickpactPackageId) {
+    throw new Error('KICKPACT_PACKAGE_ID not configured')
   }
   return tx.moveCall({
-    target: `${CONFIG.flickyPackageId}::duel::finalize_test_one_oracle`,
+    target: `${CONFIG.kickpactPackageId}::duel::finalize_test_one_oracle`,
     typeArguments: [coinType],
     arguments: [
       tx.object(duelId),
@@ -285,11 +285,11 @@ export const txFinalizeDuelFree = (
   duelId: string,
   coinType: string = '0x2::sui::SUI'
 ) => {
-  if (!CONFIG.flickyPackageId) {
-    throw new Error('FLICKY_PACKAGE_ID not configured')
+  if (!CONFIG.kickpactPackageId) {
+    throw new Error('KICKPACT_PACKAGE_ID not configured')
   }
   return tx.moveCall({
-    target: `${CONFIG.flickyPackageId}::duel::finalize_free`,
+    target: `${CONFIG.kickpactPackageId}::duel::finalize_free`,
     typeArguments: [coinType],
     arguments: [
       tx.object(duelId),
@@ -304,11 +304,11 @@ export const txRefundDuel = (
   duelId: string,
   coinType: string = '0x2::sui::SUI'
 ) => {
-  if (!CONFIG.flickyPackageId) {
-    throw new Error('FLICKY_PACKAGE_ID not configured')
+  if (!CONFIG.kickpactPackageId) {
+    throw new Error('KICKPACT_PACKAGE_ID not configured')
   }
   return tx.moveCall({
-    target: `${CONFIG.flickyPackageId}::duel::refund_duel`,
+    target: `${CONFIG.kickpactPackageId}::duel::refund_duel`,
     typeArguments: [coinType],
     arguments: [
       tx.object(duelId),
@@ -325,11 +325,11 @@ export const txClaimRevealTimeout = (
   duelId: string,
   coinType: string = '0x2::sui::SUI'
 ) => {
-  if (!CONFIG.flickyPackageId) {
-    throw new Error('FLICKY_PACKAGE_ID not configured')
+  if (!CONFIG.kickpactPackageId) {
+    throw new Error('KICKPACT_PACKAGE_ID not configured')
   }
   return tx.moveCall({
-    target: `${CONFIG.flickyPackageId}::duel::claim_reveal_timeout`,
+    target: `${CONFIG.kickpactPackageId}::duel::claim_reveal_timeout`,
     typeArguments: [coinType],
     arguments: [
       tx.object(duelId),
@@ -341,7 +341,7 @@ export const txClaimRevealTimeout = (
 // ========== Duel: Read Status/Fields ==========
 export const readDuelStatus = (tx: Transaction, duelId: string, coinType: string = '0x2::sui::SUI') => {
   return tx.moveCall({
-    target: `${CONFIG.flickyPackageId}::duel::status`,
+    target: `${CONFIG.kickpactPackageId}::duel::status`,
     typeArguments: [coinType],
     arguments: [tx.object(duelId)]
   })

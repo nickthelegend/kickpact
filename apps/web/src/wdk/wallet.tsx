@@ -1,5 +1,5 @@
 /**
- * WDK wallet layer — self-custodial EVM identity for Flicky.
+ * WDK wallet layer — self-custodial EVM identity for Kickpact.
  *
  * Replaces the old Sui dapp-kit + Enoki/zkLogin stack. The user holds their
  * own keys: a BIP-39 seed phrase is generated client-side, stored in

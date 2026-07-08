@@ -1,18 +1,18 @@
 {
   "expo": {
-    "name": "Flicky",
-    "slug": "flicky",
+    "name": "Kickpact",
+    "slug": "kickpact",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "flicky",
+    "scheme": "kickpact",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
     "android": {
-      "package": "io.flicky.app",
+      "package": "io.kickpact.app",
       "adaptiveIcon": {
         "backgroundColor": "#1b2548",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -39,7 +39,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Flicky uses the camera to scan a friend's pact or duel QR code so you can join their escrow."
+          "cameraPermission": "Kickpact uses the camera to scan a friend's pact or duel QR code so you can join their escrow."
         }
       ]
     ]

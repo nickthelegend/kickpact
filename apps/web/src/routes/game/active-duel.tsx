@@ -11,19 +11,19 @@ import { useSuiClient } from "@mysten/dapp-kit"
 import { useCurrentAccount } from "@/wdk/wallet"
 import type { ClientMsg, ServerMsg } from "@/lib/protocol"
 import { STAKE_TIERS, type Tier } from "@/lib/protocol"
-import type { Unsubscribe } from "@/hooks/use-flicky-socket"
+import type { Unsubscribe } from "@/hooks/use-kickpact-socket"
 import {
   buildCreateDuelDusdcTx,
   buildJoinDuelDusdcTx,
   fetchOracleSvi,
   resolveCreatedDuelId,
-} from "@/lib/flicky"
+} from "@/lib/kickpact"
 import {
   DEEPBOOK,
   buildStakedSwipeTx,
   quoteSwipePremium,
 } from "@/lib/deepbook"
-import { useFlickySign } from "@/lib/use-flicky-sign"
+import { useKickpactSign } from "@/lib/use-kickpact-sign"
 import { liveCardPnl, fmtDusdcSigned, fmtPnlPct } from "@/lib/pnl"
 import { SWIPE_WINDOW_MS, swipeWindowRemainingMs } from "@/lib/swipe-window"
 import { SWIPE_QUANTITY } from "@/components/onboarding-modal"
@@ -166,7 +166,7 @@ export function ActiveDuel({
 }: Props) {
   const account = useCurrentAccount()
   const client = useSuiClient()
-  const sign = useFlickySign()
+  const sign = useKickpactSign()
   const [phase, setPhase] = useState<Phase>(
     resumeDuelId
       ? { kind: "AWAIT_REVEAL", duelId: resumeDuelId }
@@ -550,7 +550,7 @@ function PhaseSwiping({
   ticks: Record<string, { spot: string; forward: string }>
   myAddress: string
   isWindowExpired: boolean
-  sign: ReturnType<typeof useFlickySign>
+  sign: ReturnType<typeof useKickpactSign>
   onSwipeDone: () => void
 }) {
   const card = roomState.cards[cardIdx]

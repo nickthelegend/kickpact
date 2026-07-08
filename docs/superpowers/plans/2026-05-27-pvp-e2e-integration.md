@@ -4,7 +4,7 @@
 
 **Goal:** Wire the end-to-end PvP duel flow (matchmake → create/join → server-revealed deck → 5-card staked swipes → keeper finalize → results) into `apps/web` on top of the existing pixel-art UI shell, with incremental per-card PnL projection driven from the backend indexer.
 
-**Architecture:** Web app consumes the existing `lib/flicky.ts` + `lib/deepbook.ts` codegen-based PTB builders (no playground porting). A single `active-duel.tsx` state machine handles both creator and challenger paths after the initial `create_duel` / `join_duel` sign step. The server's indexer is upgraded to project per-card `cardOutcomes` the moment each card's oracle settles, independent of `finalize_multi`. The keeper still owns reveal + finalize + redeem. All player-signed PTBs go through sponsored gas via `useFlickySign`.
+**Architecture:** Web app consumes the existing `lib/kickpact.ts` + `lib/deepbook.ts` codegen-based PTB builders (no playground porting). A single `active-duel.tsx` state machine handles both creator and challenger paths after the initial `create_duel` / `join_duel` sign step. The server's indexer is upgraded to project per-card `cardOutcomes` the moment each card's oracle settles, independent of `finalize_multi`. The keeper still owns reveal + finalize + redeem. All player-signed PTBs go through sponsored gas via `useKickpactSign`.
 
 **Tech Stack:**
 - Web: Vite + React 19 + Tailwind v4 + `@mysten/dapp-kit` + `@mysten/sui` (codegen bindings in `apps/web/src/sui/gen/`).
@@ -26,7 +26,7 @@
 - `apps/web/src/components/onboarding-modal.tsx` — PredictManager + dUSDC onboarding UI.
 
 ### Modify (web)
-- `apps/web/src/hooks/use-flicky-socket.ts` — subscription pattern.
+- `apps/web/src/hooks/use-kickpact-socket.ts` — subscription pattern.
 - `apps/web/src/lib/deepbook.ts` — add `quoteSwipePremium` (UI display only).
 - `apps/web/src/routes/game/pvp.tsx` — onboarding gate before queue_join.
 - `apps/web/src/routes/game/active-duel.tsx` — full state machine.
@@ -607,7 +607,7 @@ git commit -m "feat(web): PnL math util (liveCardPnl, runningPnl)"
 
 **Files:**
 - Modify: `apps/web/src/lib/deepbook.ts` (append a new export near the bottom, before `extractManagerIdFromChanges`)
-- Modify: `apps/web/src/lib/flicky.test.ts` (or new `deepbook.test.ts`) — devInspect tests are hard offline; add a non-network unit test that exercises just the BCS parsing instead
+- Modify: `apps/web/src/lib/kickpact.test.ts` (or new `deepbook.test.ts`) — devInspect tests are hard offline; add a non-network unit test that exercises just the BCS parsing instead
 
 The contract snapshots `premium` on chain — this helper exists ONLY so the UI can display an estimated cost on the UP/DOWN buttons.
 
@@ -702,16 +702,16 @@ record_swipe doesn't take a premium arg)."
 
 ---
 
-## Task 5: Web — refactor `use-flicky-socket` to subscription pattern
+## Task 5: Web — refactor `use-kickpact-socket` to subscription pattern
 
 **Files:**
-- Modify: `apps/web/src/hooks/use-flicky-socket.ts`
+- Modify: `apps/web/src/hooks/use-kickpact-socket.ts`
 
 The current hook exposes `lastMsg: ServerMsg | null`. With two components (`pvp.tsx` watching `queue_status`/`match_found`, `active-duel.tsx` watching `room_state`/`oracle_tick`/`duel_assigned`), the single-state model drops messages. Replace with handler registration.
 
 - [ ] **Step 1: Replace the hook implementation**
 
-Overwrite `apps/web/src/hooks/use-flicky-socket.ts`:
+Overwrite `apps/web/src/hooks/use-kickpact-socket.ts`:
 
 ```ts
 import { useEffect, useRef, useState, useCallback } from "react"
@@ -721,7 +721,7 @@ import { ServerMsg, ClientMsg } from "@/lib/protocol"
 export type Unsubscribe = () => void
 
 /**
- * Connect to the Flicky WS server. Returns:
+ * Connect to the Kickpact WS server. Returns:
  *   - `wsOpen`: connection state.
  *   - `send`: write a typed ClientMsg.
  *   - `onMessage(handler)`: subscribe to ALL incoming server msgs. Caller
@@ -731,7 +731,7 @@ export type Unsubscribe = () => void
  * Multiple components can subscribe simultaneously; each handler is
  * invoked for every message. No single-`lastMsg` race.
  */
-export function useFlickySocket(address?: string) {
+export function useKickpactSocket(address?: string) {
   const wsRef = useRef<WebSocket | null>(null)
   const handlersRef = useRef<Set<(msg: ServerMsg) => void>>(new Set())
   const [wsOpen, setWsOpen] = useState(false)
@@ -789,8 +789,8 @@ Expected: existing callers (`pvp.tsx`) will error because they read `lastMsg`. W
 - [ ] **Step 3: Commit**
 
 ```bash
-git add apps/web/src/hooks/use-flicky-socket.ts
-git commit -m "refactor(web): typed onMessage subscription for use-flicky-socket"
+git add apps/web/src/hooks/use-kickpact-socket.ts
+git commit -m "refactor(web): typed onMessage subscription for use-kickpact-socket"
 ```
 
 ---
@@ -800,7 +800,7 @@ git commit -m "refactor(web): typed onMessage subscription for use-flicky-socket
 **Files:**
 - Create: `apps/web/src/components/onboarding-modal.tsx`
 
-Two-step modal: (1) create PredictManager if missing, (2) deposit dUSDC to reach 5 dUSDC. Both calls go through `useFlickySign`. Used by `pvp.tsx` before allowing queue_join.
+Two-step modal: (1) create PredictManager if missing, (2) deposit dUSDC to reach 5 dUSDC. Both calls go through `useKickpactSign`. Used by `pvp.tsx` before allowing queue_join.
 
 - [ ] **Step 1: Create the component**
 
@@ -809,7 +809,7 @@ Create `apps/web/src/components/onboarding-modal.tsx`:
 ```tsx
 import { useEffect, useState } from "react"
 import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit"
-import { useFlickySign } from "@/lib/use-flicky-sign"
+import { useKickpactSign } from "@/lib/use-kickpact-sign"
 import {
   buildCreateManagerTx,
   buildDepositDusdcTx,
@@ -843,7 +843,7 @@ type Phase =
 export function OnboardingModal({ open, onClose, onReady }: Props) {
   const account = useCurrentAccount()
   const client = useSuiClient()
-  const sign = useFlickySign()
+  const sign = useKickpactSign()
   const [phase, setPhase] = useState<Phase>({ kind: "checking" })
   const [walletDusdc, setWalletDusdc] = useState<bigint>(0n)
 
@@ -1080,7 +1080,7 @@ git commit -m "feat(web): onboarding modal for PredictManager + dUSDC"
 **Files:**
 - Modify: `apps/web/src/routes/game/pvp.tsx`
 
-Before sending `queue_join`, run the onboarding check. On success, store the managerId and proceed to queue. Also rewires `useFlickySocket` to the new subscription API.
+Before sending `queue_join`, run the onboarding check. On success, store the managerId and proceed to queue. Also rewires `useKickpactSocket` to the new subscription API.
 
 - [ ] **Step 1: Rewrite `pvp.tsx`**
 
@@ -1094,7 +1094,7 @@ import { useCurrentAccount } from "@mysten/dapp-kit"
 import { MatchButton } from "@/components/match-button"
 import { ModeModal } from "@/components/mode-modal"
 import { OnboardingModal } from "@/components/onboarding-modal"
-import { useFlickySocket } from "@/hooks/use-flicky-socket"
+import { useKickpactSocket } from "@/hooks/use-kickpact-socket"
 import { ActiveDuel } from "./active-duel"
 import type { Tier, ServerMsg } from "@/lib/protocol"
 
@@ -1113,7 +1113,7 @@ export default function GamePvp() {
   const [onboardingOpen, setOnboardingOpen] = useState(false)
   const [managerId, setManagerId] = useState<string | null>(null)
 
-  const { wsOpen, send, onMessage } = useFlickySocket(account?.address)
+  const { wsOpen, send, onMessage } = useKickpactSocket(account?.address)
 
   const [queueSize, setQueueSize] = useState<number | null>(null)
   const [matched, setMatched] = useState<{
@@ -1274,13 +1274,13 @@ Overwrite `apps/web/src/routes/game/active-duel.tsx`:
 import { useEffect, useRef, useState } from "react"
 import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit"
 import type { ClientMsg, ServerMsg } from "@/lib/protocol"
-import type { Unsubscribe } from "@/hooks/use-flicky-socket"
+import type { Unsubscribe } from "@/hooks/use-kickpact-socket"
 import {
   buildCreateDuelDusdcTx,
   buildJoinDuelDusdcTx,
-} from "@/lib/flicky"
+} from "@/lib/kickpact"
 import { DEEPBOOK } from "@/lib/deepbook"
-import { useFlickySign } from "@/lib/use-flicky-sign"
+import { useKickpactSign } from "@/lib/use-kickpact-sign"
 import { STAKE_TIERS, type Tier } from "@/lib/protocol"
 
 interface Props {
@@ -1343,7 +1343,7 @@ export function ActiveDuel({
 }: Props) {
   const account = useCurrentAccount()
   const client = useSuiClient()
-  const sign = useFlickySign()
+  const sign = useKickpactSign()
   const [phase, setPhase] = useState<Phase>({
     kind: "ENTRY",
     reason: role === "creator" ? "Waiting for deck hash…" : "Waiting for opponent…",
@@ -1682,7 +1682,7 @@ useEffect(() => {
 Add the import at the top of the file:
 
 ```ts
-import { fetchOracleSvi } from "@/lib/flicky"
+import { fetchOracleSvi } from "@/lib/kickpact"
 import { quoteSwipePremium, buildStakedSwipeTx } from "@/lib/deepbook"
 import { liveCardPnl, runningPnl, fmtDusdcSigned } from "@/lib/pnl"
 import { SWIPE_QUANTITY } from "@/components/onboarding-modal"
@@ -1709,7 +1709,7 @@ function PhaseSwiping({
   expiries: Record<string, bigint>
   ticks: Record<string, { spot: string; forward: string }>
   myAddress: string
-  sign: ReturnType<typeof useFlickySign>
+  sign: ReturnType<typeof useKickpactSign>
   onSwipeDone: () => void
 }) {
   const card = roomState.cards[cardIdx]

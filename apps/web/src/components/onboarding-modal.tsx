@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from "re
 import { createPortal } from "react-dom"
 import { useSuiClient } from "@mysten/dapp-kit"
 import { useCurrentAccount } from "@/wdk/wallet"
-import { useFlickySign } from "@/lib/use-flicky-sign"
+import { useKickpactSign } from "@/lib/use-kickpact-sign"
 import {
   buildCreateManagerTx,
   buildDepositDusdcTx,
@@ -70,7 +70,7 @@ type Phase =
 export function OnboardingModal({ open, stake, onClose, onReady }: Props) {
   const account = useCurrentAccount()
   const client = useSuiClient()
-  const sign = useFlickySign()
+  const sign = useKickpactSign()
   const [phase, setPhase] = useState<Phase>({ kind: "checking" })
   const [walletDusdc, setWalletDusdc] = useState<bigint>(0n)
   const [walletTopupOpen, setWalletTopupOpen] = useState(false)

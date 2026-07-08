@@ -1,10 +1,10 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Flicky Backend API",
+    "title": "Kickpact Backend API",
     "version": "0.1.0",
-    "description": "Bun + bun:sqlite backend for the Flicky PvP prediction-duel game on Sui. Serves card-generation (commit-reveal), Enoki-sponsored gas, oracle reads, duel state queries, and a WebSocket matchmaking + room-broadcast channel at /ws.\n\nFor the WS protocol see `src/ws/protocol.ts` in the repo (OpenAPI does not cover WebSocket messages — use AsyncAPI for that if it grows beyond the inline reference).",
-    "contact": { "name": "Flicky", "url": "https://github.com/nikola0x0/flicky" }
+    "description": "Bun + bun:sqlite backend for the Kickpact PvP prediction-duel game on Sui. Serves card-generation (commit-reveal), Enoki-sponsored gas, oracle reads, duel state queries, and a WebSocket matchmaking + room-broadcast channel at /ws.\n\nFor the WS protocol see `src/ws/protocol.ts` in the repo (OpenAPI does not cover WebSocket messages — use AsyncAPI for that if it grows beyond the inline reference).",
+    "contact": { "name": "Kickpact", "url": "https://github.com/nikola0x0/kickpact" }
   },
   "servers": [
     { "url": "http://localhost:3001", "description": "Local dev" }
@@ -255,7 +255,7 @@
       "post": {
         "tags": ["sponsor"],
         "summary": "Enoki sponsored-tx — two-step protocol",
-        "description": "`action: \"create\"` returns sponsor-signed bytes for the wallet to sign with `signTransaction`; `action: \"execute\"` submits the combined signatures.\n\nAllowlist gates MoveCall targets — see `src/sponsor.ts::FLICKY_FNS` + `DEEPBOOK_PREDICT_FNS`.",
+        "description": "`action: \"create\"` returns sponsor-signed bytes for the wallet to sign with `signTransaction`; `action: \"execute\"` submits the combined signatures.\n\nAllowlist gates MoveCall targets — see `src/sponsor.ts::KICKPACT_FNS` + `DEEPBOOK_PREDICT_FNS`.",
         "requestBody": {
           "required": true,
           "content": {
@@ -305,7 +305,7 @@
           "ok": { "type": "boolean" },
           "port": { "type": "integer" },
           "network": { "type": "string", "enum": ["mainnet", "testnet", "devnet", "localnet"] },
-          "flickyPackageId": { "type": "string", "nullable": true },
+          "kickpactPackageId": { "type": "string", "nullable": true },
           "decks": { "type": "integer", "description": "count of plaintext decks in the reveal store" },
           "ws": {
             "type": "object",

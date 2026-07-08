@@ -1,7 +1,7 @@
 /* Match Room worklet — runs inside Bare (react-native-bare-kit) on the phone.
  *
  * P2P watch-party chat over Hyperswarm: peers who join the same match topic
- * (hash of "flicky/match/<gameId>") discover each other on the DHT and get
+ * (hash of "kickpact/match/<gameId>") discover each other on the DHT and get
  * direct encrypted sockets — full mesh, no server. The RN side talks to this
  * worklet over IPC with newline-delimited JSON.
  *
@@ -48,7 +48,7 @@ function broadcast(o) {
 function join(gameId, id, nick) {
   me = { id, nick }
   swarm = new Hyperswarm()
-  const topic = crypto.data(b4a.from(`flicky/match/${gameId}`))
+  const topic = crypto.data(b4a.from(`kickpact/match/${gameId}`))
 
   swarm.on("connection", (c) => {
     conns.add(c)

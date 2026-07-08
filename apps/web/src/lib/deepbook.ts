@@ -4,7 +4,7 @@
  * Each staked swipe is an atomic PTB combining:
  *   - `predict::mint(...)` — creates a real Predict binary position on
  *     DeepBook with dUSDC from the player's PredictManager
- *   - `duel::record_swipe(...)` — records the swipe in the Flicky duel for
+ *   - `duel::record_swipe(...)` — records the swipe in the Kickpact duel for
  *     score-based PvP payout
  *
  * The player must own a `PredictManager` and have dUSDC in its balance before
@@ -25,7 +25,7 @@ type SuiClient = SuiJsonRpcClient
 import * as predict from "@/sui/gen/deepbook_predict/predict"
 import * as predictManager from "@/sui/gen/deepbook_predict/predict_manager"
 import * as marketKey from "@/sui/gen/deepbook_predict/market_key"
-import * as duel from "@/sui/gen/flicky/duel"
+import * as duel from "@/sui/gen/kickpact/duel"
 import { CONFIG } from "./config"
 
 /** Hard-coded testnet object IDs for DeepBook Predict. */
@@ -48,7 +48,7 @@ export const DEEPBOOK = {
  * so this cache is effectively long-lived. Invalidation only happens
  * if the cached object can't be fetched anymore — see `findPredictManager`.
  */
-const MANAGER_CACHE_KEY = "flicky.predictManager.v1"
+const MANAGER_CACHE_KEY = "kickpact.predictManager.v1"
 
 function readManagerCache(address: string): string | null {
   try {
@@ -95,7 +95,7 @@ function clearManagerCache(address: string): void {
  *
  * Resolution order:
  *   1. localStorage cache — manager ids are permanent per address.
- *   2. The Flicky server's `/manager` endpoint — the single source of
+ *   2. The Kickpact server's `/manager` endpoint — the single source of
  *      truth. Its lookup is DB-cached AND scans the full event stream, so
  *      a `null` answer is authoritative ("no manager exists yet"), not a
  *      truncated miss. This is what lets us decide whether to bootstrap
@@ -155,7 +155,7 @@ export async function findPredictManager(
 }
 
 /**
- * Resolve a manager id via the Flicky server's `/manager` endpoint.
+ * Resolve a manager id via the Kickpact server's `/manager` endpoint.
  *
  * Returns:
  *   - a manager id string  → server found one
@@ -230,7 +230,7 @@ export async function getManagerDusdcBalance(
  *
  * The minimized DeepBook Predict codegen at `sui/gen/deepbook_predict`
  * doesn't expose `create_manager` — the function lives on the deployed
- * DeepBook package but not on the type-stub used by Flicky's contract.
+ * DeepBook package but not on the type-stub used by Kickpact's contract.
  * We build the call manually instead of going through the codegen
  * binding. Sponsor allowlist whitelists `predict::create_manager` so
  * the sponsored-gas path still works.
@@ -292,7 +292,7 @@ export function buildWithdrawDusdcTx(
 
 /**
  * Atomic staked swipe: mint a binary Predict position on DeepBook AND record
- * the swipe in the Flicky duel.
+ * the swipe in the Kickpact duel.
  *
  * `quantity` is in dUSDC micro-units (1e6 = 1 dUSDC). The dUSDC is debited
  * from the player's PredictManager; the position pays `quantity` if correct.
@@ -300,7 +300,7 @@ export function buildWithdrawDusdcTx(
  * Aborts:
  *   - `EMarketNotActive` if the OracleSVI isn't ACTIVE
  *   - insufficient PredictManager balance
- *   - flicky `EOracleNotLive` / `EOutOfTurn` (standard swipe guards)
+ *   - kickpact `EOracleNotLive` / `EOutOfTurn` (standard swipe guards)
  */
 export function buildStakedSwipeTx(args: {
   duelId: string
@@ -342,7 +342,7 @@ export function buildStakedSwipeTx(args: {
     }),
   )
 
-  // 3. Record the swipe in the Flicky duel — same OracleSVI, atomic.
+  // 3. Record the swipe in the Kickpact duel — same OracleSVI, atomic.
   // Contract signature: (duel, manager, predict, oracle, card_idx, is_up,
   // quantity, clock, ctx). The contract snapshots premium + p_swiped
   // on-chain via get_trade_amounts — no client-supplied premium. Clock +

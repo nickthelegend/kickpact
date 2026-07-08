@@ -1,5 +1,5 @@
 /**
- * First-time publish of the flicky Move package to Sui testnet.
+ * First-time publish of the kickpact Move package to Sui testnet.
  *
  *   bun run publish
  *
@@ -39,7 +39,7 @@ const PUBLISHED_TOML = resolve(import.meta.dir, "../Published.toml");
  * publish path uses the TS SDK + `sui move build`, so we have to
  * mirror the write ourselves. Without this, anyone reading
  * Published.toml as ground truth (other Move packages depending on
- * flicky, codegen tools, on-chain explorers) sees a stale address.
+ * kickpact, codegen tools, on-chain explorers) sees a stale address.
  */
 function syncPublishedToml(packageId: string, upgradeCap: string, chainId: string): void {
   // Minimal but valid Published.toml — matches the shape the Sui CLI
@@ -132,7 +132,7 @@ async function main() {
     process.exit(1);
   }
 
-  // 4. Extract packageId + UpgradeCap. Flicky has no `init` functions, so
+  // 4. Extract packageId + UpgradeCap. Kickpact has no `init` functions, so
   //    no extra shared objects/caps come out of the publish tx.
   const changes = result.objectChanges ?? [];
   const packageChange = changes.find((c) => c.type === "published") as
@@ -180,7 +180,7 @@ async function main() {
   // Mirror packageId into apps/web/.env.local so Vite picks up the new id
   try {
     const envPath = resolve(import.meta.dir, "../../web/.env.local");
-    const envKey = `VITE_FLICKY_PACKAGE_ID_${NETWORK.toUpperCase()}`;
+    const envKey = `VITE_KICKPACT_PACKAGE_ID_${NETWORK.toUpperCase()}`;
     const wrote = upsertEnvVar(envPath, envKey, packageId);
     console.log(`Wrote env:               ${envPath} :: ${envKey} (${wrote})`);
   } catch (e) {

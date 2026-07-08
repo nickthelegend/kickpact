@@ -92,17 +92,17 @@ Do not recreate any of this:
 
 | Concern                  | Lives in                                                | Notes                                                                                                                                                    |
 | ------------------------ | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Duel PTB builders        | `apps/web/src/lib/flicky.ts`                            | `buildCreateDuelDusdcTx`, `buildJoinDuelDusdcTx`, `buildRevealDeckTx`, `buildSwipeTx`, `buildSettleAndFinalizeTx`. Uses `@/sui/gen/flicky/duel` codegen. |
-| Deck commit-reveal       | `apps/web/src/lib/flicky.ts`                            | `computeDeckHash` (BCS + sha2-256), `DeckCard` type.                                                                                                     |
-| Duel state read/parse    | `apps/web/src/lib/flicky.ts`                            | `fetchDuel`, `parseDuel`, `DuelState`.                                                                                                                   |
-| Oracle discovery         | `apps/web/src/lib/flicky.ts`                            | `findLatestOracleSvi`, `fetchOracleSvi`, `oracleStrikes`.                                                                                                |
+| Duel PTB builders        | `apps/web/src/lib/kickpact.ts`                            | `buildCreateDuelDusdcTx`, `buildJoinDuelDusdcTx`, `buildRevealDeckTx`, `buildSwipeTx`, `buildSettleAndFinalizeTx`. Uses `@/sui/gen/kickpact/duel` codegen. |
+| Deck commit-reveal       | `apps/web/src/lib/kickpact.ts`                            | `computeDeckHash` (BCS + sha2-256), `DeckCard` type.                                                                                                     |
+| Duel state read/parse    | `apps/web/src/lib/kickpact.ts`                            | `fetchDuel`, `parseDuel`, `DuelState`.                                                                                                                   |
+| Oracle discovery         | `apps/web/src/lib/kickpact.ts`                            | `findLatestOracleSvi`, `fetchOracleSvi`, `oracleStrikes`.                                                                                                |
 | Atomic staked swipe      | `apps/web/src/lib/deepbook.ts`                          | `buildStakedSwipeTx` (mint + record_swipe in one PTB).                                                                                                   |
 | PredictManager discovery | `apps/web/src/lib/deepbook.ts`                          | `findPredictManager` with localStorage cache, `invalidateManagerCache`.                                                                                  |
 | dUSDC balances           | `apps/web/src/lib/deepbook.ts`                          | `getWalletDusdcBalance`, `getManagerDusdcBalance`.                                                                                                       |
 | Manager onboarding PTBs  | `apps/web/src/lib/deepbook.ts`                          | `buildCreateManagerTx`, `buildDepositDusdcTx`, `buildWithdrawDusdcTx`.                                                                                   |
-| Sponsored-gas signing    | `apps/web/src/lib/sponsor.ts`, `lib/use-flicky-sign.ts` | All player-signed PTBs go through this.                                                                                                                  |
+| Sponsored-gas signing    | `apps/web/src/lib/sponsor.ts`, `lib/use-kickpact-sign.ts` | All player-signed PTBs go through this.                                                                                                                  |
 | Wire protocol            | `apps/web/src/lib/protocol.ts`                          | Full `ClientMsg`/`ServerMsg` discriminated unions, `STAKE_TIERS`.                                                                                        |
-| WebSocket hook (basic)   | `apps/web/src/hooks/use-flicky-socket.ts`               | 47 lines; exposes `{ wsOpen, lastMsg, send }`. Will be extended (see below).                                                                             |
+| WebSocket hook (basic)   | `apps/web/src/hooks/use-kickpact-socket.ts`               | 47 lines; exposes `{ wsOpen, lastMsg, send }`. Will be extended (see below).                                                                             |
 | Environment              | `apps/web/src/lib/config.ts`                            | `packageId`, `deepbookPredictPackageId`, `serverHttpUrl`, `serverWsUrl`, `CLOCK_ID`, `stakeType`, etc. Already complete.                                 |
 
 ## Naming discipline
@@ -150,7 +150,7 @@ Implementation: devInspect `predict::get_trade_amounts` with a `MarketKey` built
 
 Caveat in the JSDoc: the contract will re-snapshot at swipe time so the actual on-chain `premium` may differ by a few atoms due to clock/SVI drift between quote and execute. UI displays the quote as an **estimate**, not a commitment. **No new `lib/predict-txb.ts` file.**
 
-### 2. `hooks/use-flicky-socket.ts` — typed subscription pattern
+### 2. `hooks/use-kickpact-socket.ts` — typed subscription pattern
 
 Current API drops messages when two components read the same `lastMsg` state (`pvp.tsx` watches `queue_status`/`match_found`; `active-duel.tsx` watches `duel_assigned`/`room_state`/`oracle_tick`).
 
@@ -158,7 +158,7 @@ Extend to:
 
 ```ts
 type Unsubscribe = () => void
-function useFlickySocket(address?: string): {
+function useKickpactSocket(address?: string): {
   wsOpen: boolean
   send: (msg: ClientMsg) => void
   onMessage: (handler: (msg: ServerMsg) => void) => Unsubscribe
@@ -199,7 +199,7 @@ The only role-conditional branch is the ENTRY step. From `AWAIT_REVEAL` onwards,
 - If `role === "creator"`: read `deckHash` from the `match_found` payload (the server pre-generated the deck at matchmaking; plaintext stays server-side). Sign `buildCreateDuelDusdcTx(client, address, deckHash, STAKE_TIERS[tier], DEEPBOOK.dusdcType)` → sponsored → execute. Parse `duelId` from objectChanges. `send({ type: "room_subscribe", duelId })`.
 - If `role === "challenger"`: wait for `duel_assigned` from server. Sign `buildJoinDuelDusdcTx(client, address, duelId, STAKE_TIERS[tier], DEEPBOOK.dusdcType)` → sponsored → execute. `send({ type: "room_subscribe", duelId })`.
 
-The web app does NOT build `reveal_deck`. `buildRevealDeckTx` in `lib/flicky.ts` stays put (test fixtures may use it) but no production web code invokes it.
+The web app does NOT build `reveal_deck`. `buildRevealDeckTx` in `lib/kickpact.ts` stays put (test fixtures may use it) but no production web code invokes it.
 
 #### AWAIT_REVEAL
 
@@ -236,7 +236,7 @@ Live data: `oracle_tick` updates a `spot` display under the active card. No re-q
 
 #### Settlement (passive)
 
-> **Contract change (2026-05-27):** settlement is now a **single** `finalize_multi` call (or `finalize` if all 5 cards share one oracle), not 5× `settle_card` + a separate `finalize`. The new `buildFinalizeTx` helper in `lib/flicky.ts` builds the PTB, but the web app does NOT call it — the keeper does, signed by the server admin key.
+> **Contract change (2026-05-27):** settlement is now a **single** `finalize_multi` call (or `finalize` if all 5 cards share one oracle), not 5× `settle_card` + a separate `finalize`. The new `buildFinalizeTx` helper in `lib/kickpact.ts` builds the PTB, but the web app does NOT call it — the keeper does, signed by the server admin key.
 
 - No client-side finalize call. Keeper in `apps/server/src/keeper.ts` waits until both players are 5/5 AND all relevant oracles have `settlement_price.is_some()`, then submits `finalize_multi(duel, p0_mgr, p1_mgr, oracle_0..oracle_4, clock)`.
 - UI shows per-card PnL progressively as each oracle settles, **before** any on-chain finalize, courtesy of backend prereq **B1**. Each `room_state.cardOutcomes[i]` push flips card `i` from mark-to-market (proportional, `oracle_tick`-driven) to definitive binary PnL.
@@ -264,12 +264,12 @@ The new contract has three timing constants the UI should reflect — but the ch
 Following the 2026-05-29 fresh publish (per-card settle + finalize, max-amplitude + sign-balanced deckmaster):
 
 - Current: `packageId` defaults to `0xaed053fcc146abd1da507eae72b4f3e9c838d83c83c7b68b230a3c9a2601a522` (per `apps/contracts/deployed.json`).
-- `VITE_FLICKY_PACKAGE_ID_TESTNET` in `apps/web/.env.local` is auto-written by `publish.ts`.
+- `VITE_KICKPACT_PACKAGE_ID_TESTNET` in `apps/web/.env.local` is auto-written by `publish.ts`.
 - Previous publish at `0x4ab595f3...` (and earlier `0x436cc562...`, `0x505cdc...`) is orphaned — duels there can no longer be finalized.
 
 ### 6. Files explicitly NOT created
 
-- ~~`apps/web/src/lib/duel-txb.ts`~~ — duplicates `lib/flicky.ts` with worse type safety.
+- ~~`apps/web/src/lib/duel-txb.ts`~~ — duplicates `lib/kickpact.ts` with worse type safety.
 - ~~`apps/web/src/lib/predict-txb.ts`~~ — duplicates `lib/deepbook.ts`; range/LP/admin functions don't belong in the game UI.
 - ~~Any new `config.ts` env vars~~ — already present (only the value updates).
 - ~~`finalize_test_one_oracle` UI button~~ — dev-only contract entry; keeper picks the right finalize call.

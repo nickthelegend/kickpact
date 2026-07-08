@@ -14,7 +14,7 @@
  *   pixel.ttf    → in-game font for the mobile-frame game UI (--font-pixel, font-pixel utility)
  */
 @font-face {
-  font-family: "Flicky Display";
+  font-family: "Kickpact Display";
   src: url("/fonts/landing.ttf") format("truetype");
   font-weight: 100 900;
   font-style: normal;
@@ -22,7 +22,7 @@
 }
 
 @font-face {
-  font-family: "Flicky Pixel";
+  font-family: "Kickpact Pixel";
   src: url("/fonts/pixel.ttf") format("truetype");
   font-weight: 100 900;
   font-style: normal;
@@ -491,8 +491,8 @@
   --radius-4xl: 32px;
   --font-sans: "Inter Variable", -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
   --font-mono: ui-monospace, "SFMono-Regular", "Menlo", monospace;
-  --font-display: "Flicky Display", "Inter Variable", -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-pixel: "Flicky Pixel", ui-monospace, "SFMono-Regular", "Menlo", monospace;
+  --font-display: "Kickpact Display", "Inter Variable", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-pixel: "Kickpact Pixel", ui-monospace, "SFMono-Regular", "Menlo", monospace;
 }
 
 /* Light mode — Linear inverse surfaces (less polished, dark is canonical). */
@@ -539,7 +539,7 @@
   --sidebar-ring: #5e69d1;
 }
 
-/* Dark mode — Linear canvas. Default for flicky. */
+/* Dark mode — Linear canvas. Default for kickpact. */
 .dark {
   --background: #010102;
   --foreground: #f7f8f8;

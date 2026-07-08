@@ -1,5 +1,5 @@
 /**
- * Flicky premium design tokens — ported 1:1 from the web app's palette so the
+ * Kickpact premium design tokens — ported 1:1 from the web app's palette so the
  * React Native UI matches the original pixel look exactly.
  */
 export const C = {
@@ -30,6 +30,6 @@ export const C = {
 
 /** Loaded via expo-font in App.tsx. */
 export const FONT = {
-  pixel: "FlickyPixel",
-  display: "FlickyDisplay",
+  pixel: "KickpactPixel",
+  display: "KickpactDisplay",
 } as const

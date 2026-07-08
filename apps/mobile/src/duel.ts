@@ -1,12 +1,12 @@
 /**
  * Real on-chain duel layer for the mobile app — ethers calls to the deployed
- * FlickyDuel + MockUSDT on Sepolia. Same lifecycle as the web app's
+ * KickpactDuel + MockUSDT on Sepolia. Same lifecycle as the web app's
  * duel-contract.ts. Signing is done by the wallet's ethers signer (which on a
  * device is backed by the WDK-managed key).
  */
 import { ethers } from "ethers"
 
-import { CHAIN, FLICKY_DUEL_ABI, USDT_ABI } from "./chain"
+import { CHAIN, KICKPACT_DUEL_ABI, USDT_ABI } from "./chain"
 import { ASSETS, fetchTickers, toStrike } from "./prices"
 
 export interface Card {
@@ -35,7 +35,7 @@ export interface DuelState {
 }
 
 export function duelContract(runner: ethers.ContractRunner): ethers.Contract {
-  return new ethers.Contract(CHAIN.duelAddress, FLICKY_DUEL_ABI as unknown as string[], runner)
+  return new ethers.Contract(CHAIN.duelAddress, KICKPACT_DUEL_ABI as unknown as string[], runner)
 }
 
 export function usdtContract(runner: ethers.ContractRunner): ethers.Contract {

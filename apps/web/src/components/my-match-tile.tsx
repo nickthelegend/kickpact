@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router"
 import { useCurrentAccount } from "@/wdk/wallet"
 import { CONFIG } from "@/lib/config"
-import { useFlickySocket } from "@/hooks/use-flicky-socket"
+import { useKickpactSocket } from "@/hooks/use-kickpact-socket"
 import { StreamingPnlChart } from "@/components/streaming-pnl-chart"
 import {
   DEMO_DUEL_ID,
@@ -100,7 +100,7 @@ export function MyMatchTile() {
   const account = useCurrentAccount()
   const address = account?.address
   const demo = useDemoChart()
-  const { wsOpen, send, onMessage } = useFlickySocket(address, {
+  const { wsOpen, send, onMessage } = useKickpactSocket(address, {
     enabled: !demo,
   })
   const [duels, setDuels] = useState<DuelLite[] | null>(null)

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import type { Unsubscribe } from "@/hooks/use-flicky-socket"
+import type { Unsubscribe } from "@/hooks/use-kickpact-socket"
 import type { ServerMsg } from "@/lib/protocol"
 
 type Subscribe = (handler: (msg: ServerMsg) => void) => Unsubscribe

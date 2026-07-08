@@ -28,7 +28,7 @@ use_environment = "testnet"
 manifest_digest = "C2AF8557B9993F2FD0DE4E54EF8B96561D90DB24770F5D392CB0E38E6AA92138"
 deps = { deepbook = "deepbook", std = "MoveStdlib", sui = "Sui" }
 
-[pinned.testnet.flicky]
+[pinned.testnet.kickpact]
 source = { root = true }
 use_environment = "testnet"
 manifest_digest = "9DC1985F28F133C7F0EC763E0201710EC706E987842343780D83882F3F7D1BFF"

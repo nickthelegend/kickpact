@@ -44,7 +44,7 @@ export interface RoomEvents {
 }
 
 const signedPayload = (m: { from: string; text: string; ts: number }) =>
-  `flicky-room:${m.from.toLowerCase()}:${m.ts}:${m.text}`
+  `kickpact-room:${m.from.toLowerCase()}:${m.ts}:${m.text}`
 
 export class MatchRoom {
   private worklet: Worklet | null = null

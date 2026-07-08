@@ -7,8 +7,8 @@ interface IERC20 {
     function balanceOf(address account) external view returns (uint256);
 }
 
-/// @title FlickyDuel — PvP binary-prediction duel escrow (USD₮ ERC-20 stakes)
-/// @notice EVM port of Flicky's Move `duel` module. Two players swipe YES/NO
+/// @title KickpactDuel — PvP binary-prediction duel escrow (USD₮ ERC-20 stakes)
+/// @notice EVM port of Kickpact's Move `duel` module. Two players swipe YES/NO
 ///         through a commit-revealed deck of binary cards; the contract escrows
 ///         both players' USD₮ stakes (an ERC-20 set at deploy) and pays the
 ///         side-pot to whoever reads the market better. Players must `approve`
@@ -23,8 +23,8 @@ interface IERC20 {
 ///     QUANTITY; premium = QUANTITY * p_swiped / SCALE. Net PnL = payout −
 ///     premium, so a correct low-probability (contrarian) call nets more —
 ///     same economics as the README, without Predict's premium engine.
-///   * Settlement prices are posted by a trusted `oracle` (the Flicky keeper).
-contract FlickyDuel {
+///   * Settlement prices are posted by a trusted `oracle` (the Kickpact keeper).
+contract KickpactDuel {
     // === Status / tier ===
     uint8 constant STATUS_PENDING = 1;
     uint8 constant STATUS_ACTIVE = 2;

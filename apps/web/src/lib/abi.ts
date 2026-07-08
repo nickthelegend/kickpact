@@ -1,9 +1,9 @@
 /**
  * Human-readable ABIs (ethers format) for the deployed contracts.
- * Mirrors `apps/duel-evm/src/{FlickyDuel,MockUSDT}.sol`.
+ * Mirrors `apps/duel-evm/src/{KickpactDuel,MockUSDT}.sol`.
  */
 
-export const FLICKY_DUEL_ABI = [
+export const KICKPACT_DUEL_ABI = [
   // --- lifecycle (writes) ---
   "function createDuel(uint128 stake, bytes32 deckCommitment) returns (uint256 duelId)",
   "function createDuelFree(bytes32 deckCommitment) returns (uint256 duelId)",
@@ -45,7 +45,7 @@ export const USDT_ABI = [
   "function symbol() view returns (string)",
 ] as const
 
-/** Duel status enum (mirrors FlickyDuel constants). */
+/** Duel status enum (mirrors KickpactDuel constants). */
 export const DUEL_STATUS = { PENDING: 1, ACTIVE: 2, COMPLETE: 3 } as const
 
 /** Tier enum. */

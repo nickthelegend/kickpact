@@ -74,7 +74,7 @@ export function hexFromBytes(bytes: number[] | string): string {
  * retrying.
  *
  * Terminal cases:
- *   - `flicky::duel` EDuelNotActive (abort code 2): the duel already
+ *   - `kickpact::duel` EDuelNotActive (abort code 2): the duel already
  *     finalized/refunded out from under us. The dry-run budget error shows
  *     the raw code, not the name, so we also match a bare `2)`.
  *   - `predict_manager::decrease_position` abort (EInsufficientPosition,

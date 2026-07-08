@@ -237,7 +237,7 @@ export interface NewMarketOracleOptions {
 }
 /**
  * Create a new OracleSVI on testnet. The stub deliberately omits the real Predict
- * cap-bearing constructor; this entry exists so the Flicky playground and dev
+ * cap-bearing constructor; this entry exists so the Kickpact playground and dev
  * scripts can mint usable oracles without owning a real admin cap.
  */
 export function newMarketOracle(options: NewMarketOracleOptions) {

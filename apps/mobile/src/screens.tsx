@@ -1,5 +1,5 @@
 /**
- * Flicky mobile screens (RN StyleSheet). Real on-chain flow:
+ * Kickpact mobile screens (RN StyleSheet). Real on-chain flow:
  *  - SignIn  : create / import a self-custodial wallet (real BIP-39 seed)
  *  - Home    : live USD₮ + ETH balances, USD₮ faucet, enter PvP
  *  - Pvp     : create a duel (stake escrow) or join one by code — real txs
@@ -79,9 +79,9 @@ const BRIDGE_CHAIN_LOGOS = BRIDGE_CHAINS.map((c) => chainByKey(c.key)).filter(Bo
 const nativeSym = (key: string) => (key === "polygon" ? "POL" : "ETH")
 
 // Deep-link join targets encoded in shareable QR codes.
-export const joinLink = (type: "duel" | "pact", id: string) => `flicky://join?type=${type}&id=${id}`
+export const joinLink = (type: "duel" | "pact", id: string) => `kickpact://join?type=${type}&id=${id}`
 
-/** Pull a numeric id out of a scanned Flicky QR (join link, #code, or raw #). */
+/** Pull a numeric id out of a scanned Kickpact QR (join link, #code, or raw #). */
 export function parseJoinId(value: string): string | null {
   const m = value.trim().match(/[?&]id=(\d+)/)
   if (m) return m[1]
@@ -751,7 +751,7 @@ export function PracticeScreen({ onExit }: { onExit: () => void }) {
       const botPay = bot === actualUp ? 1 : 0
       const myPrem = mine[i] ? probUp : 1 - probUp
       const botPrem = bot ? probUp : 1 - probUp
-      // subtraction-less PnL (mirrors FlickyDuel.finalize)
+      // subtraction-less PnL (mirrors KickpactDuel.finalize)
       myScore += myPay + botPrem
       botScore += botPay + myPrem
       return { asset: sym, strike, live, actualUp, mine: mine[i], bot }
@@ -1333,7 +1333,7 @@ function AcceptByCode({ onAccepted, setStatus }: { onAccepted: () => void; setSt
           setScanOpen(false)
           const id = parseJoinId(v)
           if (id) acceptById(id)
-          else setStatus("that QR isn't a Flicky pact code")
+          else setStatus("that QR isn't a Kickpact pact code")
         }}
         onClose={() => setScanOpen(false)}
       />
@@ -1758,7 +1758,7 @@ function MatchRoomPanel({ gameId, game, onBetsChanged }: { gameId: string; game:
     }
   }
 
-  // Propose a bet to the room: lock your stake in the FlickyPacts escrow as an
+  // Propose a bet to the room: lock your stake in the KickpactPacts escrow as an
   // OPEN pact (keeper auto-settles from the result), then broadcast it P2P.
   const proposeBet = async () => {
     if (!signer || !game || !roomRef.current) return
@@ -2638,7 +2638,7 @@ const st = StyleSheet.create({
   warn: { textAlign: "center", marginBottom: 12, lineHeight: 16 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16, justifyContent: "center" },
   word: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 6, width: "30%" },
-  input: { alignSelf: "stretch", borderWidth: 1, borderColor: C.white15, borderRadius: 8, color: C.white, padding: 12, marginVertical: 10, fontFamily: "FlickyPixel", fontSize: 13 },
+  input: { alignSelf: "stretch", borderWidth: 1, borderColor: C.white15, borderRadius: 8, color: C.white, padding: 12, marginVertical: 10, fontFamily: "KickpactPixel", fontSize: 13 },
   divider: { flexDirection: "row", alignItems: "center", gap: 12, alignSelf: "stretch", marginVertical: 12 },
   dline: { flex: 1, height: 1, backgroundColor: C.white15 },
 

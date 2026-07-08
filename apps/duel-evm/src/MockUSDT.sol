@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 /// @title MockUSDT — test USD₮ for Sepolia (6 decimals, like real USDT)
 /// @notice Minimal ERC-20 with an OPEN public faucet `mint` so any player can
 ///         self-fund test USD₮ for staking in a duel. Testnet only.
-///         Returns `bool` on transfers (standard) — FlickyDuel uses a safe
+///         Returns `bool` on transfers (standard) — KickpactDuel uses a safe
 ///         wrapper so it also tolerates non-returning tokens.
 contract MockUSDT {
     string public constant name = "Tether USD (Test)";

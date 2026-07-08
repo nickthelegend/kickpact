@@ -209,7 +209,7 @@ describeFn("e2e duel against testnet", () => {
     challenger = new Ed25519Keypair()
     adminAddr = admin.toSuiAddress()
     challengerAddr = challenger.toSuiAddress()
-    console.log(`flicky package:  ${packageId}`)
+    console.log(`kickpact package:  ${packageId}`)
     console.log(`admin:           ${adminAddr}`)
     console.log(`challenger:      ${challengerAddr}`)
   })

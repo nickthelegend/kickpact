@@ -140,9 +140,9 @@ interface CachedSession {
   tier?: 'starter' | 'casual' | 'standard' | 'high_roller'
 }
 
-const SESSION_KEY = (addr: string) => `flicky_e2e_session:${addr.toLowerCase()}`
+const SESSION_KEY = (addr: string) => `kickpact_e2e_session:${addr.toLowerCase()}`
 /** Cross-panel manager id (compatible with ManagerPanel). */
-const SHARED_MANAGER_KEY = 'flicky_predict_manager_id'
+const SHARED_MANAGER_KEY = 'kickpact_predict_manager_id'
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -1453,7 +1453,7 @@ export default function E2EFlowPanel({ onOutput }: Props) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2">
-            🎯 Flicky End-to-End Demo
+            🎯 Kickpact End-to-End Demo
           </h2>
           <p className="mt-1 text-xs text-gray-400">
             Real backend + on-chain calls. Wallet → manager → deposit → deck →

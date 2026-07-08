@@ -1,5 +1,5 @@
 /**
- * Flicky backend entry — single Bun.serve process that hosts:
+ * Kickpact backend entry — single Bun.serve process that hosts:
  *
  *   HTTP:
  *     GET  /health
@@ -13,7 +13,7 @@
  *                     (see src/ws/protocol.ts for the message types)
  *
  *   Background:
- *     duel indexer    polls flicky events → broadcasts to subscribed rooms
+ *     duel indexer    polls kickpact events → broadcasts to subscribed rooms
  *     settle keeper   reveal + settle_card + redeem + finalize, gas-paid by
  *                     KEEPER_SECRET_KEY (or BOT_SECRET_KEY). Disable with
  *                     KEEPER_ENABLED=false.
@@ -93,7 +93,7 @@ const server = Bun.serve({
         ok: true,
         port: env.port,
         network: env.network,
-        flickyPackageId: env.flickyPackageId,
+        kickpactPackageId: env.kickpactPackageId,
         decks,
         ws: {
           connectedAddresses: connectedAddressCount(),
@@ -107,7 +107,7 @@ const server = Bun.serve({
               ? "enabled"
               : "disabled (no KEEPER_SECRET_KEY)"
             : "disabled (KEEPER_ENABLED=false)",
-          indexer: env.indexerEnabled && env.flickyPackageId
+          indexer: env.indexerEnabled && env.kickpactPackageId
             ? "enabled"
             : "disabled",
         },
@@ -164,9 +164,9 @@ log.info(`Go to http://localhost:${server.port}/docs for documentation`)
 if (!env.enokiPrivateKey) {
   log.warn(`sponsor disabled — set ENOKI_PRIVATE_KEY in apps/server/.env`)
 }
-if (!env.flickyPackageId) {
+if (!env.kickpactPackageId) {
   log.warn(
-    `flicky package id not found — set FLICKY_PACKAGE_ID or publish via apps/contracts`,
+    `kickpact package id not found — set KICKPACT_PACKAGE_ID or publish via apps/contracts`,
   )
 }
 
@@ -184,21 +184,21 @@ void ready()
     log.error(`postgres init failed: ${e instanceof Error ? e.message : String(e)}`),
   )
 
-if (env.indexerEnabled && env.flickyPackageId) {
-  const indexer = new DuelIndexer(getSuiClient(), env.flickyPackageId)
+if (env.indexerEnabled && env.kickpactPackageId) {
+  const indexer = new DuelIndexer(getSuiClient(), env.kickpactPackageId)
   void indexer.start()
-} else if (!env.flickyPackageId) {
-  log.warn("indexer disabled — no flicky packageId")
+} else if (!env.kickpactPackageId) {
+  log.warn("indexer disabled — no kickpact packageId")
 }
 
 startMatchClock()
 startOracleStream()
 startChatPruneLoop()
 
-if (env.keeperEnabled && env.keeperSecretKey && env.flickyPackageId) {
+if (env.keeperEnabled && env.keeperSecretKey && env.kickpactPackageId) {
   try {
     const keypair = decodeKeypair(env.keeperSecretKey)
-    const keeper = new Keeper(getSuiClient(), keypair, env.flickyPackageId)
+    const keeper = new Keeper(getSuiClient(), keypair, env.kickpactPackageId)
     void keeper.start()
   } catch (e) {
     log.error(`keeper boot failed: ${e instanceof Error ? e.message : String(e)}`)

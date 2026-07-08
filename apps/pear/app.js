@@ -1,4 +1,4 @@
-/* Flicky Watch Party — Pear desktop app (Pears track).
+/* Kickpact Watch Party — Pear desktop app (Pears track).
  * Run in dev:      pear run --dev .
  * Ship a link:     pear stage main && pear seed main  →  pear run pear://<key>
  */
@@ -24,7 +24,7 @@ function bubble(m, mine) {
   who.textContent = m.nick + (m.sig ? " ✓ wallet-signed" : "")
   const txt = document.createElement("div")
   txt.className = "txt"
-  txt.textContent = m.type === "pact" ? `⚔ bet proposal: ${m.text} (join on the Flicky app)` : m.text
+  txt.textContent = m.type === "pact" ? `⚔ bet proposal: ${m.text} (join on the Kickpact app)` : m.text
   d.append(who, txt)
   $("log").appendChild(d)
   $("log").scrollTop = $("log").scrollHeight

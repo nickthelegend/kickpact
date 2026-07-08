@@ -12,7 +12,7 @@
  *
  * On-chain commit-reveal:
  *   - `buildDeck` returns `{ cards, hash }` where hash = sha2-256 of the
- *     BCS-serialized card vector that flicky::duel::reveal_deck expects.
+ *     BCS-serialized card vector that kickpact::duel::reveal_deck expects.
  *   - The plaintext is persisted to the Postgres `deck` table (see db.ts)
  *     so a server restart doesn't strand pending duels. The keeper or the
  *     player's tab calls `reveal_deck` after `join_duel` lands; we just
@@ -75,7 +75,7 @@ export function snapToTick(
   return minStrike + ((strike - minStrike) / tickSize) * tickSize
 }
 
-// ─── BCS shape that matches flicky::duel::Card on chain ─────────────────────
+// ─── BCS shape that matches kickpact::duel::Card on chain ─────────────────────
 
 const CardBcs = bcs.struct("Card", {
   oracle_id: bcs.Address,

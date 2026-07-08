@@ -13,7 +13,7 @@ import {
   oracleStrikes,
   parseDuel,
   type DeckCard,
-} from "./flicky"
+} from "./kickpact"
 import { CONFIG } from "./config"
 
 // Minimal SuiClient mock for the dUSDC builders. They only call

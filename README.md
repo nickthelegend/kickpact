@@ -1,4 +1,4 @@
-# Flicky — The Prediction Arena
+# Kickpact — The Prediction Arena
 
 > Swipe YES/NO on a binary-prediction deck, face off against another player, and on-chain escrow pays the winner. A Tinder-style PvP prediction duel on **Sui**, powered by **DeepBook Predict**.
 
@@ -18,7 +18,7 @@
 
 Prediction markets are powerful but look like a Bloomberg terminal — order books, Greeks, vol surfaces. Meanwhile swipe-betting apps have proven retail *loves* feel-based prediction UX (Pulse on Solana, Rush's $500M-in-a-week sub-hour BTC binaries) — but they're shallow, custodial, and have **no real opponent**.
 
-**Flicky is both.** Two players swipe YES/NO through the same deck of binary-digital cards. Every swipe mints a *real* on-chain DeepBook Predict position — not a synthetic bet — and a Move `Duel` shared object escrows both stakes and pays the dUSDC side-pot to whoever reads the market better. zkLogin + sponsored gas mean it feels like a mobile game: no seed phrase, no wallet popups, no SUI required.
+**Kickpact is both.** Two players swipe YES/NO through the same deck of binary-digital cards. Every swipe mints a *real* on-chain DeepBook Predict position — not a synthetic bet — and a Move `Duel` shared object escrows both stakes and pays the dUSDC side-pot to whoever reads the market better. zkLogin + sponsored gas mean it feels like a mobile game: no seed phrase, no wallet popups, no SUI required.
 
 > **Two players. One deck. One question — who reads the market better?**
 
@@ -28,7 +28,7 @@ Prediction markets are powerful but look like a Bloomberg terminal — order boo
 
 ▶️ **https://youtu.be/sKIKsmdRs9U**
 
-What to look for — these are the things that separate Flicky from a generic Predict front-end:
+What to look for — these are the things that separate Kickpact from a generic Predict front-end:
 
 1. **Real on-chain positions** — swipe right = `predict::mint` YES on testnet, not a synthetic toggle.
 2. **No wallet popups** — the *absence* of signing prompts is the magic. zkLogin + sponsored gas make every swipe a one-tap, gasless transaction.
@@ -50,7 +50,7 @@ What to look for — these are the things that separate Flicky from a generic Pr
 └──────────┘   └───────────────┘    └──────────────────┘      └──────────────┘      └────────────────┘
 ```
 
-1. **Sign in** — zkLogin via Enoki (Google/Apple OAuth → Sui address). No seed phrase, no extension. On first sign-in, a `PredictManager` is created for you, **sponsored by Flicky**. Your wallet only ever holds dUSDC.
+1. **Sign in** — zkLogin via Enoki (Google/Apple OAuth → Sui address). No seed phrase, no extension. On first sign-in, a `PredictManager` is created for you, **sponsored by Kickpact**. Your wallet only ever holds dUSDC.
 2. **Fund & queue** — deposit dUSDC (or swap SUI → dUSDC at a fixed 1:10 rate inside the app), pick a stake tier (**1 / 3 / 5 / 10 dUSDC**), and enter matchmaking. Entry is gated on the manager holding **≥ 5 dUSDC** (worst-case premium across a full 5-card deck).
 3. **Match & reveal** — matchmaking pairs two players into a Move `Duel` shared object that escrows both stakes. The deck is **commit-reveal**: hashed at `create_duel`, revealed only at match start, so neither player can pre-stage trades.
 4. **Swipe (≤ 10 min)** — swipe right = YES, left = NO, through every card in the deck. Each swipe fires a **single atomic PTB** that calls `predict::mint` on *your own* `PredictManager` (opening a real Predict position) and `record_swipe` on the shared `Duel` (logging your direction and snapshotting the probability you swiped at). No wallet popup — the PTB is gas-sponsored.
@@ -82,21 +82,21 @@ Both run the exact same swipe → lockup → settle flow (the contract exposes `
 
 ## What's actually on-chain
 
-Flicky is not a Predict front-end with a database behind it — the duel lifecycle lives on Sui.
+Kickpact is not a Predict front-end with a database behind it — the duel lifecycle lives on Sui.
 
 ### DeepBook Predict touchpoints
 
-| #   | Primitive                        | Role in Flicky |
+| #   | Primitive                        | Role in Kickpact |
 | --- | -------------------------------- | -------------- |
 | 1   | `predict::mint`                  | Called in the **player-signed swipe PTB** on the player's own `PredictManager`. Sized per-card from a stake-tier budget (≤ 1 dUSDC/card). |
 | 2   | `predict::redeem_permissionless` | Each player redeems their own positions after a card settles; the keeper may call opportunistically. Payouts deposit into the player's own manager. |
 | 3   | `OracleSVI` reads                | Powers the live mark view, calibrates deck difficulty, snapshots `p_swiped` at swipe time, and supplies each card's 0/1 settlement. |
 | 4   | Predict indexer / settlement     | Backend detects per-card settlement → drives the keeper through `settle_card` × N then `finalize`. Also drives the lockup view. |
 
-### Flicky's Move package (`apps/contracts/`)
+### Kickpact's Move package (`apps/contracts/`)
 
 - **`Duel` shared object** — escrows the dUSDC side-pot and records every swipe (card index, direction, position reference, premium paid). At settle, reads per-player PnL and releases the side-pot to the higher total. It does **not** hold Predict positions — each player owns their own manager.
-- **`swap` module** — fixed-rate 1 SUI ↔ 10 dUSDC, backing the in-app Deposit/Swap screen so a SUI-only player can fund a stake without leaving Flicky.
+- **`swap` module** — fixed-rate 1 SUI ↔ 10 dUSDC, backing the in-app Deposit/Swap screen so a SUI-only player can fund a stake without leaving Kickpact.
 - **`pricing` (SVI binary-digital)**, `math`, `i64` — supporting modules.
 - Lifecycle entrypoints: `create_duel` / `join_duel` / `reveal_deck` / `record_swipe` / `settle_card` / `finalize`, each with a `*_free` practice-tier variant, plus `refund_duel` / `claim_reveal_timeout` safety paths. Covered by a Move unit-test suite (`tests/duel_tests.move`).
 
@@ -111,7 +111,7 @@ Flicky is not a Predict front-end with a database behind it — the duel lifecyc
 ## Architecture
 
 ```
-flicky/
+kickpact/
 ├── apps/
 │   ├── web        # Vite + React 19 — swipe UI, lockup view, share card
 │   ├── server     # Bun — WebSocket relay, indexer, settled-redeem keeper,
@@ -152,7 +152,7 @@ bun install   # install all workspaces (requires Bun ≥ 1.3 + Sui CLI)
 bun dev       # turbo dev — runs web (:5173) + server (:3001) in parallel
 ```
 
-> First run needs a one-time `bun --filter @flicky/contracts codegen` to generate the gitignored Sui bindings — see [`CONTRIBUTING.md`](CONTRIBUTING.md#first-time-developer-onboarding).
+> First run needs a one-time `bun --filter @kickpact/contracts codegen` to generate the gitignored Sui bindings — see [`CONTRIBUTING.md`](CONTRIBUTING.md#first-time-developer-onboarding).
 
 ## License
 

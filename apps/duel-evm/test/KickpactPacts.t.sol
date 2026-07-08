@@ -2,11 +2,11 @@
 pragma solidity 0.8.28;
 
 import {Test} from "forge-std/Test.sol";
-import {FlickyPacts} from "../src/FlickyPacts.sol";
+import {KickpactPacts} from "../src/KickpactPacts.sol";
 import {MockUSDT} from "../src/MockUSDT.sol";
 
-contract FlickyPactsTest is Test {
-    FlickyPacts pacts;
+contract KickpactPactsTest is Test {
+    KickpactPacts pacts;
     MockUSDT usdt;
 
     address alice = address(0xA11CE); // proposer
@@ -19,7 +19,7 @@ contract FlickyPactsTest is Test {
 
     function setUp() public {
         usdt = new MockUSDT();
-        pacts = new FlickyPacts(address(usdt));
+        pacts = new KickpactPacts(address(usdt));
         _fund(alice);
         _fund(bob);
         _fund(carol);
@@ -118,40 +118,40 @@ contract FlickyPactsTest is Test {
         vm.prank(alice);
         uint256 id = pacts.createPact(bob, ref, STAKE, TERMS, uint64(block.timestamp + 1 days));
         vm.prank(address(0xDEAD));
-        vm.expectRevert(FlickyPacts.NotCounterparty.selector);
+        vm.expectRevert(KickpactPacts.NotCounterparty.selector);
         pacts.acceptPact(id);
     }
 
     function test_RevertWhen_NonArbiterResolves() public {
         uint256 id = _createAccept(ref);
         vm.prank(alice);
-        vm.expectRevert(FlickyPacts.NotArbiter.selector);
+        vm.expectRevert(KickpactPacts.NotArbiter.selector);
         pacts.resolveByArbiter(id, alice);
     }
 
     function test_RevertWhen_ArbiterResolveButNoArbiter() public {
         uint256 id = _createAccept(address(0));
         vm.prank(alice);
-        vm.expectRevert(FlickyPacts.NoArbiter.selector);
+        vm.expectRevert(KickpactPacts.NoArbiter.selector);
         pacts.resolveByArbiter(id, alice);
     }
 
     function test_RevertWhen_BadWinner() public {
         uint256 id = _createAccept(ref);
         vm.prank(ref);
-        vm.expectRevert(FlickyPacts.BadWinner.selector);
+        vm.expectRevert(KickpactPacts.BadWinner.selector);
         pacts.resolveByArbiter(id, address(0xDEAD));
     }
 
     function test_RevertWhen_SelfCounterparty() public {
         vm.prank(alice);
-        vm.expectRevert(FlickyPacts.BadCounterparty.selector);
+        vm.expectRevert(KickpactPacts.BadCounterparty.selector);
         pacts.createPact(alice, ref, STAKE, TERMS, uint64(block.timestamp + 1 days));
     }
 
     function test_RevertWhen_ZeroStake() public {
         vm.prank(alice);
-        vm.expectRevert(FlickyPacts.ZeroStake.selector);
+        vm.expectRevert(KickpactPacts.ZeroStake.selector);
         pacts.createPact(bob, ref, 0, TERMS, uint64(block.timestamp + 1 days));
     }
 
@@ -184,7 +184,7 @@ contract FlickyPactsTest is Test {
         vm.prank(alice);
         uint256 id = pacts.createPact(address(0), ref, STAKE, TERMS, uint64(block.timestamp + 1 days));
         vm.prank(alice);
-        vm.expectRevert(FlickyPacts.BadCounterparty.selector);
+        vm.expectRevert(KickpactPacts.BadCounterparty.selector);
         pacts.acceptPact(id);
     }
 }

@@ -21,7 +21,7 @@ export default function SwapPanel({ onOutput }: SwapPanelProps) {
   // Package & Pool configuration
   const [packageId, setPackageId] = useState<string>('0x51ea0f29321f3c25f8b2f530ecd3ed3dec569d954c8832d318de7e203653a936')
   const [poolId, setPoolId] = useState<string>(() => {
-    return localStorage.getItem('flicky_swap_pool_id') || ''
+    return localStorage.getItem('kickpact_swap_pool_id') || ''
   })
   const [coinXType, setCoinXType] = useState<string>('0x2::sui::SUI')
   const [coinYType, setCoinYType] = useState<string>('0xe95040085976bfd54a1a07225cd46c8a2b4e8e2b6732f140a0fc49850ba73e1a::dusdc::DUSDC')
@@ -58,7 +58,7 @@ export default function SwapPanel({ onOutput }: SwapPanelProps) {
   // Load recently used pools from localStorage
   const [recentPools, setRecentPools] = useState<string[]>(() => {
     try {
-      const stored = localStorage.getItem('flicky_swap_recent_pools')
+      const stored = localStorage.getItem('kickpact_swap_recent_pools')
       return stored ? JSON.parse(stored) : []
     } catch {
       return []
@@ -68,9 +68,9 @@ export default function SwapPanel({ onOutput }: SwapPanelProps) {
   // Save poolId to localStorage
   useEffect(() => {
     if (poolId) {
-      localStorage.setItem('flicky_swap_pool_id', poolId)
+      localStorage.setItem('kickpact_swap_pool_id', poolId)
     } else {
-      localStorage.removeItem('flicky_swap_pool_id')
+      localStorage.removeItem('kickpact_swap_pool_id')
     }
   }, [poolId])
 
@@ -79,7 +79,7 @@ export default function SwapPanel({ onOutput }: SwapPanelProps) {
     setRecentPools((prev) => {
       if (prev.includes(id)) return prev
       const updated = [id, ...prev].slice(0, 10) // Keep last 10
-      localStorage.setItem('flicky_swap_recent_pools', JSON.stringify(updated))
+      localStorage.setItem('kickpact_swap_recent_pools', JSON.stringify(updated))
       return updated
     })
   }

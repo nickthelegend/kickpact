@@ -1,5 +1,5 @@
 /**
- * Flicky styled components (React Native StyleSheet) — the premium pixel-
+ * Kickpact styled components (React Native StyleSheet) — the premium pixel-
  * cabinet look rebuilt natively, matching the web app. No NativeWind; pure RN
  * so it renders identically on Android and the web preview.
  */

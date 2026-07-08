@@ -1,8 +1,8 @@
 /**
  * Single signing entrypoint for EVM transactions — the WDK replacement for
- * the old Sui `use-flicky-sign.ts`. The connected WDK account signs and sends
+ * the old Sui `use-kickpact-sign.ts`. The connected WDK account signs and sends
  * each transaction; gas is paid in Sepolia ETH from the player's own wallet
- * (self-custodial). USD₮ stakes move via the FlickyDuel contract.
+ * (self-custodial). USD₮ stakes move via the KickpactDuel contract.
  *
  * Call sites pass a `{ to, data, value }` request (see `lib/duel-contract.ts`)
  * — a smaller, EVM-native contract than the old Sui `{ transaction }` shape.

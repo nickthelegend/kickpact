@@ -17,7 +17,7 @@ import { CHAIN } from "./chain"
 import { loadSecret, saveSecret, clearSecret } from "./storage"
 import { getEthBalance, getUsdtBalance } from "./duel"
 
-const SEED_KEY = "flicky.wallet.seed"
+const SEED_KEY = "kickpact.wallet.seed"
 
 type Status = "INITIALIZING" | "NO_WALLET" | "BACKUP_PENDING" | "READY"
 

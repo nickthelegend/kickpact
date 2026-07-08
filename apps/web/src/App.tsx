@@ -1,5 +1,5 @@
 /**
- * Flicky game UI — phased state machine driven by on-chain duel state.
+ * Kickpact game UI — phased state machine driven by on-chain duel state.
  *
  *   Lobby ─→ WaitingForOpponent ─→ Swiping ─→ Lockup ─→ Settling ─→ Result
  *           (creator side)         (5 cards,            (call settle
@@ -32,7 +32,7 @@ import {
   useSuiClient,
   useWallets,
 } from "@mysten/dapp-kit"
-import { useFlickySign } from "@/lib/use-flicky-sign"
+import { useKickpactSign } from "@/lib/use-kickpact-sign"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@workspace/ui/components/button"
 import {
@@ -63,7 +63,7 @@ import {
   type DeckCard,
   type DuelState,
   type OracleSviInfo,
-} from "@/lib/flicky"
+} from "@/lib/kickpact"
 import {
   DEEPBOOK,
   buildCreateManagerTx,
@@ -488,7 +488,7 @@ export default function App() {
       <header className="mx-auto flex max-w-3xl items-center justify-between p-4 sm:p-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-[-0.03em]">
-            <span className="text-primary">flicky</span>
+            <span className="text-primary">kickpact</span>
           </h1>
           <p className="text-ink-subtle text-sm tracking-[-0.005em]">
             swipe BTC binaries · PvP on Sui testnet
@@ -533,7 +533,7 @@ function Footer() {
   return (
     <p className="text-muted-foreground pt-4 text-center text-sm">
       package <code>{shortId(CONFIG.packageId)}</code>{" "}
-      <ExplorerLink href={objectUrl(CONFIG.packageId)}>flicky on chain</ExplorerLink>
+      <ExplorerLink href={objectUrl(CONFIG.packageId)}>kickpact on chain</ExplorerLink>
     </p>
   )
 }
@@ -618,7 +618,7 @@ function Lobby({
 }) {
   const client = useSuiClient()
   const queryClient = useQueryClient()
-  const { mutateAsync: signAndExec, isPending } = useFlickySign()
+  const { mutateAsync: signAndExec, isPending } = useKickpactSign()
   const { oracleId, oracle } = useOracle()
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -833,7 +833,7 @@ function DepositPanel({
 }) {
   const client = useSuiClient()
   const queryClient = useQueryClient()
-  const { mutateAsync: signAndExec } = useFlickySign()
+  const { mutateAsync: signAndExec } = useKickpactSign()
   const [copied, setCopied] = useState(false)
   const [busy, setBusy] = useState<"create" | "deposit" | null>(null)
   const [err, setErr] = useState<string | null>(null)
@@ -1356,7 +1356,7 @@ function JoinView({
   address: string
 }) {
   const client = useSuiClient()
-  const { mutateAsync: signAndExec, isPending } = useFlickySign()
+  const { mutateAsync: signAndExec, isPending } = useKickpactSign()
   const queryClient = useQueryClient()
   const [err, setErr] = useState<string | null>(null)
   const isDusdc = duel.stakeCoinType === DEEPBOOK.dusdcType
@@ -1500,7 +1500,7 @@ function SwipingView({
   address: string
 }) {
   const client = useSuiClient()
-  const { mutateAsync: signAndExec, isPending } = useFlickySign()
+  const { mutateAsync: signAndExec, isPending } = useKickpactSign()
   const queryClient = useQueryClient()
   const now = useNow(250)
   const card = duel.cards[myNextIdx]
@@ -1865,7 +1865,7 @@ function RevealingView({
   deckHashHex: string
   stakeCoinType: string
 }) {
-  const { mutateAsync: signAndExec, isPending } = useFlickySign()
+  const { mutateAsync: signAndExec, isPending } = useKickpactSign()
   const queryClient = useQueryClient()
   const [err, setErr] = useState<string | null>(null)
 
@@ -1967,7 +1967,7 @@ function LockupView({
 }
 
 function SettlingView({ duel, duelId }: { duel: DuelState; duelId: string }) {
-  const { mutateAsync: signAndExec, isPending } = useFlickySign()
+  const { mutateAsync: signAndExec, isPending } = useKickpactSign()
   const client = useSuiClient()
   const queryClient = useQueryClient()
   const [err, setErr] = useState<string | null>(null)
@@ -2085,7 +2085,7 @@ function ResultView({ duel, address }: { duel: DuelState; address: string }) {
       })
       const a = document.createElement("a")
       a.href = dataUrl
-      a.download = `flicky-${won ? "won" : tie ? "tie" : "lost"}-${duel.id.slice(2, 10)}.png`
+      a.download = `kickpact-${won ? "won" : tie ? "tie" : "lost"}-${duel.id.slice(2, 10)}.png`
       a.click()
     } catch (e) {
       console.error("share-card", e)

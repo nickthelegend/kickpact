@@ -2,7 +2,7 @@
 
 This doc explains why a duel's settlement clock isn't a single, fixed
 number ("the deck settles 75 minutes after start"), where the clock
-actually comes from, and how Flicky picks an oracle so duels finish
+actually comes from, and how Kickpact picks an oracle so duels finish
 quickly instead of dragging out for hours.
 
 If you've ever stared at the lockup screen wondering why one duel
@@ -18,7 +18,7 @@ settles in 6 minutes and another in 4 hours, this is the answer.
 > - The "single shortest viable" picker described below applies to the legacy single-oracle Duel; the new card-generation API in `apps/server` selects 5 oracles instead.
 > - The `ORACLE_MIN_HEADROOM_MS = 90_000` constant — sized for a 60 s swipe phase — is also legacy. The new spec gives the swipe phase **up to 10 minutes**, so the headroom floor and the 5-oracle selection floor merge into a single rule: each card's oracle expiry > `now + 10 min`.
 >
-> The DeepBook background sections (oracle pool, 2-tier 15-min cron, ~7–8 s settle latency, 1-in-6 10-min outliers, `settlement_price: Option<u64>` flip) all carry forward unchanged — they describe DeepBook's behavior, not Flicky's selection strategy.
+> The DeepBook background sections (oracle pool, 2-tier 15-min cron, ~7–8 s settle latency, 1-in-6 10-min outliers, `settlement_price: Option<u64>` flip) all carry forward unchanged — they describe DeepBook's behavior, not Kickpact's selection strategy.
 
 ---
 
@@ -35,7 +35,7 @@ separate tx at ~`expiry + 8 s` (5 of 6 testnet samples landed in
 7.4–8.2 s; one outlier took 10 min when the operator hiccupped, and
 the keeper recovered automatically).
 
-Flicky's picker (`findLatestOracleSvi`) selects `argmin(expiry)`
+Kickpact's picker (`findLatestOracleSvi`) selects `argmin(expiry)`
 among oracles that are `active && !settled && expiry − now ≥ 90 s`.
 That filter almost always lands on a short-tier (2-hour) oracle
 because every short-tier expiry is closer than every long-tier one.
@@ -63,8 +63,8 @@ optimises. Everything below is the long form.
 
 ## Background — DeepBook's oracle pool, not a clock
 
-The settlement clock visible in Flicky's UI (e.g. "11m24s left" on the
-oracle badge) is **not** something Flicky's contract sets. It is read
+The settlement clock visible in Kickpact's UI (e.g. "11m24s left" on the
+oracle badge) is **not** something Kickpact's contract sets. It is read
 verbatim from the DeepBook Predict `OracleSVI` object that the duel's
 deck was committed against:
 
@@ -78,7 +78,7 @@ function expiresIn(o: OracleSviInfo, now: number): string {
 ```
 
 That `o.expiry` is a `u64` field DeepBook writes when it creates the
-oracle, and Flicky never overrides it.
+oracle, and Kickpact never overrides it.
 
 What's surprising — and the source of the "75 minutes?" confusion —
 is that DeepBook does **not** run one oracle at a time. On testnet,
@@ -140,7 +140,7 @@ just isn't the only one, and "75 min" is one of eleven choices.
 
 ## Why the old picker drifted to multi-hour expiries
 
-The original `findLatestOracleSvi` (in `apps/web/src/lib/flicky.ts`)
+The original `findLatestOracleSvi` (in `apps/web/src/lib/kickpact.ts`)
 sorted candidates by `OracleCreated` event timestamp, **newest first**,
 and returned the first one that was ACTIVE + priced + not settled.
 
@@ -177,7 +177,7 @@ for a forwards-trading product, fatal for a swipe-PvP demo.
 
 ## Current strategy — shortest viable expiry
 
-The picker is now in `apps/web/src/lib/flicky.ts::findLatestOracleSvi`.
+The picker is now in `apps/web/src/lib/kickpact.ts::findLatestOracleSvi`.
 Pseudocode:
 
 ```text
@@ -238,7 +238,7 @@ Two ways to bias toward the shortest tier:
    it has ≥90 s headroom, that's what you'll get.
 
 2. **Lower the headroom.** Set `ORACLE_MIN_HEADROOM_MS` to `60_000n`
-   in `apps/web/src/lib/flicky.ts` to allow the picker to pick
+   in `apps/web/src/lib/kickpact.ts` to allow the picker to pick
    oracles that are only 60 s away from expiry. You'll get faster
    settlement but a higher risk of `EOracleNotLive` if any one PTB
    takes more than ~ a second longer than expected. Useful for "demo
@@ -384,9 +384,9 @@ duel-end time on testnet from "hours" to "minutes".
 
 ## File pointers
 
-- `apps/web/src/lib/flicky.ts::findLatestOracleSvi` — the picker.
-- `apps/web/src/lib/flicky.ts::ORACLE_MIN_HEADROOM_MS` — the floor.
-- `apps/web/src/lib/flicky.ts::fetchOracleSvi` — single-oracle read,
+- `apps/web/src/lib/kickpact.ts::findLatestOracleSvi` — the picker.
+- `apps/web/src/lib/kickpact.ts::ORACLE_MIN_HEADROOM_MS` — the floor.
+- `apps/web/src/lib/kickpact.ts::fetchOracleSvi` — single-oracle read,
   used by the SwipingView header and the settle path.
 - `apps/web/src/App.tsx::expiresIn` — UI formatter.
 - `apps/contracts/sources/duel.move::EOracleNotLive` (abort code 6)

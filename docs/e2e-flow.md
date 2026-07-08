@@ -84,9 +84,9 @@ requirements being satisfied).
 
 ---
 
-## Contract responsibilities — Flicky vs DeepBook Predict
+## Contract responsibilities — Kickpact vs DeepBook Predict
 
-Two distinct Move packages compose into every staked duel. Flicky owns
+Two distinct Move packages compose into every staked duel. Kickpact owns
 the **PvP score-based payout** layer; DeepBook Predict owns the
 **oracle data + real binary market positions** layer. They share only
 one piece of data: the `OracleSVI` object id (and its `expiry`/`strike`
@@ -94,7 +94,7 @@ indexing key into MarketKey).
 
 Knowing which side a function lives on tells you who guards what.
 
-### Flicky package (`apps/contracts/sources/`)
+### Kickpact package (`apps/contracts/sources/`)
 
 Source of truth for the current `packageId` is [`apps/contracts/deployed.json`](../apps/contracts/deployed.json).
 
@@ -116,7 +116,7 @@ Source of truth for the current `packageId` is [`apps/contracts/deployed.json`](
 | `duel::claim_reveal_timeout<T>(duel, clock)` | Challenger sweeps pot if host didn't reveal within 5 min of join | status → COMPLETE, pot → challenger. Emits `DuelForfeited` |
 | `duel::new_card(oracle, strike)` | Pure constructor for `Card` (used by reveal callers to build the vector) | none — produces value |
 
-**State Flicky stores per `Duel<T>`:**
+**State Kickpact stores per `Duel<T>`:**
 - `cards: vector<Card>` — `{ oracle_id, strike } × deck_size`
 - `deck_hash: vector<u8>` — sha2-256 commitment
 - `deck_size: u64` — chosen at create-time, [1, 20]
@@ -130,10 +130,10 @@ Source of truth for the current `packageId` is [`apps/contracts/deployed.json`](
 - `p{0,1}_next_card_idx: u64` — turn ordering
 - `started_at_ms: u64` — set when challenger joins
 
-**Events Flicky emits:**
+**Events Kickpact emits:**
 - `DuelCreated`, `DuelJoined`, `DeckRevealed`, `SwipeRecorded`, `CardSettled`, `DuelFinalized`, `DuelRefunded`, `DuelForfeited`
 
-**What Flicky never touches:**
+**What Kickpact never touches:**
 - DeepBook prices, SVI params, settlement_price (only reads via `predict::get_trade_amounts` and `oracle::settlement_price`)
 - PredictManager **mutation** — only reads `position(key)` for anti-replay. Redeem flow happens entirely outside the Duel (via `predict::redeem_permissionless`, keeper-driven).
 
@@ -149,14 +149,14 @@ Published at `0xf5ea2b3749c65d6e56507cc35388719aadb28f9cab873696a2f8687f5c785138
 | `predict::mint<T>(predict, manager, oracle, key, quantity, clock, ctx)` | Open a binary position (UP/DOWN) on `oracle@strike` for `quantity` dUSDC | Manager balance ↓ quantity, position recorded at `MarketKey(oracle, expiry, strike, is_up)`. **Invariant: `sender == manager.owner`** |
 | `predict::redeem<T>(predict, manager, oracle, key, quantity, clock)` | Settle owner's position post-expiry | Owner's manager balance ↑ payout. Requires `sender == manager.owner` |
 | `predict::redeem_permissionless<T>(predict, manager, oracle, key, quantity, clock)` | Settle anyone's position post-expiry | Manager balance ↑ payout. **Permissionless caller** — keeper uses this |
-| `predict::mint_range<T>`, `redeem_range<T>` | Range card variants | (Flicky doesn't use these yet — PRD gap) |
+| `predict::mint_range<T>`, `redeem_range<T>` | Range card variants | (Kickpact doesn't use these yet — PRD gap) |
 | `predict_manager::deposit<T>(manager, coin, ctx)` | Top up the manager's spendable balance | Manager balance ↑ |
 | `predict_manager::withdraw<T>(manager, amount, ctx)` | Pull spendable balance back to wallet | Returns `Coin<T>` |
 | `predict_manager::balance<T>(manager)` | Read-only balance query | none (used via devInspect) |
 | `market_key::up(oracle, expiry, strike)` | Construct UP MarketKey | Pure value — passed as input to mint/redeem |
 | `market_key::down(oracle, expiry, strike)` | Construct DOWN MarketKey | Pure value |
-| `range_key::lo_hi(oracle, expiry, lo, hi)` | Construct range MarketKey | (unused by Flicky today) |
-| `pricing::p_up(oracle, strike) → u64` | Compute implied probability of UP based on oracle's SVI surface | Pure read — Flicky calls inside `record_swipe` to snapshot `p_swiped` |
+| `range_key::lo_hi(oracle, expiry, lo, hi)` | Construct range MarketKey | (unused by Kickpact today) |
+| `pricing::p_up(oracle, strike) → u64` | Compute implied probability of UP based on oracle's SVI surface | Pure read — Kickpact calls inside `record_swipe` to snapshot `p_swiped` |
 | `oracle::*` accessors | `id`, `expiry`, `is_active`, `prices`, `settlement_price`, `svi` | Pure reads |
 
 **State DeepBook stores:**
@@ -171,8 +171,8 @@ Published at `0xf5ea2b3749c65d6e56507cc35388719aadb28f9cab873696a2f8687f5c785138
 - `predict_manager::BalanceEvent`, `predict::BalanceEvent` — per deposit/withdraw/mint/redeem
 - `predict::RangeRedeemed` — for range positions
 
-**Invariants enforced by DeepBook (load-bearing for Flicky's design):**
-1. `predict::mint` requires `sender == manager.owner` — forces the **player** (not Flicky, not keeper) to sign every staked swipe
+**Invariants enforced by DeepBook (load-bearing for Kickpact's design):**
+1. `predict::mint` requires `sender == manager.owner` — forces the **player** (not Kickpact, not keeper) to sign every staked swipe
 2. `PredictManager` is a **shared object** with internal `owner: address` field — allows permissionless keeper redeem while still gating mint
 3. `OracleSVI.settlement_price: Option<u64>` — None during liveness, Some after operator publishes (~+8 s after `expiry`)
 
@@ -180,7 +180,7 @@ Published at `0xf5ea2b3749c65d6e56507cc35388719aadb28f9cab873696a2f8687f5c785138
 
 ### Who-does-what summary
 
-| Concern | Flicky | DeepBook |
+| Concern | Kickpact | DeepBook |
 |---|---|---|
 | Lock player stake | `p{0,1}_stake: Balance<T>` ✓ | — |
 | Match opponent (PvP) | `creator + challenger` fields ✓ | — |
@@ -197,9 +197,9 @@ Published at `0xf5ea2b3749c65d6e56507cc35388719aadb28f9cab873696a2f8687f5c785138
 
 ### Why this separation matters
 
-- **Predict's mint invariant** (`sender == owner`) is why staked swipes must be player-signed PTBs — Flicky can't route mint through a keeper or shared bot wallet.
+- **Predict's mint invariant** (`sender == owner`) is why staked swipes must be player-signed PTBs — Kickpact can't route mint through a keeper or shared bot wallet.
 - **Each card pins its own oracle** — different expiries within one deck. `settle_card` is per-card so the keeper can settle each as its oracle's `settlement_price` becomes available, without blocking on the slowest one.
-- **Settlement timing is DeepBook's contract, not Flicky's** — the keeper waits for each card's oracle to publish `settlement_price` (~+8 s after expiry), then runs `settle_card` (which reads that price). Once `settled_count == deck_size`, anyone can call `finalize` to distribute the pot. `predict::redeem_permissionless` materialises each player's Predict position payout into their PredictManager.
+- **Settlement timing is DeepBook's contract, not Kickpact's** — the keeper waits for each card's oracle to publish `settlement_price` (~+8 s after expiry), then runs `settle_card` (which reads that price). Once `settled_count == deck_size`, anyone can call `finalize` to distribute the pot. `predict::redeem_permissionless` materialises each player's Predict position payout into their PredictManager.
 
 ### Typical staked-swipe PTB (composition of both)
 
@@ -207,7 +207,7 @@ Published at `0xf5ea2b3749c65d6e56507cc35388719aadb28f9cab873696a2f8687f5c785138
 PTB[
   market_key::up(oracle, expiry, strike)           ─┐  DeepBook
   predict::mint<DUSDC>(predict, manager, oracle, mk, qty)  ─┤  DeepBook
-  duel::record_swipe<DUSDC>(duel, mgr, predict, oracle, idx, is_up, qty)  ─┤  Flicky
+  duel::record_swipe<DUSDC>(duel, mgr, predict, oracle, idx, is_up, qty)  ─┤  Kickpact
 ]                                                  ─┘
   ↑
   signed once by player
@@ -220,10 +220,10 @@ PTB[
 ```text
 PTB[
   duel::settle_card<DUSDC>(duel, p0_mgr, p1_mgr, oracle_0, 0)      ─┐
-  duel::settle_card<DUSDC>(duel, p0_mgr, p1_mgr, oracle_1, 1)      ─┤  Flicky × deck_size
+  duel::settle_card<DUSDC>(duel, p0_mgr, p1_mgr, oracle_1, 1)      ─┤  Kickpact × deck_size
   …                                                                ─┤
   duel::settle_card<DUSDC>(duel, p0_mgr, p1_mgr, oracle_(N-1), N-1)─┘
-  duel::finalize<DUSDC>(duel, clock)                               ─── Flicky
+  duel::finalize<DUSDC>(duel, clock)                               ─── Kickpact
   market_key::up(oracle_i, expiry_i, strike_i)                     ─┐
   predict::redeem_permissionless<DUSDC>(predict, mgr_x, oracle_i, mk, qty)  ─┤  DeepBook × M
   …                                                                ─┘  (M = total swipes both sides)
@@ -261,7 +261,7 @@ Q&A trail leading to `docs/oracle-selection.md` for details.
 | Builder | `buildCreateManagerTx()` — `apps/web/src/lib/deepbook.ts:104` |
 | Params | none — `predict::create_manager(ctx)` |
 | Result | new **shared** `PredictManager` object with internal `owner: address` field; `PredictManagerCreated { manager_id, owner }` event |
-| Discovery after the fact | `findPredictManager` — walks `PredictManagerCreated` events, matches `owner == address`, caches into `localStorage["flicky.predictManager.v1"]` |
+| Discovery after the fact | `findPredictManager` — walks `PredictManagerCreated` events, matches `owner == address`, caches into `localStorage["kickpact.predictManager.v1"]` |
 | One-per-address | enforced socially (UI gate) — DeepBook does not on-chain dedupe |
 | Status | ✓ shipped with localStorage cache + UI checklist row + tx digest toast |
 
@@ -290,7 +290,7 @@ tier selection so the player can pre-fund.
 
 | Concern | Detail |
 |---|---|
-| Helper | `findLatestOracleSvi(client, "BTC")` — `apps/web/src/lib/flicky.ts:500` |
+| Helper | `findLatestOracleSvi(client, "BTC")` — `apps/web/src/lib/kickpact.ts:500` |
 | Strategy | `argmin(expiry)` among DeepBook BTC OracleSVI objects that are `active && !settled && (expiry − now) ≥ 90 s` |
 | Headroom constant | `ORACLE_MIN_HEADROOM_MS = 90_000n` — covers 60 s swipe phase + 30 s margin |
 | Fallback | `CONFIG.fallbackOracleSviId` if no eligible oracle |
@@ -317,12 +317,12 @@ tier selection so the player can pre-fund.
 
 | Concern | Detail |
 |---|---|
-| Builders | `buildCreateDuelTx(deckHash, stake, type)` (SUI) · `buildCreateDuelDusdcTx(client, owner, deckHash, stake, type)` (dUSDC) — `apps/web/src/lib/flicky.ts:123` |
+| Builders | `buildCreateDuelTx(deckHash, stake, type)` (SUI) · `buildCreateDuelDusdcTx(client, owner, deckHash, stake, type)` (dUSDC) — `apps/web/src/lib/kickpact.ts:123` |
 | Params on-chain | `Balance<T>` (stake), `vector<u8>` (deck_hash, 32 bytes) |
 | Move guards | `EZeroStake` if stake.value == 0 · `EDeckHashWrongLength` if hash ≠ 32 bytes — `apps/contracts/sources/duel.move::create_duel` |
 | UI gates (dUSDC) | DepositPanel must show `stakedReady = hasManager && managerBalance > 0` · wallet must hold ≥ stake dUSDC · `apps/web/src/App.tsx::Lobby` |
 | Result | Duel<T> shared object created with `status = PENDING`, `creator = sender`, `p0_stake = Balance<T>`, `card_settlements = [None×5]`. `DuelCreated { duel_id, creator, stake_amount, deck_hash }` event |
-| Signing | sponsor-or-fallback via `useFlickySign` (`apps/web/src/lib/use-flicky-sign.ts`) |
+| Signing | sponsor-or-fallback via `useKickpactSign` (`apps/web/src/lib/use-kickpact-sign.ts`) |
 | Status | ✓ shipped with hard gates |
 
 ---
@@ -333,7 +333,7 @@ tier selection so the player can pre-fund.
 
 | Concern | Detail |
 |---|---|
-| Builders | `buildJoinDuelTx(duelId, stake, type)` · `buildJoinDuelDusdcTx(...)` — `apps/web/src/lib/flicky.ts` |
+| Builders | `buildJoinDuelTx(duelId, stake, type)` · `buildJoinDuelDusdcTx(...)` — `apps/web/src/lib/kickpact.ts` |
 | Params on-chain | `&mut Duel<T>`, `Coin<T>` matching `p0_stake`, `&Clock` |
 | Move guards | `EJoinerIsCreator` · `EDuelNotPending` · `EStakeMismatch` — `apps/contracts/sources/duel.move::join_duel` |
 | UI gates | Plaintext deck must exist (`GET /deckmaster/reveal` → 404 ⇒ block) · for dUSDC: joiner has PredictManager + dUSDC balance ≥ stake · `apps/web/src/App.tsx::JoinView` |
@@ -349,7 +349,7 @@ tier selection so the player can pre-fund.
 
 | Concern | Detail |
 |---|---|
-| Builder | `buildRevealDeckTx(duelId, cards, type)` — `apps/web/src/lib/flicky.ts:147` |
+| Builder | `buildRevealDeckTx(duelId, cards, type)` — `apps/web/src/lib/kickpact.ts:147` |
 | Params | `&mut Duel<T>`, `vector<Card>` (length 5, each `{ oracle_id: ID, strike: u64 }`) |
 | Permission | permissionless — any address can call |
 | Move guards | `EDuelNotActive` if status ≠ ACTIVE · `EDeckAlreadyRevealed` if cards already non-empty · `EDeckHashMismatch` if `sha2_256(bcs::to_bytes(&cards)) ≠ duel.deck_hash` — `apps/contracts/sources/duel.move::reveal_deck` |
@@ -370,7 +370,7 @@ have `card_idx == p{N}_next_card_idx`.
 
 | Concern | Detail |
 |---|---|
-| Builder | `buildSwipeTx(duelId, oracleId, cardIdx, isUp, type)` — `apps/web/src/lib/flicky.ts:265` |
+| Builder | `buildSwipeTx(duelId, oracleId, cardIdx, isUp, type)` — `apps/web/src/lib/kickpact.ts:265` |
 | Params on-chain | `&mut Duel<T>`, `&OracleSVI`, `card_idx: u64`, `is_up: bool`, `&Clock`, `&TxContext` |
 
 ### Staked tier (`Duel<DUSDC>`) — atomic mint + record_swipe
@@ -486,7 +486,7 @@ balance currently need to issue a withdraw PTB manually.
 
 | Failure | Symptom | Recovery |
 |---|---|---|
-| Sponsor service down / 503 | tx flow proceeds via `useFlickySign` fallback | wallet-paid gas, no user action needed |
+| Sponsor service down / 503 | tx flow proceeds via `useKickpactSign` fallback | wallet-paid gas, no user action needed |
 | Keeper offline | duel stuck on RevealingView or LockupView | RevealingView shows manual "reveal now" button after fetching plaintext · LockupView is just waiting — anyone (including the player) can call settle_card + finalize; keeper just hasn't yet |
 | Deckmaster server restart with old in-mem store | plaintext lost | mitigated by file persistence at `apps/server/.data/decks.json` · JoinView refuses to join unrevealable duels (404 gate) |
 | Player's PredictManager missing / under-funded | swipe would abort `predict::mint` | UI gates at Lobby + JoinView + SwipingView prevent reaching swipe phase · SwipingView's error message tells them to deposit |
@@ -516,9 +516,9 @@ balance currently need to issue a withdraw PTB manually.
 |---|---|
 | `apps/contracts/sources/duel.move` | Duel<T> + entry funcs + scoring + tie-break |
 | `apps/contracts/tests/duel_tests.move` | 27 Move tests covering full flow + edge cases |
-| `apps/web/src/lib/flicky.ts` | Web-side builders + parseDuel + oracle picker + deck hash |
+| `apps/web/src/lib/kickpact.ts` | Web-side builders + parseDuel + oracle picker + deck hash |
 | `apps/web/src/lib/deepbook.ts` | DeepBook Predict integration: manager discovery (event scan + localStorage cache), mint+swipe PTB, deposit, withdraw, redeem builders |
-| `apps/web/src/lib/use-flicky-sign.ts` | Sponsor-or-fallback signing entrypoint |
+| `apps/web/src/lib/use-kickpact-sign.ts` | Sponsor-or-fallback signing entrypoint |
 | `apps/web/src/lib/sponsor.ts` | `signAndExecuteWithSponsorOrFallback` core |
 | `apps/web/src/App.tsx` | All UI views: Lobby, DepositPanel, JoinView, RevealingView, SwipingView, LockupView, SettlingView, ResultView |
 | `apps/server/src/index.ts` | HTTP endpoints (/health, /deckmaster/*, /sponsor) + WS echo (placeholder) |

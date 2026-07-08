@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { Link, useParams } from "react-router"
 import { useCurrentAccount } from "@/wdk/wallet"
 import { CONFIG } from "@/lib/config"
-import { useFlickySocket } from "@/hooks/use-flicky-socket"
+import { useKickpactSocket } from "@/hooks/use-kickpact-socket"
 import { markCardPnl } from "@/lib/pnl"
 import { PixelButton } from "@/components/pixel-button"
 import { StreamingPnlChart } from "@/components/streaming-pnl-chart"
@@ -138,7 +138,7 @@ export default function DuelView() {
   const account = useCurrentAccount()
   const address = account?.address
   const demo = useDemoChart()
-  const { wsOpen, send, onMessage } = useFlickySocket(address, {
+  const { wsOpen, send, onMessage } = useKickpactSocket(address, {
     enabled: !demo,
   })
   const [fetchedDuel, setFetchedDuel] = useState<DuelLite | null>(null)

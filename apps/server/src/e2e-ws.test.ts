@@ -66,7 +66,7 @@ beforeAll(async () => {
       if (duels) return duels
       const leaderboard = await handleLeaderboardRequest(req, url)
       if (leaderboard) return leaderboard
-      return new Response("flicky e2e", { status: 200, headers: CORS_HEADERS })
+      return new Response("kickpact e2e", { status: 200, headers: CORS_HEADERS })
     },
     websocket: websocketHandler,
   })

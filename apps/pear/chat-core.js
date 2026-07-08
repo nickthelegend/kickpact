@@ -1,7 +1,7 @@
-/* Shared Match Room core — identical topic + wire protocol as the Flicky
+/* Shared Match Room core — identical topic + wire protocol as the Kickpact
  * mobile worklet (apps/mobile/worklet/room.js), so desktop peers land in the
  * SAME rooms as phones:
- *   topic = hash("flicky/match/<gameId>") · newline-JSON {type:"hello"|"msg"|"pact"}
+ *   topic = hash("kickpact/match/<gameId>") · newline-JSON {type:"hello"|"msg"|"pact"}
  */
 import Hyperswarm from "hyperswarm"
 import crypto from "hypercore-crypto"
@@ -9,7 +9,7 @@ import b4a from "b4a"
 
 export function joinRoom(gameId, { id = "", nick = "desktop-fan", onMsg, onPeers, onJoined, onReady }) {
   const swarm = new Hyperswarm()
-  const topic = crypto.data(b4a.from(`flicky/match/${gameId}`))
+  const topic = crypto.data(b4a.from(`kickpact/match/${gameId}`))
   const conns = new Set()
 
   const framed = (onLine) => {

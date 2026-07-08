@@ -1,14 +1,14 @@
 /**
- * Flicky keeper + practice bot (daemon). Polls Sepolia for FREE practice duels
+ * Kickpact keeper + practice bot (daemon). Polls Sepolia for FREE practice duels
  * and drives the opponent + settlement so a solo player can play the full loop:
  *   pending → bot joins → (player reveals + swipes) → bot swipes → keeper
  *   settles each card → finalize. Free tier = no stakes, no payout, just scores.
  *
  * Uses the deployer key as both the bot (challenger) and the oracle (settler).
- * Run: DEPLOYER_PRIVATE_KEY=0x... bun scripts/flicky-keeper.ts
+ * Run: DEPLOYER_PRIVATE_KEY=0x... bun scripts/kickpact-keeper.ts
  */
 import { ethers } from "ethers"
-import { CHAIN, FLICKY_DUEL_ABI, DUEL_STATUS } from "../src/chain"
+import { CHAIN, KICKPACT_DUEL_ABI, DUEL_STATUS } from "../src/chain"
 import { assetForStrike, fetchTickers, toStrike } from "../src/prices"
 
 const ZERO = "0x0000000000000000000000000000000000000000"
@@ -27,10 +27,10 @@ async function main() {
   const pk = process.env.DEPLOYER_PRIVATE_KEY
   if (!pk) throw new Error("set DEPLOYER_PRIVATE_KEY (bot + oracle key)")
   const bot = new ethers.Wallet(pk, tx)
-  const duelW = new ethers.Contract(CHAIN.duelAddress, FLICKY_DUEL_ABI as unknown as string[], bot)
-  const duelR = new ethers.Contract(CHAIN.duelAddress, FLICKY_DUEL_ABI as unknown as string[], logs)
-  console.log("flicky keeper/bot:", bot.address)
-  console.log("watching free practice duels on FlickyDuel", CHAIN.duelAddress, "\n")
+  const duelW = new ethers.Contract(CHAIN.duelAddress, KICKPACT_DUEL_ABI as unknown as string[], bot)
+  const duelR = new ethers.Contract(CHAIN.duelAddress, KICKPACT_DUEL_ABI as unknown as string[], logs)
+  console.log("kickpact keeper/bot:", bot.address)
+  console.log("watching free practice duels on KickpactDuel", CHAIN.duelAddress, "\n")
 
   const done = new Set<string>()
 

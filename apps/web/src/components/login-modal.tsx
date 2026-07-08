@@ -118,7 +118,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
 
         <header className="px-6 pb-4 pt-7 text-center">
           <h2 id="login-title" className="text-base uppercase tracking-[0.18em]">
-            {view === "import" ? "import wallet" : "sign in to flicky"}
+            {view === "import" ? "import wallet" : "sign in to kickpact"}
           </h2>
           <p className="mt-1 text-xs uppercase tracking-[0.18em] text-white/45">
             self-custodial · powered by wdk

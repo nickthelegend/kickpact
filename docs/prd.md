@@ -1,8 +1,8 @@
-# Flicky — Game Spec
+# Kickpact — Game Spec
 
-> **This doc is the source of truth for Flicky's game design.** When the spec and any other doc disagree, this wins. Changes are tracked in the companion **Flicky — Decisions (ADR Log)**.
+> **This doc is the source of truth for Kickpact's game design.** When the spec and any other doc disagree, this wins. Changes are tracked in the companion **Kickpact — Decisions (ADR Log)**.
 >
-> Repo (implementation): [https://github.com/nikola0x0/flicky](https://github.com/nikola0x0/flicky)
+> Repo (implementation): [https://github.com/nikola0x0/kickpact](https://github.com/nikola0x0/kickpact)
 
 ---
 
@@ -12,12 +12,12 @@ Swipe YES/NO on 5 binary cards. Face off against another player. The Duel escrow
 
 ## Why this exists
 
-Prediction markets are powerful but feel like trading terminals. Swipe-based mobile betting apps (Pulse on Solana, Rush's $500M-in-a-week sub-hour BTC binaries) proved enormous retail demand for "feel-based" prediction UX — but they're shallow and have no real PvP layer. Flicky bridges them: a Tinder-style swipe deck on top of DeepBook Predict's binary-digital primitive, plus a 1v1 escrow layer so two players can put real stakes on "who reads BTC better."
+Prediction markets are powerful but feel like trading terminals. Swipe-based mobile betting apps (Pulse on Solana, Rush's $500M-in-a-week sub-hour BTC binaries) proved enormous retail demand for "feel-based" prediction UX — but they're shallow and have no real PvP layer. Kickpact bridges them: a Tinder-style swipe deck on top of DeepBook Predict's binary-digital primitive, plus a 1v1 escrow layer so two players can put real stakes on "who reads BTC better."
 
 ## End-to-end player flow
 
 1. **Sign in.** zkLogin via Enoki (Google / Apple OAuth → Sui address). The zkLogin address is the wallet — no separate in-app balance.
-2. **Predict Manager bootstrap.** A `PredictManager` is created for the player on first sign-in, sponsored by Flicky. The player never touches SUI for gas.
+2. **Predict Manager bootstrap.** A `PredictManager` is created for the player on first sign-in, sponsored by Kickpact. The player never touches SUI for gas.
 3. **Practice Mode (optional).** Solo vs. a server-generated bot with virtual positions — no stake, no `predict::mint`, **no matchmaking queue**. Full swipe + settle UX so the player learns the loop before risking dUSDC. Practice Mode is the **only** path for solo play; the Staked queue is human-vs-human only.
 4. **Deposit / Swap.** To enter matching, the player tops up dUSDC. The in-app Deposit screen surfaces the player's Sui address + QR + copy, and includes a built-in **SUI ↔ dUSDC swap (1 SUI : 10 dUSDC)** so a player with only SUI can fund a stake without leaving the app.
 5. **Matching.** Player picks a stake tier — **1, 3, 5, or 10 dUSDC** — and joins the queue. Entry requires `PredictManager` balance **≥ 5 dUSDC** (the per-card mint budget: up to 1 dUSDC of Predict premium × 5 cards). MMR + bucketed per-tier matching; queue is **human-vs-human only** — no bot-fill. Players who want solo play use Practice Mode (step 3).
@@ -125,10 +125,10 @@ A single global chat channel sits across the whole app — lobby + watch + resul
 ## Identity, wallet, money flow
 
 - **zkLogin via Enoki** (Google / Apple OAuth → Sui address) is the wallet identity. There is no separate in-app balance — the zkLogin address **is** the wallet.
-- **Predict Manager** is created on first sign-in, sponsored by Flicky. The player never holds SUI for gas, never signs a manager-creation transaction outside the app.
+- **Predict Manager** is created on first sign-in, sponsored by Kickpact. The player never holds SUI for gas, never signs a manager-creation transaction outside the app.
 - **Sponsored gas** covers every on-chain action a player takes (create_duel, join_duel, per-swipe mint+record, settle, redeem). The player's zkLogin wallet only ever needs dUSDC for staking and Predict premium.
 - **Deposit screen** shows the zkLogin address + QR + copy. Users top up by sending dUSDC from any wallet (Suiet, Sui Wallet, CEX withdrawal).
-- **In-app swap** — a SUI → dUSDC swap module at a fixed **1 SUI : 10 dUSDC** rate, so a player whose only on-chain asset is SUI can convert to dUSDC without leaving Flicky. No external on-ramp in MVP.
+- **In-app swap** — a SUI → dUSDC swap module at a fixed **1 SUI : 10 dUSDC** rate, so a player whose only on-chain asset is SUI can convert to dUSDC without leaving Kickpact. No external on-ramp in MVP.
 
 ---
 
@@ -143,10 +143,10 @@ Predict is the centerpiece of the chain story. Touchpoints:
 
 ### Cross-track absorption
 
-Flicky combines three previously-proposed Predict ideas plus the novel PvP layer:
+Kickpact combines three previously-proposed Predict ideas plus the novel PvP layer:
 
-- **#30 Gamified Predict App** — Flicky is the PvP version of this.
-- **#21 Settled-Redeem Keeper Network** — Flicky operates one as system infrastructure.
+- **#30 Gamified Predict App** — Kickpact is the PvP version of this.
+- **#21 Settled-Redeem Keeper Network** — Kickpact operates one as system infrastructure.
 - **#29 Streaks Leaderboard PWA** — natural v1.1 layer once the streak / ladder retention loop ships.
 
 ---

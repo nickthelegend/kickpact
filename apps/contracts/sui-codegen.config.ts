@@ -4,7 +4,7 @@ import type { SuiCodegenConfig } from "@mysten/codegen";
  * Sui TypeScript codegen — emits typed bindings for every Move function +
  * struct so `apps/web` can import generated builders directly:
  *
- *   import { duel } from "@/sui/gen/flicky";
+ *   import { duel } from "@/sui/gen/kickpact";
  *   duel.record_swipe(tx, { ... }, [stakeCoinType]);
  *
  *   import { predict } from "@/sui/gen/deepbook_predict";
@@ -17,11 +17,11 @@ const config: SuiCodegenConfig = {
 
   packages: [
     {
-      // Local flicky package — source of truth for the generated TS layer.
-      // After first publish, swap "flicky" for the deployed packageId from
+      // Local kickpact package — source of truth for the generated TS layer.
+      // After first publish, swap "kickpact" for the deployed packageId from
       // deployed.json or rely on Move.toml's named-address resolution.
       path: "./",
-      package: "flicky",
+      package: "kickpact",
     },
     {
       // DeepBook Predict — the on-chain `0xf5ea2b3749…` package. Generated

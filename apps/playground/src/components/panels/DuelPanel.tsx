@@ -145,14 +145,14 @@ export default function DuelPanel({ onOutput }: DuelPanelProps) {
 
   // IDs
   const [duelId, setDuelId] = useState<string>(() => {
-    return localStorage.getItem('flicky_active_duel_id') || ''
+    return localStorage.getItem('kickpact_active_duel_id') || ''
   })
   const [duelCoinType, setDuelCoinType] = useState<string>(() => {
     return DUSDC_TYPE(CONFIG.dusdcPackageId)
   })
   const [oracleId, setOracleId] = useState<string>(CONFIG.marketOracleId)
   const [managerId, setManagerId] = useState<string>(() => {
-    return localStorage.getItem('flicky_predict_manager_id') || ''
+    return localStorage.getItem('kickpact_predict_manager_id') || ''
   })
 
   // Staking
@@ -193,7 +193,7 @@ export default function DuelPanel({ onOutput }: DuelPanelProps) {
 
   // Save active duelId in localStorage
   useEffect(() => {
-    localStorage.setItem('flicky_active_duel_id', duelId)
+    localStorage.setItem('kickpact_active_duel_id', duelId)
     if (duelId) {
       fetchDuelDetails()
     } else {
@@ -204,7 +204,7 @@ export default function DuelPanel({ onOutput }: DuelPanelProps) {
   // Sync manager ID if changed in other panels
   useEffect(() => {
     const handleStorageChange = () => {
-      setManagerId(localStorage.getItem('flicky_predict_manager_id') || '')
+      setManagerId(localStorage.getItem('kickpact_predict_manager_id') || '')
     }
     window.addEventListener('storage', handleStorageChange)
     return () => window.removeEventListener('storage', handleStorageChange)
@@ -453,7 +453,7 @@ export default function DuelPanel({ onOutput }: DuelPanelProps) {
         strike: c.strike.toString(),
         expiry: c.expiry ? c.expiry.toString() : undefined,
       }))
-      localStorage.setItem(`flicky_generated_deck_${hash.join(',')}`, JSON.stringify(deckToStore))
+      localStorage.setItem(`kickpact_generated_deck_${hash.join(',')}`, JSON.stringify(deckToStore))
 
       const uniqueOracles = new Set(cards.map((c) => c.oracleId)).size
       onOutput({
@@ -607,7 +607,7 @@ export default function DuelPanel({ onOutput }: DuelPanelProps) {
           strike: c.strike.toString(),
           expiry: c.expiry ? c.expiry.toString() : undefined
         }))
-        localStorage.setItem(`flicky_duel_deck_${createdObj.objectId}`, JSON.stringify(deckToStore))
+        localStorage.setItem(`kickpact_duel_deck_${createdObj.objectId}`, JSON.stringify(deckToStore))
       }
 
       onOutput({
@@ -676,7 +676,7 @@ export default function DuelPanel({ onOutput }: DuelPanelProps) {
       let cards = generatedCards
       if (cards.length === 0) {
         // Fallback: look up using saved keys
-        const localDeck = localStorage.getItem(`flicky_duel_deck_${duelId}`)
+        const localDeck = localStorage.getItem(`kickpact_duel_deck_${duelId}`)
         if (localDeck) {
           const parsed = JSON.parse(localDeck) as any[]
           cards = parsed.map(c => ({
@@ -687,7 +687,7 @@ export default function DuelPanel({ onOutput }: DuelPanelProps) {
         } else if (duelDetails?.deck_hash) {
           // Look up by deck hash
           const hashString = duelDetails.deck_hash.join(',')
-          const hashDeck = localStorage.getItem(`flicky_generated_deck_${hashString}`)
+          const hashDeck = localStorage.getItem(`kickpact_generated_deck_${hashString}`)
           if (hashDeck) {
             const parsed = JSON.parse(hashDeck) as any[]
             cards = parsed.map(c => ({
@@ -817,7 +817,7 @@ export default function DuelPanel({ onOutput }: DuelPanelProps) {
 
       // Snapshots premium + p_swiped from `predict::get_trade_amounts` on-chain.
       realTx.moveCall({
-        target: `${CONFIG.flickyPackageId}::duel::record_swipe`,
+        target: `${CONFIG.kickpactPackageId}::duel::record_swipe`,
         typeArguments: [duelCoinType],
         arguments: [
           realTx.object(duelId),
@@ -1045,7 +1045,7 @@ export default function DuelPanel({ onOutput }: DuelPanelProps) {
       {/* Title */}
       <div>
         <h2 className="text-xl font-bold text-gray-50 flex items-center gap-2">
-          ⚔️ Flicky Duel Panel
+          ⚔️ Kickpact Duel Panel
         </h2>
         <p className="mt-1 text-sm text-gray-400">
           Create, play, settle, and finalize N-card prediction matches
@@ -1081,7 +1081,7 @@ export default function DuelPanel({ onOutput }: DuelPanelProps) {
               value={managerId}
               onChange={(e) => {
                 setManagerId(e.target.value.trim())
-                localStorage.setItem('flicky_predict_manager_id', e.target.value.trim())
+                localStorage.setItem('kickpact_predict_manager_id', e.target.value.trim())
               }}
               placeholder="0x..."
               className="mt-1 w-full rounded border border-gray-800 bg-gray-950 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none"

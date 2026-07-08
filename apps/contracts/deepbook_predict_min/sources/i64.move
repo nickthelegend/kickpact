@@ -1,6 +1,6 @@
 // Vendored minimal stub of `deepbook_predict::i64`. We re-declare the I64
 // type with the same field layout as the on-chain package and expose
-// magnitude/is_negative readers so flicky can convert SVI params into its
+// magnitude/is_negative readers so kickpact can convert SVI params into its
 // own i64 type for SVI binary-digital pricing.
 module deepbook_predict::i64;
 

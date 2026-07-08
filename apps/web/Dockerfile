@@ -9,7 +9,7 @@
 #
 # Build context = monorepo ROOT (Railway sets RAILWAY_DOCKERFILE_PATH to
 # apps/web/Dockerfile). Locally:
-#   docker build -f apps/web/Dockerfile -t flicky-web .
+#   docker build -f apps/web/Dockerfile -t kickpact-web .
 
 FROM oven/bun:1.3 AS build
 WORKDIR /app

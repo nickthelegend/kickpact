@@ -9,14 +9,14 @@
  * Run: DEPLOYER_PRIVATE_KEY=0x... bun scripts/demo-pact.ts
  */
 import { ethers } from "ethers"
-import { CHAIN, FLICKY_PACTS_ABI, USDT_ABI } from "../src/chain"
+import { CHAIN, KICKPACT_PACTS_ABI, USDT_ABI } from "../src/chain"
 
 const provider = new ethers.JsonRpcProvider(CHAIN.rpcUrl, CHAIN.chainId, { staticNetwork: true })
 const STAKE = 2_000_000n // 2 USD₮ each
 const TERMS = "If Brazil scores first, you owe me 2 USDt"
 
 function pacts(s: ethers.ContractRunner) {
-  return new ethers.Contract(CHAIN.pactsAddress, FLICKY_PACTS_ABI as unknown as string[], s)
+  return new ethers.Contract(CHAIN.pactsAddress, KICKPACT_PACTS_ABI as unknown as string[], s)
 }
 function usdt(s: ethers.ContractRunner) {
   return new ethers.Contract(CHAIN.usdtAddress, USDT_ABI as unknown as string[], s)

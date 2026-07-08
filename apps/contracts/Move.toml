@@ -1,8 +1,8 @@
 [package]
-name = "flicky"
+name = "kickpact"
 edition = "2024"
 license = "Apache-2.0"
-authors = ["Flicky Labs <lequocuyit@gmail.com>"]
+authors = ["Kickpact Labs <lequocuyit@gmail.com>"]
 
 [dependencies]
 deepbook_predict = { local = "./deepbook_predict_min" }
@@ -10,7 +10,7 @@ deepbook = { local = "./deepbook_min" }
 token = { local = "./token_min" }
 
 [addresses]
-flicky = "0x0"
+kickpact = "0x0"
 
 [dev-dependencies]
 

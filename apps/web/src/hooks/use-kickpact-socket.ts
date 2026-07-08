@@ -5,7 +5,7 @@ import type { ServerMsg, ClientMsg } from "@/lib/protocol"
 export type Unsubscribe = () => void
 
 /**
- * Connect to the Flicky WS server. Returns:
+ * Connect to the Kickpact WS server. Returns:
  *
  *   - `wsOpen`: connection state.
  *   - `send`: write a typed ClientMsg (no-op until open).
@@ -36,7 +36,7 @@ const MAX_BACKOFF_MS = 10_000
  *   `undefined` as `address` to disable, since that now connects
  *   anonymously rather than staying offline.
  */
-export function useFlickySocket(
+export function useKickpactSocket(
   address?: string,
   options?: { enabled?: boolean },
 ) {

@@ -4,7 +4,7 @@
  *   bun run scripts/init-oracle.ts [ttl_ms]
  *
  * ttl_ms defaults to 86_400_000 (24h). Prints the shared object id so the
- * Flicky playground can paste it into "Oracle ID".
+ * Kickpact playground can paste it into "Oracle ID".
  */
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"

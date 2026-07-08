@@ -1,7 +1,7 @@
 /**
  * Inspect the deployed DeepBook Predict objects on testnet and print the
  * derived address graph (transitive deps, live BTC MarketOracle, configs)
- * needed to wire flicky::duel into DeepBook.
+ * needed to wire kickpact::duel into DeepBook.
  *
  * Usage (from apps/server):
  *   bun run src/scripts/deepbook-discover.ts

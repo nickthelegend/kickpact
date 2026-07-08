@@ -1,13 +1,13 @@
 /**
  * E2E proof: OPEN ROOM (anyone joins) + AUTO-SETTLE from the official result.
  * Sets up an open room on a finished World Cup match and has a 2nd wallet join.
- * Then run flicky-settle-keeper.ts to auto-settle it from the ESPN result.
+ * Then run kickpact-settle-keeper.ts to auto-settle it from the ESPN result.
  *
  *   bun scripts/demo-open-settle.ts        # create + join
- *   KEEPER_PRIVATE_KEY=… bun scripts/flicky-settle-keeper.ts   # settles it
+ *   KEEPER_PRIVATE_KEY=… bun scripts/kickpact-settle-keeper.ts   # settles it
  */
 import { ethers } from "ethers"
-import { CHAIN, FLICKY_PACTS_ABI } from "../src/chain"
+import { CHAIN, KICKPACT_PACTS_ABI } from "../src/chain"
 import { fetchGames, finalOutcome, predictionTerms, type Outcome } from "../src/football"
 
 const provider = new ethers.JsonRpcProvider(CHAIN.rpcUrl, CHAIN.chainId, { staticNetwork: true })
@@ -41,8 +41,8 @@ async function main() {
 
   const usdtK = new ethers.Contract(CHAIN.usdtAddress, ERC20, keeper)
   const usdtP = new ethers.Contract(CHAIN.usdtAddress, ERC20, p2)
-  const pactsK = new ethers.Contract(CHAIN.pactsAddress, FLICKY_PACTS_ABI as unknown as string[], keeper)
-  const pactsP = new ethers.Contract(CHAIN.pactsAddress, FLICKY_PACTS_ABI as unknown as string[], p2)
+  const pactsK = new ethers.Contract(CHAIN.pactsAddress, KICKPACT_PACTS_ABI as unknown as string[], keeper)
+  const pactsP = new ethers.Contract(CHAIN.pactsAddress, KICKPACT_PACTS_ABI as unknown as string[], p2)
 
   if ((await provider.getBalance(p2.address)) < ethers.parseEther("0.015")) {
     console.log("funding player2 gas…")
@@ -80,6 +80,6 @@ async function main() {
   const expectedWinner = predicted === result ? keeper.address : p2.address
   console.log(`\n>>> ACTIVE open room #${pactId} ready. expected winner (auto-settle): ${expectedWinner}`)
   console.log(`>>> USD₮ before: proposer ${await usdtK.balanceOf(keeper.address)} · player2 ${await usdtP.balanceOf(p2.address)}`)
-  console.log(`>>> now run: KEEPER_PRIVATE_KEY=<keeper> bun scripts/flicky-settle-keeper.ts`)
+  console.log(`>>> now run: KEEPER_PRIVATE_KEY=<keeper> bun scripts/kickpact-settle-keeper.ts`)
 }
 main().catch((e) => { console.error(e); process.exit(1) })

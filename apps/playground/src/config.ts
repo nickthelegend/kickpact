@@ -11,7 +11,7 @@ export const CONFIG = {
   predictPackageId: import.meta.env.VITE_PREDICT_PACKAGE_ID || '',
   registryId: import.meta.env.VITE_REGISTRY_ID || '',
   predictObjectId: import.meta.env.VITE_PREDICT_OBJECT_ID || '',
-  flickyPackageId: import.meta.env.VITE_FLICKY_PACKAGE_ID || '',
+  kickpactPackageId: import.meta.env.VITE_KICKPACT_PACKAGE_ID || '',
 
   // Oracle & Pyth
   marketOracleId: import.meta.env.VITE_MARKET_ORACLE_ID || '',
@@ -20,7 +20,7 @@ export const CONFIG = {
   // dUSDC
   dusdcPackageId: import.meta.env.VITE_DUSDC_PACKAGE_ID || '',
 
-  // Flicky backend (apps/server). The HTTP base is used for
+  // Kickpact backend (apps/server). The HTTP base is used for
   // /deckmaster/* / /duels/* / /oracle/* reads; the WS base is used for
   // matchmaking + chat + live ticks.
   serverHttpUrl:

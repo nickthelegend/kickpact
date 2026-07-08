@@ -1,11 +1,11 @@
 {
-  "name": "flicky-watchparty",
+  "name": "kickpact-watchparty",
   "version": "1.0.0",
-  "description": "Flicky Match Rooms — P2P World Cup watch-party over Hyperswarm (Pears track). Same rooms as the Flicky mobile app.",
+  "description": "Kickpact Match Rooms — P2P World Cup watch-party over Hyperswarm (Pears track). Same rooms as the Kickpact mobile app.",
   "type": "module",
   "main": "index.html",
   "pear": {
-    "name": "flicky-watchparty",
+    "name": "kickpact-watchparty",
     "type": "desktop",
     "gui": {
       "backgroundColor": "#1b2548",

@@ -1,13 +1,13 @@
 /**
- * FlickyPacts layer — self-custodial friend bets. Real ethers calls to the
- * deployed FlickyPacts on Sepolia. The on-chain record stores a keccak hash of
+ * KickpactPacts layer — self-custodial friend bets. Real ethers calls to the
+ * deployed KickpactPacts on Sepolia. The on-chain record stores a keccak hash of
  * the terms; the human text is cached locally so it can be displayed (and
  * shared with the counterparty like a code).
  */
 import { ethers } from "ethers"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
-import { CHAIN, FLICKY_PACTS_ABI } from "./chain"
+import { CHAIN, KICKPACT_PACTS_ABI } from "./chain"
 
 export const ZERO = "0x0000000000000000000000000000000000000000"
 
@@ -27,14 +27,14 @@ export interface PactState {
 }
 
 export function pactsContract(runner: ethers.ContractRunner): ethers.Contract {
-  return new ethers.Contract(CHAIN.pactsAddress, FLICKY_PACTS_ABI as unknown as string[], runner)
+  return new ethers.Contract(CHAIN.pactsAddress, KICKPACT_PACTS_ABI as unknown as string[], runner)
 }
 
 export function hashTerms(text: string): string {
   return ethers.keccak256(ethers.toUtf8Bytes(text))
 }
 
-const termsKey = (id: string | bigint) => `flicky.pact.terms.${id}`
+const termsKey = (id: string | bigint) => `kickpact.pact.terms.${id}`
 export async function saveTermsText(id: string | bigint, text: string) {
   try { await AsyncStorage.setItem(termsKey(id), text) } catch {}
 }
@@ -43,7 +43,7 @@ export async function getTermsText(id: string | bigint): Promise<string | null> 
 }
 
 // ── match → pacts index (so a match screen can show the bets placed on it) ──
-const matchKey = (gameId: string) => `flicky.match.pacts.${gameId}`
+const matchKey = (gameId: string) => `kickpact.match.pacts.${gameId}`
 export async function listMatchPacts(gameId: string): Promise<string[]> {
   try {
     const raw = await AsyncStorage.getItem(matchKey(gameId))
@@ -59,7 +59,7 @@ export async function addMatchPact(gameId: string, pactId: string | bigint) {
 }
 
 // ── writes ──
-/** Approve the FlickyPacts contract to pull `amount` USD₮ (stake escrow). */
+/** Approve the KickpactPacts contract to pull `amount` USD₮ (stake escrow). */
 export async function approvePacts(signer: ethers.Signer, amount: bigint): Promise<string> {
   const usdt = new ethers.Contract(
     CHAIN.usdtAddress,

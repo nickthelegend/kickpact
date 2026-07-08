@@ -12,7 +12,7 @@ import { createSecureStorage } from "@tetherto/wdk-react-native-secure-storage"
 
 const storage = createSecureStorage({
   authentication: {
-    promptMessage: "Authenticate to access your Flicky wallet",
+    promptMessage: "Authenticate to access your Kickpact wallet",
     cancelLabel: "Cancel",
     disableDeviceFallback: false,
   },

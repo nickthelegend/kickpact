@@ -14,7 +14,7 @@ import {
 describe("isTerminalSettleError", () => {
   test("EDuelNotActive (named) → terminal, stop retrying", () => {
     expect(
-      isTerminalSettleError("MoveAbort in flicky::duel: EDuelNotActive"),
+      isTerminalSettleError("MoveAbort in kickpact::duel: EDuelNotActive"),
     ).toBe(true)
   })
 

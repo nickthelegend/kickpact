@@ -18,7 +18,7 @@ import {
 
 import { signAndExecuteWithSponsorOrFallback } from "./sponsor"
 
-export function useFlickySign() {
+export function useKickpactSign() {
   const client = useSuiClient()
   const account = useCurrentAccount()
   const { mutateAsync: signTxAsync, isPending: signing } = useSignTransaction()

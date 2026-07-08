@@ -72,7 +72,7 @@ export default function App() {
               </button>
               <div>
                 <h1 className="text-xl font-bold flex items-center gap-2">
-                  ⚔️ Flicky Duel Arena
+                  ⚔️ Kickpact Duel Arena
                 </h1>
                 <p className="mt-0.5 text-xs text-gray-400">
                   Test dUSDC Staked 5-Card Duels

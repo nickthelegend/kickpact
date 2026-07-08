@@ -1,6 +1,6 @@
 # apps/server
 
-Single-process Bun backend for Flicky. One `bun --watch src/index.ts`
+Single-process Bun backend for Kickpact. One `bun --watch src/index.ts`
 boots HTTP + WebSocket on the same port and starts every background
 service (indexer, keeper, match clock, oracle stream, chat prune).
 
@@ -110,7 +110,7 @@ See `src/ws/protocol.ts` for exact TypeScript types.
 
 ## Background services
 
-- **Indexer** — polls 6 flicky event types ascending from per-tracker cursors stored in `event_cursor` (Postgres). Refreshes touched duels → mirrors to `duel` table → broadcasts `room_state` to subscribers. Also applies MMR ELO update on `DuelFinalized`. Restart-safe; first boot seeds cursors to latest event so we don't replay history.
+- **Indexer** — polls 6 kickpact event types ascending from per-tracker cursors stored in `event_cursor` (Postgres). Refreshes touched duels → mirrors to `duel` table → broadcasts `room_state` to subscribers. Also applies MMR ELO update on `DuelFinalized`. Restart-safe; first boot seeds cursors to latest event so we don't replay history.
 - **Keeper** — sweeps recent duels and runs `reveal_deck` (when plaintext is in the store) → `settle_card × pending` → `redeem_permissionless × N` (dUSDC only) → `finalize` in a single PTB. Permissionless on chain.
 - **Match clock** — every 1 s, pushes `match_tick { serverNowMs, status }` to subscribers of every non-`COMPLETE` room. PRD: "match timing is authoritative from the server."
 - **Oracle stream** — every 2 s, batch-reads every currently-subscribed `OracleSVI` and pushes `oracle_tick` to each oracle's subscribers. Powers the lockup-phase live-mark UI.
@@ -147,7 +147,7 @@ bun --filter server demo:duel          # end-to-end DeepBook-backed duel demo
 
 ## Env
 
-Copy `.env.example` → `.env` and fill what your local run needs. **`DATABASE_URL` is required** for any DB-backed feature (duel mirror, chat, MMR, deck store). The HTTP/WS layer still boots without it — `/health` answers and reports the DB as unreachable — but the indexer/keeper/chat will error until it's set. For the keeper to settle: `KEEPER_SECRET_KEY` (falls back to `BOT_SECRET_KEY`). For sponsored gas: `ENOKI_PRIVATE_KEY`. Default network is `testnet`; DeepBook + dUSDC ids are baked into `env.ts` defaults so `.env` only carries overrides. To serve mainnet sponsored gas you must also set `FLICKY_PACKAGE_MAINNET` + `DEEPBOOK_PREDICT_PACKAGE_MAINNET` — sponsor throws a clear error rather than approve `0x0` placeholders.
+Copy `.env.example` → `.env` and fill what your local run needs. **`DATABASE_URL` is required** for any DB-backed feature (duel mirror, chat, MMR, deck store). The HTTP/WS layer still boots without it — `/health` answers and reports the DB as unreachable — but the indexer/keeper/chat will error until it's set. For the keeper to settle: `KEEPER_SECRET_KEY` (falls back to `BOT_SECRET_KEY`). For sponsored gas: `ENOKI_PRIVATE_KEY`. Default network is `testnet`; DeepBook + dUSDC ids are baked into `env.ts` defaults so `.env` only carries overrides. To serve mainnet sponsored gas you must also set `KICKPACT_PACKAGE_MAINNET` + `DEEPBOOK_PREDICT_PACKAGE_MAINNET` — sponsor throws a clear error rather than approve `0x0` placeholders.
 
 ## Deploy (Railway)
 
@@ -155,17 +155,17 @@ The server + its Postgres both live in one Railway project (workspace **Le Quoc 
 
 - `railway.json` (repo root) pins the **Dockerfile** builder at `apps/server/Dockerfile` and the `/health` healthcheck.
 - `.railwayignore` / `.dockerignore` keep `node_modules` + **`.env` secrets** out of the build context — env is injected at runtime via Railway service variables.
-- The `flicky-server` service reads `DATABASE_URL=${{Postgres.DATABASE_URL}}` (private network). Add `KEEPER_SECRET_KEY`, `ENOKI_PRIVATE_KEY`, `ALLOWED_ORIGIN` as service variables to light up the keeper / sponsor / CORS.
+- The `kickpact-server` service reads `DATABASE_URL=${{Postgres.DATABASE_URL}}` (private network). Add `KEEPER_SECRET_KEY`, `ENOKI_PRIVATE_KEY`, `ALLOWED_ORIGIN` as service variables to light up the keeper / sponsor / CORS.
 
 ```bash
-railway up --service flicky-server --ci    # build + deploy current dir
-railway domain --service flicky-server      # mint a public URL
-railway logs --service flicky-server        # tail runtime logs
+railway up --service kickpact-server --ci    # build + deploy current dir
+railway domain --service kickpact-server      # mint a public URL
+railway logs --service kickpact-server        # tail runtime logs
 ```
 
 The same image runs locally for a smoke test (point `DATABASE_URL` at a reachable Postgres):
 
 ```bash
-docker build -f apps/server/Dockerfile -t flicky-server .   # from repo root
-docker run --rm -p 3001:3001 -e DATABASE_URL=postgres://… flicky-server
+docker build -f apps/server/Dockerfile -t kickpact-server .   # from repo root
+docker run --rm -p 3001:3001 -e DATABASE_URL=postgres://… kickpact-server
 ```

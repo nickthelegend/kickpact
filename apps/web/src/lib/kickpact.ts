@@ -1,9 +1,9 @@
 /**
- * Web-side helpers for the flicky duel flow. Thin wrappers around generated
+ * Web-side helpers for the kickpact duel flow. Thin wrappers around generated
  * codegen bindings + JSON parsers for shared-object reads.
  *
  * Every duel references a DeepBook `OracleSVI` directly — there's no
- * FlickyOracle path anymore. Staked swipes (predict::mint + record_swipe in
+ * KickpactOracle path anymore. Staked swipes (predict::mint + record_swipe in
  * one PTB) live in `./deepbook.ts`.
  */
 import { Transaction } from "@mysten/sui/transactions"
@@ -13,7 +13,7 @@ import { normalizeSuiObjectId, normalizeSuiAddress } from "@mysten/sui/utils"
 
 type SuiClient = SuiJsonRpcClient
 
-import * as duelGen from "@/sui/gen/flicky/duel"
+import * as duelGen from "@/sui/gen/kickpact/duel"
 import { CONFIG } from "./config"
 import { DEEPBOOK } from "./deepbook"
 
@@ -95,7 +95,7 @@ export interface DeckCard {
 }
 
 /**
- * BCS schema matching the on-chain `flicky::duel::Card` layout
+ * BCS schema matching the on-chain `kickpact::duel::Card` layout
  * (`oracle_id: ID, strike: u64`). The vector serialization + sha2-256
  * here must reproduce what `bcs::to_bytes(&cards)` + `hash::sha2_256`
  * produce in Move — see `apps/contracts/sources/duel.move::reveal_deck`.

@@ -5,7 +5,7 @@
 > and what an independent oracle would have to replicate to be drop-in
 > equivalent.**
 >
-> Audience: anyone planning to build a Flicky-style prediction product on Sui
+> Audience: anyone planning to build a Kickpact-style prediction product on Sui
 > that wants the same price-feed properties as DeepBook (permissionless
 > updates, per-market settlement, SVI-based fair pricing) without depending on
 > DeepBook itself.
@@ -473,7 +473,7 @@ In parallel, every 15 minutes the operator creates the next overlapping
 
 ---
 
-## 9. What an independent oracle (Flicky-style) must replicate
+## 9. What an independent oracle (Kickpact-style) must replicate
 
 If a separate protocol wants the same properties — multi-asset, permissionless
 spot, per-expiry settlement, SVI fair pricing — it has to land **all five** of
@@ -531,30 +531,30 @@ to displace a valid primary.
 
 ---
 
-## 10. Implementation roadmap (suggested for Flicky)
+## 10. Implementation roadmap (suggested for Kickpact)
 
-Status of each piece in the current Flicky codebase, against the DeepBook
+Status of each piece in the current Kickpact codebase, against the DeepBook
 reference:
 
-| Piece | DeepBook reference | Flicky today | Gap |
+| Piece | DeepBook reference | Kickpact today | Gap |
 |---|---|---|---|
 | Permissionless spot via Pyth Lazer | `pyth_source.move::update_from_lazer` | Hermes HTTP + admin keeper (`apps/server/src/scripts/keeper.ts`) | **Significant.** Need Move-side `pyth_lazer` dep + on-chain `update_from_lazer` entry. |
-| Per-expiry MarketOracle | `market_oracle.move` | `flicky::oracle::FlickyOracle` per expiry | Adequate. Field layout differs but state machine matches. |
-| ACTIVE → PENDING → SETTLED status | `market_oracle::status` | `flicky::oracle::status` returning `STATUS_ACTIVE/PENDING/SETTLED` | Equivalent. |
+| Per-expiry MarketOracle | `market_oracle.move` | `kickpact::oracle::KickpactOracle` per expiry | Adequate. Field layout differs but state machine matches. |
+| ACTIVE → PENDING → SETTLED status | `market_oracle::status` | `kickpact::oracle::status` returning `STATUS_ACTIVE/PENDING/SETTLED` | Equivalent. |
 | Dual-timestamp staleness | `(source_timestamp_ms, update_timestamp_ms)` | Same pair on `PriceState` and `SettlementState` | Equivalent. |
 | Basis bounds + per-push deviation | `MarketOracleBounds` with 5 fields | `OracleBounds { settlement_freshness_ms, max_spot_deviation }` only | Missing `max_basis_deviation`, `min_basis`, `max_basis`. Add or document why omitted. |
 | Settlement source comparison | Pyth vs Block Scholes, earliest wins | Single admin-pushed settlement via `oracle::settle` | Missing fallback path. Could add a Pyth-Lazer-only `settle_from_lazer` once layer 1 is in. |
-| SVI fair pricing | `pricing::compute_nd2` (Gatheral SVI + normal CDF) | `flicky::oracle::implied_probability_up` — distance-from-forward heuristic clamped to [5%, 95%] | **Significant divergence.** The simpler model is fine for the hackathon POC but won't quote DeepBook-style range markets. |
-| Per-market quoting + fees | `pricing.move` with Bernoulli + utilization fee | None | Acceptable if Flicky is the only consumer (game pays its own fees). |
+| SVI fair pricing | `pricing::compute_nd2` (Gatheral SVI + normal CDF) | `kickpact::oracle::implied_probability_up` — distance-from-forward heuristic clamped to [5%, 95%] | **Significant divergence.** The simpler model is fine for the hackathon POC but won't quote DeepBook-style range markets. |
+| Per-market quoting + fees | `pricing.move` with Bernoulli + utilization fee | None | Acceptable if Kickpact is the only consumer (game pays its own fees). |
 
-The realistic order for Flicky to grow toward parity is:
+The realistic order for Kickpact to grow toward parity is:
 
-1. **Add basis bounds + per-push deviation tests** to `flicky::oracle::update_price`.
+1. **Add basis bounds + per-push deviation tests** to `kickpact::oracle::update_price`.
    Cheap, defensive, no external deps.
 2. **Add a permissionless `settle_from_pyth` path** that takes a verified
    `LazerUpdate` post-expiry. Removes the admin cap from the settlement path.
 3. **Add `update_price_from_lazer`** so the live spot is permissionless. At
-   this point Flicky doesn't need a keeper at all — anyone refreshing their
+   this point Kickpact doesn't need a keeper at all — anyone refreshing their
    own duel's oracle is enough.
 4. **Replace `approx_p_up` with a proper SVI quoter** if and when range
    markets / non-binary cards are introduced.

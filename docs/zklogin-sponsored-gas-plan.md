@@ -10,7 +10,7 @@ Three PRD requirements are coupled:
    OIDC token is exchanged for a zk proof that lets a derived Sui address
    sign txns without an extension wallet. **Enoki is the locked provider**
    for MVP — no other zkLogin flow is in scope.
-2. **Sponsored Predict Manager bootstrap** — on first sign-in, Flicky
+2. **Sponsored Predict Manager bootstrap** — on first sign-in, Kickpact
    sponsors `predict::create_manager` for the player. They never sign
    that tx themselves and never need SUI to enable staked play.
 3. **Sponsored gas, end-to-end** — every player-signed PTB is gas-paid

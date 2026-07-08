@@ -8,7 +8,7 @@ import { ModeModal } from "@/components/mode-modal"
 import { OnboardingModal } from "@/components/onboarding-modal"
 import { PixelButton } from "@/components/pixel-button"
 import { WsErrorBanner } from "@/components/ws-error-banner"
-import { useFlickySocket } from "@/hooks/use-flicky-socket"
+import { useKickpactSocket } from "@/hooks/use-kickpact-socket"
 import { ActiveDuel } from "./active-duel"
 import { STAKE_TIERS, type Tier } from "@/lib/protocol"
 
@@ -41,7 +41,7 @@ export default function GamePvp() {
   const [onboardingOpen, setOnboardingOpen] = useState(false)
   const [managerId, setManagerId] = useState<string | null>(null)
 
-  const { wsOpen, send, onMessage } = useFlickySocket(account?.address)
+  const { wsOpen, send, onMessage } = useKickpactSocket(account?.address)
 
   const [queueSize, setQueueSize] = useState<number | null>(null)
   const [matched, setMatched] = useState<{

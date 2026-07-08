@@ -26,7 +26,7 @@ export default function ManagerPanel({ onOutput }: ManagerPanelProps) {
   const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction()
 
   const [managerId, setManagerId] = useState<string>(() => {
-    return localStorage.getItem('flicky_predict_manager_id') || ''
+    return localStorage.getItem('kickpact_predict_manager_id') || ''
   })
   const [managerBalance, setManagerBalance] = useState<string>('0')
   const [walletBalance, setWalletBalance] = useState<string>('0')
@@ -42,7 +42,7 @@ export default function ManagerPanel({ onOutput }: ManagerPanelProps) {
 
   // Save manager ID when it changes
   useEffect(() => {
-    localStorage.setItem('flicky_predict_manager_id', managerId)
+    localStorage.setItem('kickpact_predict_manager_id', managerId)
   }, [managerId])
 
   const findManagerOnChain = async (address: string) => {

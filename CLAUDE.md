@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Flicky is a Tinder-style PvP prediction-duel built on Sui + DeepBook Predict. Two players swipe YES/NO through a 5-card binary-digital deck; a Move `Duel` shared object escrows stakes and pays the winner. See `README.md` for full game design, scoring rules, and Predict touchpoints — that file is authoritative for protocol-level decisions.
+Kickpact is a Tinder-style PvP prediction-duel built on Sui + DeepBook Predict. Two players swipe YES/NO through a 5-card binary-digital deck; a Move `Duel` shared object escrows stakes and pays the winner. See `README.md` for full game design, scoring rules, and Predict touchpoints — that file is authoritative for protocol-level decisions.
 
 ## Stack
 

@@ -10,7 +10,7 @@ import {
   useSuiBalance,
 } from "@/hooks/use-wallet-balances"
 import { buildWithdrawDusdcTx } from "@/lib/deepbook"
-import { useFlickySign } from "@/lib/use-flicky-sign"
+import { useKickpactSign } from "@/lib/use-kickpact-sign"
 import {
   DUSDC_COIN_TYPE,
   DUSDC_DECIMALS,
@@ -40,7 +40,7 @@ type Tab = "MANAGER" | "SEND"
  *   - SEND    tab: zk-wallet → arbitrary address, SUI or dUSDC, with
  *     an inline confirm step before signing.
  *
- * Both go through the sponsor service via useFlickySign.
+ * Both go through the sponsor service via useKickpactSign.
  */
 export function WithdrawModal({ open, address, onClose }: WithdrawModalProps) {
   const [tab, setTab] = useState<Tab>("MANAGER")
@@ -152,7 +152,7 @@ function TabRow({
  * ─────────────────────────────────────────────────────────────────── */
 
 function ManagerWithdrawTab({ address }: { address: string }) {
-  const sign = useFlickySign()
+  const sign = useKickpactSign()
   const invalidateBalances = useInvalidateWalletBalances()
   const { data: managerInfo, refetch: refetchManager } = useManagerBalance()
   const managerBalance = managerInfo?.balance ?? 0
@@ -256,7 +256,7 @@ const SEND_META: Record<
 
 function SendTab({ address }: { address: string }) {
   const client = useSuiClient()
-  const sign = useFlickySign()
+  const sign = useKickpactSign()
   const invalidateBalances = useInvalidateWalletBalances()
   const { data: dusdcBalance = 0 } = useDusdcBalance()
   const { data: suiBalance = 0 } = useSuiBalance()

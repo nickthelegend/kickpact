@@ -88,7 +88,7 @@ public fun compute_price(market: &OracleSVI, _strike: u64): u64 {
 // === Testnet admin (vendored stub only — DO NOT vendor onto mainnet) ===
 
 /// Create a new OracleSVI on testnet. The stub deliberately omits the real
-/// Predict cap-bearing constructor; this entry exists so the Flicky playground
+/// Predict cap-bearing constructor; this entry exists so the Kickpact playground
 /// and dev scripts can mint usable oracles without owning a real admin cap.
 public fun new_market_oracle(expiry: u64, ctx: &mut TxContext): OracleSVI {
     OracleSVI {

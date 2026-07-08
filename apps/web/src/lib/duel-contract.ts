@@ -1,6 +1,6 @@
 /**
- * EVM duel-contract layer — the FlickyDuel equivalent of the old Sui
- * `flicky.ts` + `deepbook.ts`. Builds calldata for the FlickyDuel lifecycle
+ * EVM duel-contract layer — the KickpactDuel equivalent of the old Sui
+ * `kickpact.ts` + `deepbook.ts`. Builds calldata for the KickpactDuel lifecycle
  * and reads duel state from Sepolia. Stakes are USD₮ (ERC-20).
  *
  * Transactions are returned as `{ to, data, value }` request objects so they
@@ -10,7 +10,7 @@
 import { ethers } from "ethers"
 
 import { EVM_CONFIG } from "./evm-config"
-import { FLICKY_DUEL_ABI, USDT_ABI } from "./abi"
+import { KICKPACT_DUEL_ABI, USDT_ABI } from "./abi"
 
 export interface Card {
   /** Settlement price threshold; settlement > strike ⇒ "up". */
@@ -45,7 +45,7 @@ export interface DuelState {
   cards: Card[]
 }
 
-const duelIface = new ethers.Interface(FLICKY_DUEL_ABI as unknown as string[])
+const duelIface = new ethers.Interface(KICKPACT_DUEL_ABI as unknown as string[])
 const usdtIface = new ethers.Interface(USDT_ABI as unknown as string[])
 
 const DUEL = EVM_CONFIG.duelAddress
@@ -155,7 +155,7 @@ export function refundDuelTx(duelId: bigint): TxRequest {
 // === Reads ===
 
 export function duelContract(provider: ethers.Provider): ethers.Contract {
-  return new ethers.Contract(DUEL, FLICKY_DUEL_ABI as unknown as string[], provider)
+  return new ethers.Contract(DUEL, KICKPACT_DUEL_ABI as unknown as string[], provider)
 }
 
 export function usdtContract(provider: ethers.Provider): ethers.Contract {

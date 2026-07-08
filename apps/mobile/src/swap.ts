@@ -3,7 +3,7 @@
  * API + ethers. Shaped like WDK's swap module (`quoteSwap` / `swap`) so it can
  * be swapped for `@tetherto/wdk-protocol-swap-velora-evm` later.
  *
- * This is part of Flicky's MAINNET path (Polygon / Ethereum) — the rails that
+ * This is part of Kickpact's MAINNET path (Polygon / Ethereum) — the rails that
  * fund the Polymarket CLOB tier. Testnet Pacts/Duels stay on Sepolia.
  */
 import { ethers } from "ethers"

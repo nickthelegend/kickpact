@@ -1,10 +1,10 @@
 /**
- * On-chain stats — real reads from FlickyDuel + FlickyPacts events. Powers the
+ * On-chain stats — real reads from KickpactDuel + KickpactPacts events. Powers the
  * match history and leaderboard (no backend, no fakes; pure event queries).
  */
 import { ethers } from "ethers"
 
-import { CHAIN, FLICKY_DUEL_ABI, FLICKY_PACTS_ABI } from "./chain"
+import { CHAIN, KICKPACT_DUEL_ABI, KICKPACT_PACTS_ABI } from "./chain"
 
 const ZERO = "0x0000000000000000000000000000000000000000"
 
@@ -15,10 +15,10 @@ const logsProvider = new ethers.JsonRpcProvider(CHAIN.logsRpcUrl, CHAIN.chainId,
 })
 
 function duel(_p: ethers.Provider) {
-  return new ethers.Contract(CHAIN.duelAddress, FLICKY_DUEL_ABI as unknown as string[], logsProvider)
+  return new ethers.Contract(CHAIN.duelAddress, KICKPACT_DUEL_ABI as unknown as string[], logsProvider)
 }
 function pacts(_p: ethers.Provider) {
-  return new ethers.Contract(CHAIN.pactsAddress, FLICKY_PACTS_ABI as unknown as string[], logsProvider)
+  return new ethers.Contract(CHAIN.pactsAddress, KICKPACT_PACTS_ABI as unknown as string[], logsProvider)
 }
 
 export interface HistoryItem {

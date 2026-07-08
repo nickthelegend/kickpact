@@ -1,5 +1,5 @@
 /**
- * Flicky settle-keeper — auto-settles football match predictions from the
+ * Kickpact settle-keeper — auto-settles football match predictions from the
  * official result. Closes the loop: a Pact created on a World Cup match
  * (arbiter = keeper) is paid out automatically once the match finishes.
  *
@@ -8,11 +8,11 @@
  * every finished game × outcome and matches it against on-chain pacts — so it
  * recovers each pact's match + predicted side with no off-chain database.
  *
- * Run: KEEPER_PRIVATE_KEY=0x... bun scripts/flicky-settle-keeper.ts
+ * Run: KEEPER_PRIVATE_KEY=0x... bun scripts/kickpact-settle-keeper.ts
  * (the key must be CHAIN.keeperAddress — the arbiter set on match predictions.)
  */
 import { ethers } from "ethers"
-import { CHAIN, FLICKY_PACTS_ABI, PACT_STATUS } from "../src/chain"
+import { CHAIN, KICKPACT_PACTS_ABI, PACT_STATUS } from "../src/chain"
 import { fetchGames, finalOutcome, predictionTerms, type Outcome } from "../src/football"
 
 const POLL_MS = 30_000
@@ -31,14 +31,14 @@ async function main() {
   const pk = process.env.KEEPER_PRIVATE_KEY || process.env.DEPLOYER_PRIVATE_KEY
   if (!pk) throw new Error("set KEEPER_PRIVATE_KEY (the arbiter / keeper key)")
   const keeper = new ethers.Wallet(pk, tx)
-  const pactsW = new ethers.Contract(CHAIN.pactsAddress, FLICKY_PACTS_ABI as unknown as string[], keeper)
-  const pactsR = new ethers.Contract(CHAIN.pactsAddress, FLICKY_PACTS_ABI as unknown as string[], logs)
+  const pactsW = new ethers.Contract(CHAIN.pactsAddress, KICKPACT_PACTS_ABI as unknown as string[], keeper)
+  const pactsR = new ethers.Contract(CHAIN.pactsAddress, KICKPACT_PACTS_ABI as unknown as string[], logs)
 
-  console.log("flicky settle-keeper:", keeper.address)
+  console.log("kickpact settle-keeper:", keeper.address)
   if (keeper.address.toLowerCase() !== CHAIN.keeperAddress.toLowerCase()) {
     console.warn("WARN: key address != CHAIN.keeperAddress", CHAIN.keeperAddress, "— resolves will revert (NotArbiter).")
   }
-  console.log("watching FlickyPacts", CHAIN.pactsAddress, "for finished-match predictions\n")
+  console.log("watching KickpactPacts", CHAIN.pactsAddress, "for finished-match predictions\n")
 
   const settled = new Set<string>()
 

@@ -216,7 +216,7 @@ export function QRScanner({
           </View>
 
           <PixelText size={9} upper={false} color={C.white45} style={{ marginTop: 12, textAlign: "center", lineHeight: 14 }}>
-            {hint ?? "point at your friend's Flicky QR code"}
+            {hint ?? "point at your friend's Kickpact QR code"}
           </PixelText>
         </Pressable>
       </Pressable>

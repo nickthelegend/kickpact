@@ -1,7 +1,7 @@
-// Copyright (c) Flicky Labs
+// Copyright (c) Kickpact Labs
 // SPDX-License-Identifier: Apache-2.0
 
-/// Flicky duel: a two-player, N-card prediction match escrowing stakes
+/// Kickpact duel: a two-player, N-card prediction match escrowing stakes
 /// in a shared object, consuming DeepBook Predict positions for correctness
 /// and computing payout. Each card pins its OWN DeepBook `OracleSVI`, so a
 /// deck of 5 cards can span 5 different oracle expiries / strikes.
@@ -32,7 +32,7 @@
 ///              `manager.owner() == sender` and anti-replay vs PredictManager.
 ///   `FREE`   — same engine, no Predict mint, no dUSDC stake. Same Duel
 ///              object, same scoring math, just gated money flow.
-module flicky::duel;
+module kickpact::duel;
 
 use deepbook_predict::oracle::{Self as db_oracle, OracleSVI};
 use deepbook_predict::predict::{Self as db_predict, Predict};

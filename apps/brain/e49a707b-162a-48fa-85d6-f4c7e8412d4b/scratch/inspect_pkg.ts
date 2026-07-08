@@ -1,4 +1,4 @@
-import { getSuiClient } from "/Users/alvin/Developer/sui-flow/flicky/apps/server/src/lib/sui"
+import { getSuiClient } from "/Users/alvin/Developer/sui-flow/kickpact/apps/server/src/lib/sui"
 
 async function main() {
   const client = getSuiClient()
