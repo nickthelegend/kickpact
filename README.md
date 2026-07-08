@@ -15,9 +15,13 @@
 ## ▶️ 60‑second launch video
 
 <!-- VIDEO_EMBED -->
-[![Watch the Kickpact launch video](docs/media/poster.png)](docs/media/kickpact-launch.mp4)
+<p align="center">
+  <video src="https://github.com/nickthelegend/kickpact/releases/download/v1.0.0/kickpact-launch.mp4" controls muted width="760"></video>
+</p>
 
-*Click the poster to play `docs/media/kickpact-launch.mp4` (also attached inline above once the repo is published).*
+> ▶️ If the player doesn't load in your viewer, click the poster to watch the 60‑second launch video:
+>
+> [![Watch the Kickpact launch video](docs/media/poster.png)](https://github.com/nickthelegend/kickpact/releases/download/v1.0.0/kickpact-launch.mp4)
 
 ---
 
