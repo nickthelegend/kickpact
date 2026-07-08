@@ -54,7 +54,7 @@ Kickpact is built around Tether's **Wallet Development Kit**: the wallet *is* th
 - **Bridge** — cross‑chain USD₮ over the **USD₮0 / LayerZero OFT**, mirroring `@tetherto/wdk-protocol-bridge-usdt0-evm` with verified OFT addresses + LayerZero EIDs (`src/bridge.ts`).
 - **Fiat on/off‑ramp** — MoonPay buy/sell, mirroring `@tetherto/wdk-protocol-fiat-moonpay` (`src/fiat.ts`).
 
-> **Honest scope:** secure‑storage is a live WDK dependency. Swap / bridge / fiat / core are implemented in ethers against the exact WDK module surface, so the real `@tetherto/wdk-protocol-*` packages drop straight in.
+> **Honest scope:** secure‑storage is a live WDK dependency. Swap / bridge / fiat / core are implemented in ethers against the exact WDK module surface, so the real `@tetherto/wdk-protocol-*` packages drop straight in — and the bridge registry (OFT contracts + LayerZero EIDs) is **pinned by a CI parity test to the real `@tetherto/wdk-protocol-bridge-usdt0-evm` config**, so it can never drift from Tether's shipped values.
 
 ## Pears track — the peer‑to‑peer watch party
 
