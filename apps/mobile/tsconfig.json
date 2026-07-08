@@ -4,6 +4,7 @@
     "strict": true,
     "types": [
       "bun"
-    ]
+    ],
+    "allowImportingTsExtensions": true
   }
 }

@@ -34,6 +34,10 @@ export interface RoomMsg {
   pactId?: string
   stakeUsd?: number
   outcome?: string
+  // group pools ride the same wire frame with kind: "pool" (older peers
+  // render them as a plain bet proposal — graceful degradation)
+  kind?: "pool"
+  poolId?: string
 }
 
 export interface RoomEvents {

@@ -12,8 +12,9 @@
  * (the key must be CHAIN.keeperAddress — the arbiter set on match predictions.)
  */
 import { ethers } from "ethers"
-import { CHAIN, KICKPACT_PACTS_ABI, PACT_STATUS } from "../src/chain"
+import { CHAIN, KICKPACT_PACTS_ABI, KICKPACT_POOLS_ABI, PACT_STATUS, POOLS } from "../src/chain"
 import { fetchGames, finalOutcome, predictionTerms, type Outcome } from "../src/football"
+import { gameKey, pickCode } from "../src/pool"
 
 const POLL_MS = 30_000
 // Sepolia gas is volatile — price each resolve at 2× the current network rate.
@@ -42,9 +43,44 @@ async function main() {
 
   const settled = new Set<string>()
 
+  // Group pools: same official result, keyed by gameKey = keccak("WC#<id>").
+  const poolsW = POOLS.live
+    ? new ethers.Contract(POOLS.address, KICKPACT_POOLS_ABI as unknown as string[], keeper)
+    : null
+  const settledPools = new Set<string>()
+
+  async function settlePools(games: Awaited<ReturnType<typeof fetchGames>>) {
+    if (!poolsW) return
+    for (const g of games) {
+      const result = finalOutcome(g)
+      if (!result) continue
+      const ids: bigint[] = await poolsW.poolsForGame(gameKey(g.id)).catch(() => [])
+      for (const id of ids) {
+        if (settledPools.has(id.toString())) continue
+        const p = await poolsW.getPool(id)
+        if (p.settled) {
+          settledPools.add(id.toString())
+          continue
+        }
+        if (Date.now() / 1000 < Number(p.deadline)) continue // pre-kickoff
+        console.log(`pool #${id}: ${g.home.shortName} vs ${g.away.shortName} → official ${result}`)
+        try {
+          const t = await poolsW.settle(id, pickCode(result), await gas())
+          console.log("  settle tx", t.hash, "…")
+          await t.wait()
+          console.log("  ✓ pool settled — winners can claim their split")
+          settledPools.add(id.toString())
+        } catch (e) {
+          console.log("  pool settle failed:", (e as Error).message.slice(0, 90))
+        }
+      }
+    }
+  }
+
   async function tick() {
     // 1) finished games → map every candidate terms-hash to (outcome, result)
     const games = await fetchGames().catch(() => [])
+    await settlePools(games).catch((e) => console.log("pools tick error:", (e as Error).message))
     const byHash = new Map<string, { outcome: Outcome; result: Outcome }>()
     for (const g of games) {
       const result = finalOutcome(g)

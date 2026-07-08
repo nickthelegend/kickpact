@@ -70,6 +70,35 @@ export const KICKPACT_PACTS_ABI = [
 
 export const PACT_STATUS = { PROPOSED: 1, ACTIVE: 2, RESOLVED: 3, REFUNDED: 4 } as const
 
+// ── Group pools (KickpactPools) — watch-party pots split among winners ──────
+// Deploy: apps/duel-evm/script/DeployPools.s.sol. Address is filled at deploy
+// time; `live` gates the UI until then.
+export const POOLS = {
+  address: "0x0000000000000000000000000000000000000000",
+  // The pools arbiter / settle-keeper (posts official results).
+  keeperAddress: "0xc37Ec892a1e52637b303035b9107Ee633aEDe978",
+  live: false,
+} as const
+
+export const KICKPACT_POOLS_ABI = [
+  "function createPool(bytes32 gameKey, address arbiter, uint128 stake, uint64 deadline, uint8 pick) returns (uint256 poolId)",
+  "function joinPool(uint256 poolId, uint8 pick)",
+  "function settle(uint256 poolId, uint8 result)",
+  "function claim(uint256 poolId)",
+  "function cancelPool(uint256 poolId)",
+  "function refundExpired(uint256 poolId)",
+  "function nextPoolId() view returns (uint256)",
+  "function getPool(uint256 poolId) view returns (tuple(address creator, bytes32 gameKey, address arbiter, uint128 stake, uint64 deadline, uint8 result, bool settled, uint32 winners, uint32 paid, address[] members))",
+  "function membersOf(uint256 poolId) view returns (address[])",
+  "function poolsForGame(bytes32 gameKey) view returns (uint256[])",
+  "function pickOf(uint256 poolId, address member) view returns (uint8)",
+  "function claimed(uint256 poolId, address member) view returns (bool)",
+  "event PoolCreated(uint256 indexed poolId, address indexed creator, bytes32 indexed gameKey, address arbiter, uint128 stake, uint64 deadline)",
+  "event PoolJoined(uint256 indexed poolId, address indexed member, uint8 pick)",
+  "event PoolSettled(uint256 indexed poolId, uint8 result, uint32 winners, uint256 pot)",
+  "event PoolClaimed(uint256 indexed poolId, address indexed member, uint256 amount)",
+] as const
+
 export function shortAddr(a: string): string {
   return a ? `${a.slice(0, 6)}…${a.slice(-4)}` : ""
 }

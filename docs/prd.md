@@ -34,6 +34,8 @@ Two people escrow an **equal USD₮ stake** against a plain‑English outcome ("
 - **Resolve** — by **mutual agreement** (both call `agree(winner)`) or by a **neutral arbiter** (our keeper auto‑settles World Cup predictions from the official result).
 - Contract: `KickpactPacts`.
 
+**Group pools (the watch‑party pot)** — the room‑native variant: any number of friends stake the SAME amount into `KickpactPools`, each picks home/draw/away, and the pot splits equally among correct picks when the keeper posts the official result (no winners → refunds; unsettled → self‑refund after grace). Created and joined straight from the P2P match room.
+
 ### Tier 2 — Duels (on‑chain PvP swipe game) · Sepolia
 A Tinder‑style 1v1. Both players swipe **UP/DOWN** through a commit‑revealed deck of "will this crypto asset beat its strike?" cards on live prices. The contract escrows both stakes and pays the **better market‑reader** — a correct contrarian call scores more than following the crowd.
 - **Practice vs bot** — free, instant, fully local; the on‑ramp to the swipe loop.

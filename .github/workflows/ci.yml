@@ -31,6 +31,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
+      # anvil + forge artifacts for the group-pool lifecycle E2E
+      - uses: foundry-rs/foundry-toolchain@v1
       - uses: actions/setup-node@v4
         with:
           node-version: 22

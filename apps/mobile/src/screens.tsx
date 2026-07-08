@@ -11,7 +11,7 @@ import { ActivityIndicator, Image, Linking, Modal, Pressable, ScrollView, Share,
 import { C } from "./theme"
 import { BalanceChip, Panel, PixelButton, PixelText } from "./ui"
 import { useWallet } from "./wallet"
-import { CHAIN, DUEL_STATUS, shortAddr } from "./chain"
+import { CHAIN, DUEL_STATUS, POOLS, shortAddr } from "./chain"
 import {
   approveUsdt,
   createDuel,
@@ -45,6 +45,16 @@ import {
   ZERO,
   type PactState,
 } from "./pact"
+import {
+  claimPool,
+  createPool as createGroupPool,
+  joinPool,
+  myPick,
+  pickName,
+  poolsForGame,
+  type PoolOutcome,
+  type PoolState,
+} from "./pool"
 import { PACT_STATUS } from "./chain"
 import { leaderboard, myHistory, type HistoryItem, type RankRow } from "./stats"
 import {
@@ -1715,7 +1725,28 @@ function MatchRoomPanel({ gameId, game, onBetsChanged }: { gameId: string; game:
   const [propOutcome, setPropOutcome] = useState<Outcome>("home")
   const [propTier, setPropTier] = useState(0)
   const [busyPact, setBusyPact] = useState<string | null>(null)
+  // ── group pool (the watch-party pot) ──
+  const [poolOpen, setPoolOpen] = useState(false)
+  const [poolPick, setPoolPick] = useState<PoolOutcome>("home")
+  const [poolTier, setPoolTier] = useState(1) // default 3 USD₮
+  const [gamePools, setGamePools] = useState<PoolState[]>([])
+  const [myPicks, setMyPicks] = useState<Record<string, number>>({})
+  const [busyPool, setBusyPool] = useState<string | null>(null)
   const roomRef = useRef<MatchRoom | null>(null)
+
+  const refreshPools = useCallback(async () => {
+    if (!POOLS.live || !address) return
+    try {
+      const ps = await poolsForGame(provider, gameId)
+      setGamePools(ps)
+      const picks: Record<string, number> = {}
+      for (const p of ps) picks[p.id.toString()] = await myPick(provider, p.id, address)
+      setMyPicks(picks)
+    } catch {}
+  }, [address, gameId, provider])
+  useEffect(() => {
+    refreshPools()
+  }, [refreshPools])
 
   const push = useCallback((m: RoomMsg) => {
     setMsgs((prev) => [...prev.slice(-59), m])
@@ -1733,7 +1764,10 @@ function MatchRoomPanel({ gameId, game, onBetsChanged }: { gameId: string; game:
           onReady: () => setNote("live on the DHT — waiting for fans…"),
           onPeers: (n) => setPeers(n),
           onJoined: (nick) => push({ type: "msg", from: "", nick: "", text: `${nick} joined the room`, ts: Date.now(), sig: "", verified: true }),
-          onMsg: (m) => push(m),
+          onMsg: (m) => {
+            push(m)
+            if (m.kind === "pool") refreshPools() // a friend opened a pot
+          },
         },
       )
       roomRef.current = room
@@ -1804,6 +1838,67 @@ function MatchRoomPanel({ gameId, game, onBetsChanged }: { gameId: string; game:
     }
   }
 
+  // Start a GROUP POOL: everyone stakes the same amount into the contract,
+  // each member picks an outcome, winners split the pot after the keeper
+  // posts the official result. Broadcast to the room so friends can join.
+  const startPool = async () => {
+    if (!signer || !game || !roomRef.current) return
+    const stake = CHAIN.stakeTiers[poolTier]
+    setBusyPool("create")
+    setNote("opening the pool + locking your stake…")
+    try {
+      const { poolId } = await createGroupPool(signer, game, stake, poolPick)
+      const stakeUsd = Number(stake) / Number(CHAIN.ONE_USDT)
+      push(
+        await roomRef.current.send(`group pool on ${game.home.shortName} vs ${game.away.shortName}`, {
+          type: "pact",
+          kind: "pool",
+          poolId: poolId.toString(),
+          stakeUsd,
+          outcome: poolPick,
+        }),
+      )
+      setNote(`pool #${poolId} open — ${stakeUsd} USD₮ each, winners split the pot`)
+      setPoolOpen(false)
+      await refreshPools()
+    } catch (e) {
+      setNote(errMsg(e))
+    } finally {
+      setBusyPool(null)
+    }
+  }
+
+  // Join a pool from the panel with YOUR OWN pick.
+  const joinGroupPool = async (p: PoolState, pick: PoolOutcome) => {
+    if (!signer) return
+    setBusyPool(p.id.toString())
+    setNote(`joining pool #${p.id} (${pick})…`)
+    try {
+      await joinPool(signer, p.id, pick)
+      setNote(`you're in pool #${p.id} — picked ${pick}`)
+      await refreshPools()
+    } catch (e) {
+      setNote(errMsg(e))
+    } finally {
+      setBusyPool(null)
+    }
+  }
+
+  const claimGroupPool = async (p: PoolState) => {
+    if (!signer) return
+    setBusyPool(p.id.toString())
+    setNote(`claiming from pool #${p.id}…`)
+    try {
+      await claimPool(signer, p.id)
+      setNote(`claimed your share of pool #${p.id} 🎉`)
+      await refreshPools()
+    } catch (e) {
+      setNote(errMsg(e))
+    } finally {
+      setBusyPool(null)
+    }
+  }
+
   // Take the other side of a bet proposed in the room (join its escrow).
   const joinBet = async (m: RoomMsg) => {
     if (!signer || !m.pactId) return
@@ -1868,6 +1963,18 @@ function MatchRoomPanel({ gameId, game, onBetsChanged }: { gameId: string; game:
             <PixelText key={i} size={9} upper={false} color={C.white35} style={{ textAlign: "center", marginVertical: 4 }}>
               {m.text}
             </PixelText>
+          ) : m.type === "pact" && m.kind === "pool" ? (
+            <View key={i} style={[st.roomMsg, { borderWidth: 1, borderColor: C.greenLight, alignSelf: "stretch", maxWidth: "100%" }]}>
+              <PixelText size={9} color={C.greenLight} tracking={1}>
+                🏆 group pool · {m.nick} {m.verified ? "✓" : "⚠"}
+              </PixelText>
+              <PixelText size={11} upper={false} style={{ marginTop: 4, lineHeight: 16 }}>
+                {m.text}
+              </PixelText>
+              <PixelText size={9} upper={false} color={C.white45} style={{ marginTop: 3 }}>
+                pool #{m.poolId} · {m.stakeUsd} USD₮ each · winners split the pot — pick your side in the pool card below
+              </PixelText>
+            </View>
           ) : m.type === "pact" ? (
             <View key={i} style={[st.roomMsg, { borderWidth: 1, borderColor: C.gold, alignSelf: "stretch", maxWidth: "100%" }]}>
               <PixelText size={9} color={C.gold} tracking={1}>
@@ -1947,6 +2054,97 @@ function MatchRoomPanel({ gameId, game, onBetsChanged }: { gameId: string; game:
           )}
         </View>
       )}
+
+      {/* ── GROUP POOL — the watch-party pot: same stake each, pick an
+             outcome, winners split the pot when the keeper posts the result */}
+      {POOLS.live && game && !game.completed && (
+        <View style={{ marginTop: 8 }}>
+          {!poolOpen ? (
+            <PixelButton label="🏆 start a group pool" color={C.importBlue} size={11} onPress={() => setPoolOpen(true)} />
+          ) : (
+            <View style={{ backgroundColor: C.panel, borderRadius: 10, borderWidth: 1, borderColor: C.greenLight, padding: 10 }}>
+              <PixelText size={9} upper={false} color={C.white45} style={{ lineHeight: 13 }}>
+                everyone stakes the same, picks an outcome — winners split the pot.
+                nobody right? everyone refunds. the contract holds the money.
+              </PixelText>
+              <PixelText size={10} color={C.white45} tracking={1} style={{ marginTop: 8 }}>your pick</PixelText>
+              <View style={{ flexDirection: "row", gap: 6, marginTop: 8 }}>
+                {([["home", game.home.shortName], ["draw", "draw"], ["away", game.away.shortName]] as [PoolOutcome, string][]).map(([o, label]) => (
+                  <PixelButton key={o} label={label} color={poolPick === o ? C.green : C.importBlue} size={10} style={{ flex: 1 }} onPress={() => setPoolPick(o)} />
+                ))}
+              </View>
+              <PixelText size={10} color={C.white45} tracking={1} style={{ marginTop: 10 }}>stake (USD₮ each)</PixelText>
+              <View style={{ flexDirection: "row", gap: 6, marginTop: 8 }}>
+                {CHAIN.stakeTiers.map((t, i) => (
+                  <PixelButton key={i} label={`${Number(t) / Number(CHAIN.ONE_USDT)}`} color={i === poolTier ? C.green : C.importBlue} size={11} style={{ flex: 1 }} onPress={() => setPoolTier(i)} />
+                ))}
+              </View>
+              <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+                <PixelButton label="✕" color={C.importBlue} size={11} onPress={() => setPoolOpen(false)} style={{ paddingHorizontal: 14 }} />
+                <PixelButton
+                  label={busyPool === "create" ? "opening…" : "open pool + broadcast"}
+                  color={C.green}
+                  size={11}
+                  style={{ flex: 1 }}
+                  onPress={startPool}
+                />
+              </View>
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* live pools on this match */}
+      {POOLS.live && gamePools.map((p) => {
+        const mine = myPicks[p.id.toString()] ?? 0
+        const stakeUsd = Number(p.stake) / Number(CHAIN.ONE_USDT)
+        const potUsd = Number(p.pot) / Number(CHAIN.ONE_USDT)
+        const iWon = p.settled && mine > 0 && (p.winners === 0 || mine === p.result)
+        return (
+          <View key={p.id.toString()} style={{ marginTop: 8, backgroundColor: C.panel, borderRadius: 10, borderWidth: 1, borderColor: C.greenLight, padding: 10 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <PixelText size={10} color={C.greenLight} tracking={1}>🏆 pool #{p.id.toString()}</PixelText>
+              <PixelText size={9} color={C.white45}>
+                {p.members.length} in · {potUsd} USD₮ pot
+              </PixelText>
+            </View>
+            <PixelText size={9} upper={false} color={C.white45} style={{ marginTop: 4 }}>
+              {stakeUsd} USD₮ each ·{" "}
+              {p.settled
+                ? p.winners === 0
+                  ? "settled — nobody called it, stakes refundable"
+                  : `settled — ${pickName(p.result)} won, ${p.winners} split the pot`
+                : mine > 0
+                  ? `you picked ${pickName(mine)} — settles after the match`
+                  : "pick a side to join"}
+            </PixelText>
+            {!p.settled && mine === 0 && game && (
+              <View style={{ flexDirection: "row", gap: 6, marginTop: 8 }}>
+                {([["home", game.home.shortName], ["draw", "draw"], ["away", game.away.shortName]] as [PoolOutcome, string][]).map(([o, label]) => (
+                  <PixelButton
+                    key={o}
+                    label={busyPool === p.id.toString() ? "…" : label}
+                    color={C.green}
+                    size={10}
+                    style={{ flex: 1 }}
+                    onPress={() => joinGroupPool(p, o)}
+                  />
+                ))}
+              </View>
+            )}
+            {iWon && (
+              <PixelButton
+                label={busyPool === p.id.toString() ? "claiming…" : "claim your share 🎉"}
+                color={C.gold}
+                textColor="#1b2548"
+                size={11}
+                style={{ marginTop: 8 }}
+                onPress={() => claimGroupPool(p)}
+              />
+            )}
+          </View>
+        )
+      })}
     </Panel>
   )
 }
