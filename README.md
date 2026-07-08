@@ -16,12 +16,14 @@
 
 <!-- VIDEO_EMBED -->
 <p align="center">
-  <video src="https://github.com/nickthelegend/kickpact/releases/download/v1.0.0/kickpact-launch.mp4" controls muted width="760"></video>
+  <a href="https://github.com/nickthelegend/kickpact/releases/download/v1.0.0/kickpact-launch.mp4">
+    <img src="docs/media/preview.gif" alt="Kickpact 60-second launch video preview" width="760" />
+  </a>
 </p>
 
-> ▶️ If the player doesn't load in your viewer, click the poster to watch the 60‑second launch video:
->
-> [![Watch the Kickpact launch video](docs/media/poster.png)](https://github.com/nickthelegend/kickpact/releases/download/v1.0.0/kickpact-launch.mp4)
+<p align="center">
+  <sub>▶️ <b><a href="https://github.com/nickthelegend/kickpact/releases/download/v1.0.0/kickpact-launch.mp4">Watch the full 60‑second launch video, with sound</a></b> — the loop above is a silent preview.</sub>
+</p>
 
 ---
 
