@@ -1,0 +1,63 @@
+# Kickpact CI — contracts + both apps' unit & integration suites.
+# Integration tests run the real Hyperswarm wire over a hermetic in-process
+# hyperdht testnet (loopback only — no public network needed in CI).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  contracts:
+    name: Contracts (Foundry)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/duel-evm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: forge test
+        run: forge test -vv
+
+  mobile:
+    name: Android app (unit + integration)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: bun install
+        run: bun install --frozen-lockfile
+      - name: unit tests (bun)
+        run: bun test src
+      - name: integration tests (node — hermetic DHT)
+        run: npm run test:integration
+
+  desktop:
+    name: Desktop app (unit + integration)
+    runs-on: ubuntu-latest
+    env:
+      # tests exercise the Bare worker's room core, not the Electron shell
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: bun install (workspace root)
+        run: bun install --frozen-lockfile
+      - name: unit tests
+        run: npm test
+        working-directory: apps/desktop
+      - name: integration tests (node — hermetic DHT)
+        run: npm run test:integration
+        working-directory: apps/desktop
