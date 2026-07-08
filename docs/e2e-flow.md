@@ -46,7 +46,7 @@ deck hash  stakes    revealed   per card  per card             takes the pot
 
 1. **Fund Polygon** — in‑app **Swap** (USD₮→USDC via Velora/ParaSwap) and **Bridge** (USD₮ over USD₮0 / LayerZero) move value onto Polygon.
 2. **Browse** — the Markets screen lists live World Cup markets with YES/NO cents + volume (Polymarket Gamma API).
-3. **Trade** — currently deep‑links to Polymarket for order signing; in‑app CLOB signing is next.
+3. **Trade** — in‑app: the trade sheet fetches the live best ask, the WDK wallet EIP‑712‑signs a FOK market order (`src/clob.ts` — L1 auth derives API creds, L2 HMAC signs the request), and posts it to `clob.polymarket.com`. Balance/allowance gaps surface with a one‑tap USDC.e approve. The client's wire bytes are test‑pinned to the official `@polymarket/clob-client`.
 
 ---
 

@@ -32,11 +32,15 @@
     "tailwindcss": "3.4.17"
   },
   "devDependencies": {
+    "@polymarket/clob-client": "^5.8.1",
     "@tetherto/wdk-protocol-bridge-usdt0-evm": "^1.0.0-beta.6",
+    "@types/bun": "^1.3.14",
     "@types/react": "~19.2.2",
     "babel-preset-expo": "^56.0.15",
     "bare-pack": "^2.1.3",
-    "typescript": "~6.0.3"
+    "ethers5": "npm:ethers@5",
+    "typescript": "~6.0.3",
+    "undici": "^8.7.0"
   },
   "scripts": {
     "start": "expo start",

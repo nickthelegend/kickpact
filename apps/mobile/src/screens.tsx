@@ -71,6 +71,7 @@ import { BRIDGE_CHAINS, bridge, quoteBridge, type BridgeChain } from "./bridge"
 import { offRamp, onRamp } from "./fiat"
 import { assetForStrike, fetchTickers, fromStrike, priceLabel, type Ticker } from "./prices"
 import { fetchMarkets, fmtVolume, marketUrl, toCents, type PolyMarket } from "./polymarket"
+import * as clob from "./clob"
 import { QRModal, QRScanner } from "./qr"
 import { MatchRoom, type RoomMsg } from "./room"
 import { ethers } from "ethers"
@@ -401,7 +402,14 @@ function HomeDashboard({ onSwap, onBridge, onMarkets }: { onSwap: () => void; on
         await refresh()
         setNote("+100 USD₮ minted to your wallet")
       } catch (e) {
-        setNote(errMsg(e))
+        const msg = errMsg(e)
+        if (/insufficient funds/i.test(msg)) {
+          // first-run trap: minting needs a drop of Sepolia ETH for gas
+          setNote("needs a drop of Sepolia ETH for gas — grab some free from a faucet (opening one), then mint again")
+          Linking.openURL("https://cloud.google.com/application/web3/faucet/ethereum/sepolia").catch(() => {})
+        } else {
+          setNote(msg)
+        }
       } finally {
         setBusy(false)
       }
@@ -2556,6 +2564,7 @@ export function MarketsScreen({ onBack }: { onBack: () => void }) {
   const [markets, setMarkets] = useState<PolyMarket[]>([])
   const [loading, setLoading] = useState(true)
   const [q, setQ] = useState("")
+  const [trading, setTrading] = useState<PolyMarket | null>(null)
 
   const [err, setErr] = useState<string | null>(null)
 
@@ -2606,10 +2615,148 @@ export function MarketsScreen({ onBack }: { onBack: () => void }) {
           </PixelText>
         )}
         {shown.map((m) => (
-          <MarketCard key={m.id} m={m} onTrade={() => Linking.openURL(marketUrl(m))} />
+          <MarketCard key={m.id} m={m} onTrade={() => setTrading(m)} />
         ))}
       </ScrollView>
+      {trading && <TradeSheet m={trading} onClose={() => setTrading(null)} />}
     </View>
+  )
+}
+
+/** In-app CLOB trading: sign an EIP-712 FOK market buy with the WDK wallet and
+ * post it straight to Polymarket's order book. Real money — funded via the
+ * Swap/Bridge rails (USDC.e + a little POL on Polygon). */
+function TradeSheet({ m, onClose }: { m: PolyMarket; onClose: () => void }) {
+  const { signer } = useWallet()
+  const [outcome, setOutcome] = useState(0)
+  const [amount, setAmount] = useState("1")
+  const [ask, setAsk] = useState<number | null>(null)
+  const [busy, setBusy] = useState<string | null>(null)
+  const [note, setNote] = useState<string | null>(null)
+  const [needsApprove, setNeedsApprove] = useState(false)
+  const [done, setDone] = useState<string | null>(null)
+
+  const tokenId = m.tokenIds[outcome]
+  useEffect(() => {
+    setAsk(null)
+    setNote(null)
+    setDone(null)
+    if (!tokenId) return
+    clob
+      .bestPrice(tokenId, "BUY")
+      .then(setAsk)
+      .catch(() => setAsk(m.prices[outcome] ?? null))
+  }, [tokenId])
+
+  const usdc = Math.max(0, Number(amount) || 0)
+  const px = ask ?? m.prices[outcome] ?? 0
+  const shares = px > 0 ? usdc / px : 0
+
+  const buy = async () => {
+    if (!signer || !tokenId || usdc <= 0) return
+    setBusy("checking funds on polygon…")
+    setNote(null)
+    setDone(null)
+    try {
+      const gap = await clob.fundingGap(await signer.getAddress(), usdc, m.negRisk)
+      if (gap === "APPROVE_REQUIRED") {
+        setNeedsApprove(true)
+        setNote("one-time approval needed: let the exchange pull your USDC.e")
+        return
+      }
+      if (gap) {
+        setNote(gap)
+        return
+      }
+      setBusy("signing order with your wallet…")
+      const creds = await clob.deriveApiCreds(signer)
+      const built = await clob.buildMarketBuy(signer, { tokenId, usdcAmount: usdc, negRisk: m.negRisk })
+      setBusy(`posting FOK buy @ ${toCents(built.price)}…`)
+      const res = await clob.postOrder(signer, creds, built)
+      if (res.ok) {
+        setDone(`filled — ~${built.tokens.toFixed(2)} shares @ ${toCents(built.price)}`)
+      } else {
+        setNote(String(res.body?.error || `CLOB rejected (HTTP ${res.status})`))
+      }
+    } catch (e: any) {
+      setNote(String(e?.message || e))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const approve = async () => {
+    if (!signer) return
+    setBusy("approving USDC.e (one-time)…")
+    setNote(null)
+    try {
+      const polygonSigner = signer.connect(clob.polygonProvider())
+      await clob.approveUsdce(polygonSigner, m.negRisk)
+      setNeedsApprove(false)
+      setNote("approved — tap buy again")
+    } catch (e: any) {
+      setNote(String(e?.message || e))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  return (
+    <Modal transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={st.modalOverlay} onPress={onClose}>
+        <Pressable style={st.modalSheet} onPress={() => {}}>
+          <PixelText size={12} style={{ lineHeight: 18 }} upper={false}>{m.question}</PixelText>
+          <PixelText size={8} color={C.white45} style={{ marginTop: 4 }}>
+            real money · polymarket clob · polygon mainnet{m.negRisk ? " · neg-risk" : ""}
+          </PixelText>
+
+          <View style={{ flexDirection: "row", gap: 8, marginTop: 14 }}>
+            {m.outcomes.map((o, i) => (
+              <Pressable
+                key={i}
+                onPress={() => setOutcome(i)}
+                style={[st.mktPill, { backgroundColor: i === outcome ? C.eth : C.panel, flex: 1, alignItems: "center" }]}
+              >
+                <PixelText size={11}>{o} {toCents(m.prices[i] ?? 0)}</PixelText>
+              </Pressable>
+            ))}
+          </View>
+
+          <TextInput
+            value={amount}
+            onChangeText={setAmount}
+            keyboardType="decimal-pad"
+            placeholder="USDC amount"
+            placeholderTextColor={C.white35}
+            style={st.input}
+          />
+          <PixelText size={9} upper={false} color={C.white45}>
+            {ask == null ? "fetching live ask…" : `best ask ${toCents(px)} — pay $${usdc.toFixed(2)} for ~${shares.toFixed(2)} shares`}
+          </PixelText>
+
+          {busy && (
+            <View style={{ flexDirection: "row", gap: 10, alignItems: "center", marginTop: 12 }}>
+              <ActivityIndicator color={C.eth} />
+              <PixelText size={9} upper={false} color={C.white60}>{busy}</PixelText>
+            </View>
+          )}
+          {note && !busy && (
+            <PixelText size={9} upper={false} color={C.amber} style={{ marginTop: 12, lineHeight: 14 }}>{note}</PixelText>
+          )}
+          {done && (
+            <PixelText size={11} upper={false} color={C.greenLight} style={{ marginTop: 12 }}>✓ {done}</PixelText>
+          )}
+
+          <View style={{ marginTop: 14, gap: 10 }}>
+            {needsApprove && <PixelButton label="approve usdc.e (one-time)" color={C.gold} textColor="#241c06" onPress={approve} />}
+            <PixelButton label={busy ? "working…" : `buy ${m.outcomes[outcome] ?? ""}`} color={C.green} onPress={buy} />
+            <Pressable onPress={() => Linking.openURL(marketUrl(m))}>
+              <PixelText size={9} color={C.eth} style={{ textAlign: "center" }}>open on polymarket ↗</PixelText>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
   )
 }
 

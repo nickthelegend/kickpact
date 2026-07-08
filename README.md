@@ -71,7 +71,7 @@ Kickpact keeps the ritual and removes the trust problem. Every stake sits in **o
 | --- | --- | --- | --- |
 | 🤝 | **Pacts** | Escrow a bet with a friend (or an open room anyone can join). Both sides stake equal USD₮; the winner claims the pot, the loser's escrow auto‑releases. Resolve by mutual agreement or a neutral arbiter. | `KickpactPacts` on **Sepolia** |
 | ⚔️ | **Duels** | A Tinder‑style 1v1: both players swipe UP/DOWN through a commit‑revealed deck of "will this asset beat its strike?" cards. The contract escrows both stakes and pays the better reader — a correct contrarian call scores more than following the crowd. Free practice‑vs‑bot mode too. | `KickpactDuel` on **Sepolia** |
-| 📈 | **Polymarket** | Browse and trade **real‑money** World Cup markets with live order‑book odds — the real‑stakes version of your Pacts. | Polymarket CLOB on **Polygon** |
+| 📈 | **Polymarket** | Trade **real‑money** World Cup markets **in‑app**: the WDK wallet EIP‑712‑signs Fill‑or‑Kill orders and posts them straight to Polymarket's CLOB (live order‑book prices, USDC.e allowance flow — byte‑identical to the official SDK, proven by test). | Polymarket CLOB on **Polygon** |
 
 The in‑app **Swap** and **Bridge** screens exist to move USD₮ onto Polygon and fund that third tier; the testnet Pacts and Duels stay on Sepolia.
 
@@ -158,7 +158,7 @@ cd apps/desktop && bun install && bun run start
 cd apps/duel-evm && forge test    # Solidity test suite
 ```
 
-The self‑custodial wallet generates a real seed on first launch — on a testnet build, mint USD₮ from the in‑app faucet (Sepolia) and you're ready to bet.
+The self‑custodial wallet generates a real seed on first launch. **First run:** grab a drop of free Sepolia ETH for gas ([Google faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia)) — the app links you there if you forget — then mint USD₮ from the in‑app faucet and you're ready to bet.
 
 ## Tests
 
@@ -167,8 +167,8 @@ Three layers, all runnable offline:
 | Suite | What it covers | Run |
 | --- | --- | --- |
 | **Contracts** | 27 Foundry tests — duel lifecycle, pact escrow, refunds, timeouts | `cd apps/duel-evm && forge test` |
-| **Android app — unit** | Room wire protocol (framing, signed payloads, ethers verify), deterministic pact terms + keccak parity with the contract, ESPN fixture parser | `cd apps/mobile && bun test src` |
-| **Android app — integration** | The app's exact P2P wire end‑to‑end over a **hermetic in‑process DHT** (`hyperdht` testnet): join → hello → wallet‑signed message verified by the peer, forged messages rejected, in‑room pact proposals | `cd apps/mobile && npm run test:integration` |
+| **Android app — unit** | Room wire protocol (framing, signed payloads, ethers verify), deterministic pact terms + keccak parity with the contract, ESPN fixture parser, CLOB client primitives (HMAC auth vectors, EIP‑712 order round‑trip, SDK rounding math) | `cd apps/mobile && bun test src` |
+| **Android app — integration** | The app's exact P2P wire end‑to‑end over a **hermetic in‑process DHT**; **CLOB wire parity** — our hand‑rolled client produces byte‑identical signed orders to the official `@polymarket/clob-client` (signature included, both exchanges); live CLOB API (Gamma markets, order‑book price, L1 EIP‑712 auth deriving real API creds); WDK bridge‑registry parity | `cd apps/mobile && npm run test:integration` |
 | **Desktop app — unit** | Room core: topic derivation (cross‑platform constant), chunk‑safe framing, message shapes, signed/unsigned badges | `cd apps/desktop && npm test` |
 | **Desktop app — integration** | Real Hyperswarm rooms on the hermetic DHT: peers meet + chat, room isolation, wallet‑signature verification, pact passthrough | `cd apps/desktop && npm run test:integration` |
 

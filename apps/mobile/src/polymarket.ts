@@ -14,6 +14,7 @@ export interface PolyMarket {
   outcomes: string[] // e.g. ["Yes","No"]
   prices: number[] // parallel to outcomes, 0..1
   tokenIds: string[] // CLOB token ids parallel to outcomes
+  negRisk: boolean // neg-risk markets settle via the NegRisk CTF exchange
   volume: number
   liquidity: number
   image?: string
@@ -34,6 +35,7 @@ function parseMarket(m: any): PolyMarket | null {
       outcomes,
       prices,
       tokenIds,
+      negRisk: !!m.negRisk,
       volume: Number(m.volumeNum || 0),
       liquidity: Number(m.liquidityNum || 0),
       image: m.image || m.icon || undefined,

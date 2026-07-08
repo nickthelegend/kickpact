@@ -38,7 +38,7 @@ Football is the world's biggest social ritual — and the way people already "be
 | --- | --- | --- | --- |
 | 🤝 | **Pacts** | Escrow a bet with a friend (or an open room anyone can join). Both sides stake equal USD₮; the winner claims the pot, the loser's escrow auto‑releases. Resolve by mutual agreement, or let a neutral arbiter (our serverless keeper) settle it from the official result. | `KickpactPacts` on **Sepolia** |
 | ⚔️ | **Duels** | A Tinder‑style 1v1: both players swipe UP/DOWN through a commit‑revealed deck of "will this asset beat its strike?" cards on live prices. The contract escrows both stakes and pays the better market‑reader — a correct contrarian call scores more than following the crowd. Free practice‑vs‑bot mode too. | `KickpactDuel` on **Sepolia** |
-| 📈 | **Polymarket** | Browse and trade **real‑money** World Cup markets with live order‑book odds — the real‑stakes version of your Pacts. | Polymarket CLOB on **Polygon** |
+| 📈 | **Polymarket** | Trade **real‑money** World Cup markets **in‑app**: the WDK wallet EIP‑712‑signs Fill‑or‑Kill orders and posts them straight to Polymarket's CLOB — live order‑book prices, USDC.e allowance flow, byte‑identical to the official SDK (proven by test). | Polymarket CLOB on **Polygon** |
 
 The in‑app **Swap** and **Bridge** screens move USD₮ onto Polygon to fund that third tier; the testnet Pacts and Duels stay on Sepolia.
 
@@ -121,7 +121,6 @@ On first launch the app generates a real self‑custodial seed; on a testnet bui
 
 ## What's next
 
-- In‑app Polymarket CLOB order signing (currently deep‑links out).
 - Swap in the real `@tetherto/wdk-protocol-*` packages behind the existing module surfaces.
 - More bet formats on the same engine: battle royales, daily solo gauntlets, tournaments, streak rewards.
 

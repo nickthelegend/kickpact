@@ -41,7 +41,7 @@ A Tinder‑style 1v1. Both players swipe **UP/DOWN** through a commit‑revealed
 - Contract: `KickpactDuel` (commit‑reveal deck, real‑PnL scoring).
 
 ### Tier 3 — Polymarket (real‑money markets) · Polygon
-Browse and trade **real‑money** World Cup markets with live order‑book odds — the real‑stakes version of a Pact. The in‑app **Swap** and **Bridge** screens move USD₮ onto Polygon to fund this tier. (In‑app CLOB order signing is the next step; today it deep‑links out.)
+Trade **real‑money** World Cup markets with live order‑book odds — the real‑stakes version of a Pact — **in‑app**: pick an outcome, enter USDC, and the WDK wallet EIP‑712‑signs a Fill‑or‑Kill order posted straight to Polymarket's CLOB (with balance/allowance checks and a one‑tap USDC.e approve). The in‑app **Swap** and **Bridge** screens move USD₮ onto Polygon to fund this tier.
 
 ---
 
@@ -68,4 +68,4 @@ SignIn · Home (wallet + fixtures) · Game detail (predict + Match Room) · Pact
 
 ## Out of scope (for now)
 
-In‑app Polymarket order signing, fiat payout rails beyond MoonPay sandbox, and non‑football markets. The bet engine generalizes to battle royales / tournaments / gauntlets — future work.
+Fiat payout rails beyond MoonPay sandbox, and non‑football markets. The bet engine generalizes to battle royales / tournaments / gauntlets — future work.
