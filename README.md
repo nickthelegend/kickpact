@@ -1,110 +1,107 @@
-# Kickpact — The Prediction Arena
+# Kickpact — bet on football with a wallet that's yours
 
-> Swipe YES/NO on a binary-prediction deck, face off against another player, and on-chain escrow pays the winner. A Tinder-style PvP prediction duel on **Sui**, powered by **DeepBook Predict**.
+> A self‑custodial, mobile‑first **World Cup prediction app**. Your wallet holds **USD₮** and never leaves your phone — then you bet three ways: trustless **Pacts** with a friend, a Tinder‑style on‑chain **Duel**, or real‑money **Polymarket** markets. Fans of the same match meet in a **peer‑to‑peer watch party** over Hyperswarm — no server, messages signed by your wallet.
 
-[![Demo](https://img.shields.io/badge/▶_Watch_the_demo-4_min-FF0000)](https://youtu.be/sKIKsmdRs9U)
-&nbsp;·&nbsp; **Live on Sui testnet** &nbsp;·&nbsp; Built for **Sui Overflow 2026**
+<p>
+  <img alt="Tether Developers Cup" src="https://img.shields.io/badge/Tether_Developers_Cup-1BA27A?style=flat-square" />
+  <img alt="WDK track" src="https://img.shields.io/badge/track-WDK_·_self--custodial-627EEA?style=flat-square" />
+  <img alt="Pears track" src="https://img.shields.io/badge/track-Pears_·_P2P-F2B233?style=flat-square" />
+  <img alt="Sepolia" src="https://img.shields.io/badge/contracts-Sepolia_testnet-3ba34b?style=flat-square" />
+  <img alt="Polygon" src="https://img.shields.io/badge/markets-Polygon_mainnet-8247E5?style=flat-square" />
+</p>
 
-| | |
+---
+
+## ▶️ 60‑second launch video
+
+<!-- VIDEO_EMBED -->
+[![Watch the Kickpact launch video](docs/media/poster.png)](docs/media/kickpact-launch.mp4)
+
+*Click the poster to play `docs/media/kickpact-launch.mp4` (also attached inline above once the repo is published).*
+
+---
+
+## The app, screen by screen
+
+<table>
+  <tr>
+    <td width="33%"><img src="docs/media/screens/shot-01-onboarding.png" alt="Create a self-custodial wallet" /><br/><sub><b>Self‑custodial onboarding</b> — a real 12‑word wallet, powered by WDK. No email, no custodian.</sub></td>
+    <td width="33%"><img src="docs/media/screens/shot-03-home.png" alt="Home / wallet" /><br/><sub><b>Home</b> — USD₮ balance on Sepolia, WDK actions (mint · swap · bridge · withdraw · off‑ramp), live World Cup fixtures.</sub></td>
+    <td width="33%"><img src="docs/media/screens/shot-04-match.png" alt="Match room + prediction" /><br/><sub><b>Match</b> — join the P2P watch party, or lock a USD₮ prediction against a friend.</sub></td>
+  </tr>
+  <tr>
+    <td width="33%"><img src="docs/media/screens/shot-05-pacts.png" alt="Pacts" /><br/><sub><b>Pacts</b> — escrow a bet with a friend or an open room. Winner claims the pot; loser's escrow auto‑releases. No custodian, no KYC.</sub></td>
+    <td width="33%"><img src="docs/media/screens/shot-06-pvp.png" alt="PvP arena" /><br/><sub><b>PvP Arena</b> — practice vs a bot for free, or stake a real 1v1 Duel and share the code.</sub></td>
+    <td width="33%"><img src="docs/media/screens/shot-07-duel-game.png" alt="Duel game" /><br/><sub><b>Duel</b> — swipe UP/DOWN through a deck of live‑price cards. Best market‑reader takes the pot.</sub></td>
+  </tr>
+  <tr>
+    <td width="33%"><img src="docs/media/screens/shot-08-profile.png" alt="Profile" /><br/><sub><b>Profile</b> — your address + receive QR, USD₮/ETH balances, and reveal‑recovery‑phrase. Keys never leave the device.</sub></td>
+    <td width="33%"><img src="docs/media/screens/shot-09-swap.png" alt="Swap" /><br/><sub><b>Swap</b> — real on‑chain USD₮→USDC via the Velora/ParaSwap aggregator on Polygon: the rail that funds the Polymarket tier.</sub></td>
+    <td width="33%"></td>
+  </tr>
+</table>
+
+---
+
+## Why Kickpact
+
+Football is the world's biggest social ritual — and the way people already "bet" on it (group chats, side‑bets with friends, the office pool) is trustless in spirit but custodial and messy in practice: someone holds the money, someone has to be trusted to pay out.
+
+Kickpact keeps the ritual and removes the trust problem. Every stake sits in **on‑chain escrow that only the outcome can release**, the money lives in a **wallet you alone control**, and the whole thing feels like a pixel‑art mobile game rather than a DeFi terminal.
+
+> **Your keys. Your USD₮. Your call on the match.**
+
+---
+
+## Three ways to bet — one wallet, one USD₮ balance
+
+| | Tier | What it is | Where |
+| --- | --- | --- | --- |
+| 🤝 | **Pacts** | Escrow a bet with a friend (or an open room anyone can join). Both sides stake equal USD₮; the winner claims the pot, the loser's escrow auto‑releases. Resolve by mutual agreement or a neutral arbiter. | `KickpactPacts` on **Sepolia** |
+| ⚔️ | **Duels** | A Tinder‑style 1v1: both players swipe UP/DOWN through a commit‑revealed deck of "will this asset beat its strike?" cards. The contract escrows both stakes and pays the better reader — a correct contrarian call scores more than following the crowd. Free practice‑vs‑bot mode too. | `KickpactDuel` on **Sepolia** |
+| 📈 | **Polymarket** | Browse and trade **real‑money** World Cup markets with live order‑book odds — the real‑stakes version of your Pacts. | Polymarket CLOB on **Polygon** |
+
+The in‑app **Swap** and **Bridge** screens exist to move USD₮ onto Polygon and fund that third tier; the testnet Pacts and Duels stay on Sepolia.
+
+---
+
+## WDK track — a wallet that never leaves the phone
+
+Kickpact is built around the **Wallet Development Kit**: the wallet *is* the identity, and the same key that holds your USD₮ also signs your bets and your chat.
+
+- **Secure storage (real WDK).** The seed is sealed with [`@tetherto/wdk-react-native-secure-storage`](https://www.npmjs.com/package/@tetherto/wdk-react-native-secure-storage) into the device keychain (Secure Enclave / StrongBox) behind biometrics — `apps/mobile/src/storage.native.ts`.
+- **Self‑custodial wallet.** On‑device BIP‑39 seed, 12‑word backup / import, an explicit `INITIALIZING → NO_WALLET → BACKUP_PENDING → READY` state machine that mirrors WDK RN core — `apps/mobile/src/wallet.tsx`.
+- **Swap** — real swaps via the Velora/ParaSwap aggregator (`src/swap.ts`), shaped to drop in `@tetherto/wdk-protocol-swap-velora-evm`.
+- **Bridge** — cross‑chain USD₮ via the **USD₮0 / LayerZero OFT** (`src/bridge.ts`), mirroring `@tetherto/wdk-protocol-bridge-usdt0-evm` with the verified OFT addresses + LayerZero EIDs.
+- **Fiat on/off‑ramp** — MoonPay buy/sell widget (`src/fiat.ts`), mirroring `@tetherto/wdk-protocol-fiat-moonpay`.
+
+> **Honest scope:** secure‑storage is a live WDK integration. Swap / bridge / fiat / core are implemented in ethers against the exact WDK module surface so the real `@tetherto/wdk-protocol-*` packages drop straight in.
+
+---
+
+## Pears track — the peer‑to‑peer watch party
+
+Open any match and you can **join the room**: a serverless watch party where fans of the same game find each other on the Hyperswarm DHT.
+
+- **Real P2P.** A **Bare** worklet (`react-native-bare-kit`) runs **Hyperswarm** on the phone and joins a topic derived from the match id — `hash("kickpact/match/<gameId>")` — so everyone watching the same game lands in the same swarm. `apps/mobile/src/room.ts`.
+- **Signed identity = wallet identity.** Every message is signed with your WDK key and verified with `ethers.verifyMessage`; verified peers render ✓, unsigned ones ⚠.
+- **Bet from the room.** Propose a wager in‑chat and it opens an on‑chain `KickpactPacts` escrow (open room, keeper arbiter); other fans tap *join bet* to take the other side. QR "join‑escrow" flows through the same contract.
+- **Desktop companion.** `apps/pear/` is a **Pears** (`pear run`) "Watch Party" window plus a headless `bare cli.js` peer — the same rooms, on the same swarm, on desktop.
+
+---
+
+## What's on‑chain
+
+Solidity 0.8.28, Foundry, deployed to **Ethereum Sepolia** (`chainId 11155111`). Source in [`apps/duel-evm/src`](apps/duel-evm/src), addresses in [`apps/duel-evm/deployed.json`](apps/duel-evm/deployed.json).
+
+| Contract | Address (Sepolia) |
 | --- | --- |
-| 🎬 **Demo video** | https://youtu.be/sKIKsmdRs9U |
-| 📦 **Package (testnet)** | [`0xe1b1853ab66c44dbe00a4b64238a3f64e226dfcd50c331d095fb38599bdc1854`](https://suiscan.xyz/testnet/object/0xe1b1853ab66c44dbe00a4b64238a3f64e226dfcd50c331d095fb38599bdc1854) |
-| 🔗 **On-chain primitive** | DeepBook Predict (binary digitals) |
-| 🔑 **Identity / gas** | zkLogin via Enoki · sponsored gas end-to-end |
+| **KickpactDuel** | [`0x045Ad96EB24CE29f02C4E41542507DE26FE13895`](https://sepolia.etherscan.io/address/0x045Ad96EB24CE29f02C4E41542507DE26FE13895) |
+| **KickpactPacts** (v2, open rooms) | [`0xc84a624109e6406d1a5Aa8413B19a1CFFCFe7f5A`](https://sepolia.etherscan.io/address/0xc84a624109e6406d1a5Aa8413B19a1CFFCFe7f5A) |
+| **MockUSDT** (USD₮, 6dp, open faucet) | [`0x4802B35fFE360CAcF7bc22702544DDA207b950A3`](https://sepolia.etherscan.io/address/0x4802B35fFE360CAcF7bc22702544DDA207b950A3) |
+| **oracleKeeper** (settles duels + match results) | [`0x72AE77B55A9195526170bb4D8D2B6f20d37b8262`](https://sepolia.etherscan.io/address/0x72AE77B55A9195526170bb4D8D2B6f20d37b8262) |
 
----
-
-## 30-second pitch
-
-Prediction markets are powerful but look like a Bloomberg terminal — order books, Greeks, vol surfaces. Meanwhile swipe-betting apps have proven retail *loves* feel-based prediction UX (Pulse on Solana, Rush's $500M-in-a-week sub-hour BTC binaries) — but they're shallow, custodial, and have **no real opponent**.
-
-**Kickpact is both.** Two players swipe YES/NO through the same deck of binary-digital cards. Every swipe mints a *real* on-chain DeepBook Predict position — not a synthetic bet — and a Move `Duel` shared object escrows both stakes and pays the dUSDC side-pot to whoever reads the market better. zkLogin + sponsored gas mean it feels like a mobile game: no seed phrase, no wallet popups, no SUI required.
-
-> **Two players. One deck. One question — who reads the market better?**
-
----
-
-## Watch the demo (4 min)
-
-▶️ **https://youtu.be/sKIKsmdRs9U**
-
-What to look for — these are the things that separate Kickpact from a generic Predict front-end:
-
-1. **Real on-chain positions** — swipe right = `predict::mint` YES on testnet, not a synthetic toggle.
-2. **No wallet popups** — the *absence* of signing prompts is the magic. zkLogin + sponsored gas make every swipe a one-tap, gasless transaction.
-3. **One atomic swipe PTB** — a single transaction does `predict::mint` (player's own manager) **and** `record_swipe` (shared `Duel`) in the same block. See it on Suiscan in the demo.
-4. **Commit-reveal deck** — cards are hashed at duel creation, revealed only at match start → provably fair, no front-running.
-5. **On-chain settlement** — the oracle resolves each card 0/1; a keeper redeems and finalizes; the winner takes the pot. The full lifecycle closes on-chain.
-
----
-
-## How a duel works — the player walkthrough
-
-```
- sign in        deposit / stake      swipe phase (≤10 min)      lockup / watch        settle + payout
-┌──────────┐   ┌───────────────┐    ┌──────────────────┐      ┌──────────────┐      ┌────────────────┐
-│ zkLogin  │ → │ pick a tier   │ →  │ reveal deck;     │  →   │ live oracle  │  →   │ per-card 0/1;  │
-│ (Google) │   │ 1/3/5/10 dUSDC│    │ swipe YES/NO →   │      │ ticks; spot  │      │ higher PnL     │
-│ no seed  │   │ + queue       │    │ each = a real    │      │ vs strike;   │      │ takes the pot; │
-│ phrase   │   │               │    │ Predict position │      │ emoji reacts │      │ both redeem    │
-└──────────┘   └───────────────┘    └──────────────────┘      └──────────────┘      └────────────────┘
-```
-
-1. **Sign in** — zkLogin via Enoki (Google/Apple OAuth → Sui address). No seed phrase, no extension. On first sign-in, a `PredictManager` is created for you, **sponsored by Kickpact**. Your wallet only ever holds dUSDC.
-2. **Fund & queue** — deposit dUSDC (or swap SUI → dUSDC at a fixed 1:10 rate inside the app), pick a stake tier (**1 / 3 / 5 / 10 dUSDC**), and enter matchmaking. Entry is gated on the manager holding **≥ 5 dUSDC** (worst-case premium across a full 5-card deck).
-3. **Match & reveal** — matchmaking pairs two players into a Move `Duel` shared object that escrows both stakes. The deck is **commit-reveal**: hashed at `create_duel`, revealed only at match start, so neither player can pre-stage trades.
-4. **Swipe (≤ 10 min)** — swipe right = YES, left = NO, through every card in the deck. Each swipe fires a **single atomic PTB** that calls `predict::mint` on *your own* `PredictManager` (opening a real Predict position) and `record_swipe` on the shared `Duel` (logging your direction and snapshotting the probability you swiped at). No wallet popup — the PTB is gas-sponsored.
-5. **Lockup / watch** — once both players finish swiping (or the 10-min clock expires), the duel enters a shared live view of spot vs. strike, ticking toward each card's expiry, with emoji reactions. Dead waiting time becomes the ritual.
-6. **Settle** — each binary resolves to 0/1 at its own oracle tick. The settled-redeem keeper calls `settle_card` per card (and `redeem_permissionless` on each player's manager), then `finalize` releases the dUSDC side-pot to the higher total PnL.
-7. **Payout & keep** — the **winner** takes the entire side-pot; **both** players keep and can redeem their own Predict positions whenever they want. A tie splits the pot.
-
-### Adaptive deck size
-
-The deck isn't a fixed 5 — it's **sized to live oracle supply** at duel creation: `deckSize = min(liveOracles, 5)`, clamped to a **3–5 band**, and built from the **soonest-settling** eligible oracles (expiry > 10 min and within a ~3h horizon). On testnet, short-dated oracle supply fluctuates between 3 and 5, so the deck flexes to whatever's live instead of failing — and always picks the fastest-resolving cards so a duel finalizes as soon as possible.
-
-### Scoring — real PnL, no UI multipliers
-
-```
-card_pnl     = predict_redeem(player, card) − premium_paid(player, card)
-player_score = Σ card_pnl  across the deck
-```
-
-Highest total PnL wins the entire dUSDC side-pot; a tie splits it. **Predict's own premium math is the scoring engine** — a correct call on a 0.28-implied YES pays out ~3× a correct call on a 0.88 YES, so a contrarian read scores more than following the crowd. No synthetic odds-weighting, no UI multiplier. The Duel side-pot and a player's individual Predict PnL are independent ledgers: you can lose the Duel but still net-positive on a hot pick, or win the Duel with flat individual PnL.
-
-### Two tiers, one engine
-
-- **Practice** — solo vs. a bot with virtual swipes against the *real* oracle. No stake, no `predict::mint`. The on-ramp for the swipe loop.
-- **Staked PvP** — 1v1 duels with real dUSDC side-pots at fixed tiers (1 / 3 / 5 / 10 dUSDC) and ranked MMR.
-
-Both run the exact same swipe → lockup → settle flow (the contract exposes `*_free` entrypoints that mirror the staked path); only the money flow is gated.
-
----
-
-## What's actually on-chain
-
-Kickpact is not a Predict front-end with a database behind it — the duel lifecycle lives on Sui.
-
-### DeepBook Predict touchpoints
-
-| #   | Primitive                        | Role in Kickpact |
-| --- | -------------------------------- | -------------- |
-| 1   | `predict::mint`                  | Called in the **player-signed swipe PTB** on the player's own `PredictManager`. Sized per-card from a stake-tier budget (≤ 1 dUSDC/card). |
-| 2   | `predict::redeem_permissionless` | Each player redeems their own positions after a card settles; the keeper may call opportunistically. Payouts deposit into the player's own manager. |
-| 3   | `OracleSVI` reads                | Powers the live mark view, calibrates deck difficulty, snapshots `p_swiped` at swipe time, and supplies each card's 0/1 settlement. |
-| 4   | Predict indexer / settlement     | Backend detects per-card settlement → drives the keeper through `settle_card` × N then `finalize`. Also drives the lockup view. |
-
-### Kickpact's Move package (`apps/contracts/`)
-
-- **`Duel` shared object** — escrows the dUSDC side-pot and records every swipe (card index, direction, position reference, premium paid). At settle, reads per-player PnL and releases the side-pot to the higher total. It does **not** hold Predict positions — each player owns their own manager.
-- **`swap` module** — fixed-rate 1 SUI ↔ 10 dUSDC, backing the in-app Deposit/Swap screen so a SUI-only player can fund a stake without leaving Kickpact.
-- **`pricing` (SVI binary-digital)**, `math`, `i64` — supporting modules.
-- Lifecycle entrypoints: `create_duel` / `join_duel` / `reveal_deck` / `record_swipe` / `settle_card` / `finalize`, each with a `*_free` practice-tier variant, plus `refund_duel` / `claim_reveal_timeout` safety paths. Covered by a Move unit-test suite (`tests/duel_tests.move`).
-
-### Why these design decisions
-
-- **Swipe PTBs are player-signed and atomic** — Predict requires `sender == manager.owner()`, so the player *must* be the signer. zkLogin + sponsored gas are what make that invisible. The mint and the `record_swipe` land in the same block, so a position can never exist without its duel record.
-- **The Duel escrows the side-pot, not the positions** — players keep full custody of their Predict positions; the contract only adjudicates the side-pot from recorded PnL.
-- **Commit-reveal deck** — hashing the deck at creation and revealing at match start makes it provably fair and impossible to front-run.
+Stakes and payouts are in **USD₮** (6 decimals); gas is Sepolia ETH. On Polygon, the swap/bridge/Polymarket tier uses real Tether (`0xc2132D05D31c914a87C6611C10748AEb04B58e8F`). Cross‑chain moves go over **USD₮0** (LayerZero OFT).
 
 ---
 
@@ -113,47 +110,47 @@ Kickpact is not a Predict front-end with a database behind it — the duel lifec
 ```
 kickpact/
 ├── apps/
-│   ├── web        # Vite + React 19 — swipe UI, lockup view, share card
-│   ├── server     # Bun — WebSocket relay, indexer, settled-redeem keeper,
-│   │              #       sponsored-gas service, AI Deckmaster
-│   └── contracts  # Move package + TS deploy/upgrade/codegen scripts
-└── packages/
-    └── ui         # shared shadcn/ui components
+│   ├── mobile     # Expo / React Native — the app (WDK wallet, 3 bet tiers, Hyperswarm rooms)
+│   ├── duel-evm   # Solidity + Foundry — KickpactDuel, KickpactPacts, MockUSDT (Sepolia)
+│   ├── pear       # Pears / Bare desktop "Watch Party" companion + headless CLI peer
+│   └── server     # Bun — oracle/settlement keeper
+└── videos/
+    └── kickpact-launch   # the HyperFrames project for the 60s launch video
 ```
 
-| Layer | Tech |
+| Layer | Stack |
 | --- | --- |
-| **Web** | Vite, React 19, Tailwind v4, shadcn/ui, `@mysten/sui` v2 + `@mysten/dapp-kit` v1 |
-| **Server** | Bun (TypeScript strict) — card-generation API, WebSocket matchmaking + game-room relay, `Duel` indexer, PnL/settle tracker, settled-redeem keeper, sponsored-gas service |
-| **Chain** | Sui testnet, Move 2024, DeepBook Predict |
-| **Contracts** | Move package (`duel`, `swap`, `pricing`) + `@mysten/codegen` typed bindings |
-| **Identity** | zkLogin via **Enoki** (Google/Apple OAuth → Sui address) |
-| **Gas** | sponsored end-to-end — player wallets only ever hold dUSDC |
-| **Realtime** | WebSocket relay (`Bun.serve`); the match clock is authoritative on the server |
-
----
-
-## Status
-
-**Shipped — live on Sui testnet.** The full duel lifecycle works end-to-end: zkLogin sign-in, sponsored `PredictManager` bootstrap, matchmaking, commit-reveal decks (AI Deckmaster, adaptive 3–5 sizing), atomic player-signed swipe PTBs, the live lockup view, two-phase on-chain settlement (`settle_card` → `finalize`), the settled-redeem keeper, ranked MMR + leaderboard, and the in-app SUI → dUSDC swap. Both the staked and free/practice tiers run on the same engine.
-
-The deployed package id lives in [`apps/contracts/deployed.json`](apps/contracts/deployed.json) (source of truth).
-
-**What's next** — the duel is the first mode. The same engine opens up battle royales, daily solo gauntlets, tournaments, live events, and streak rewards. The bigger idea: **DeFi on DeepBook can be a game** — make it feel like one and you onboard everyone, not just traders.
+| **Mobile** | Expo ~56 · React Native 0.85 · React 19 · TypeScript · ethers v6 · **WDK secure‑storage** · biometrics (`expo-local-authentication`) · QR (`expo-camera`) · pixel UI. App id `io.kickpact.app`. |
+| **Contracts** | Solidity 0.8.28 · Foundry (Forge/Cast/Anvil) · Sepolia |
+| **P2P** | Hyperswarm DHT · **Bare** runtime (`react-native-bare-kit` on mobile, **Pears** on desktop) · wallet‑signed JSON wire |
+| **Backend** | Bun — on‑chain oracle/settlement keeper |
+| **External** | ESPN (fixtures/results) · Polymarket Gamma API (markets) · Velora/ParaSwap (swap) · LayerZero USD₮0 (bridge) · MoonPay (fiat) |
 
 ---
 
 ## Run it locally
 
-Developer setup, local commands, and conventions live in **[`CONTRIBUTING.md`](CONTRIBUTING.md)**. The short version:
-
 ```bash
-bun install   # install all workspaces (requires Bun ≥ 1.3 + Sui CLI)
-bun dev       # turbo dev — runs web (:5173) + server (:3001) in parallel
+bun install                       # install all workspaces (Bun ≥ 1.3)
+
+# mobile app
+bun --filter mobile start         # Expo dev server
+#   → build a dev/release APK from apps/mobile/android, or run on a device
+
+# contracts
+cd apps/duel-evm && forge test    # Solidity test suite
 ```
 
-> First run needs a one-time `bun --filter @kickpact/contracts codegen` to generate the gitignored Sui bindings — see [`CONTRIBUTING.md`](CONTRIBUTING.md#first-time-developer-onboarding).
+The self‑custodial wallet generates a real seed on first launch — on a testnet build, mint USD₮ from the in‑app faucet (Sepolia) and you're ready to bet.
 
-## License
+---
 
-TBD
+## Demo notes & status
+
+**Shipped — live on Sepolia.** Self‑custodial WDK onboarding, the three bet tiers (Pacts / Duels / Polymarket), the Hyperswarm watch‑party rooms with wallet‑signed chat and in‑room escrow bets, and the swap/bridge rails all run end‑to‑end. The screenshots above are from the release build (`io.kickpact.app`) on a fresh, unfunded testnet wallet.
+
+<details>
+<summary>Archived: the earlier project video</summary>
+
+An earlier iteration of this repo was a Sui prediction‑duel; its 4‑minute demo lives at <https://youtu.be/sKIKsmdRs9U> and is kept for history only. It does **not** describe the current Tether Developers Cup app documented above.
+</details>

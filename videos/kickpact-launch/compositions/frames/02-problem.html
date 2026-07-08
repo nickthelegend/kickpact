@@ -1,0 +1,383 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "KickpactPixel";
+      font-weight: 400;
+      font-style: normal;
+      font-display: block;
+      src: url("assets/fonts/KickpactPixel-Regular.ttf") format("truetype");
+    }
+    #root {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: #10162e;
+      font-family: "KickpactPixel", monospace;
+      color: #eaeeff;
+    }
+    #root .ground {
+      position: absolute;
+      inset: 0;
+      background: #10162e;
+    }
+    #root .grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    /* deliberately cold — a desaturated wash over the whole frame */
+    #root .chill {
+      position: absolute;
+      inset: 0;
+      background: rgba(16, 22, 46, 0.35);
+    }
+    #root .vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 72% 62% at 50% 46%, transparent 42%, rgba(6, 10, 24, 0.82) 100%);
+    }
+    #root .hairline {
+      position: absolute;
+      left: 80px;
+      right: 80px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.10);
+    }
+    #root .hairline.top { top: 60px; }
+    #root .hairline.bottom { top: 1020px; }
+
+    #root .micro {
+      position: absolute;
+      top: 92px;
+      left: 84px;
+      font-size: 22px;
+      letter-spacing: 0.28em;
+      color: #7f92c9;
+      text-transform: uppercase;
+    }
+    #root .micro .sq { color: #7f92c9; font-size: 16px; }
+
+    /* ---- Panel (Kickpact card) — greyed variant ---- */
+    #root .panel {
+      position: absolute;
+      width: 720px;
+      height: 300px;
+      background: #1b2548;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 12px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 46px;
+      box-sizing: border-box;
+    }
+    #root #panel1 { left: 130px; top: 320px; }
+    #root #panel2 { left: 1070px; top: 320px; }
+
+    #root .cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+      width: 130px;
+    }
+    #root .mlabel {
+      font-size: 20px;
+      letter-spacing: 0.16em;
+      color: #7f92c9;
+      text-transform: uppercase;
+      text-align: center;
+      line-height: 1.2;
+    }
+    #root .arrow {
+      font-size: 56px;
+      color: #6a78ab;
+      line-height: 1;
+    }
+
+    /* glyph — money coin */
+    #root .coin {
+      width: 78px;
+      height: 78px;
+      border-radius: 50%;
+      border: 2px solid #7f92c9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 42px;
+      color: #7f92c9;
+    }
+    /* glyph — chat bubble */
+    #root .chat {
+      position: relative;
+      width: 80px;
+      height: 58px;
+      border: 2px solid #7f92c9;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 12px;
+      box-sizing: border-box;
+    }
+    #root .chat b { display: block; height: 4px; background: #7f92c9; border-radius: 2px; }
+    #root .chat b.a { width: 100%; }
+    #root .chat b.b { width: 60%; }
+    #root .chat .tail {
+      position: absolute;
+      left: 16px;
+      bottom: -12px;
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 12px solid #7f92c9;
+    }
+
+    /* greyed external box — "not yours" (dashed = external) */
+    #root .greybox {
+      width: 236px;
+      height: 208px;
+      background: #141b34;
+      border: 1.5px dashed #39436e;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+    #root .glabel {
+      font-size: 20px;
+      letter-spacing: 0.14em;
+      color: #5b6796;
+      text-transform: uppercase;
+    }
+
+    /* app-window glyph inside greybox */
+    #root .appwin {
+      width: 100px;
+      height: 74px;
+      background: #10162e;
+      border: 1.5px solid #46527d;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    #root .appwin .appbar {
+      height: 18px;
+      border-bottom: 1px solid #2c3559;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 8px;
+    }
+    #root .appwin .appbar i { width: 6px; height: 6px; border-radius: 50%; background: #46527d; }
+    #root .appwin .appline { height: 5px; background: #333c63; border-radius: 2px; margin: 12px 10px 0; }
+    #root .appwin .appline.short { width: 55%; margin-top: 8px; }
+
+    /* server-rack glyph inside greybox */
+    #root .rack {
+      width: 100px;
+      height: 78px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    #root .rack .unit {
+      flex: 1;
+      background: #10162e;
+      border: 1.5px solid #46527d;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 8px;
+    }
+    #root .rack .unit i { width: 7px; height: 7px; border-radius: 50%; background: #46527d; }
+    #root .rack .unit s { flex: 1; height: 3px; background: #2c3559; border-radius: 2px; text-decoration: none; }
+
+    /* ---- padlock over the seam ---- */
+    #root .lock {
+      position: absolute;
+      left: 899px;
+      top: 400px;
+      width: 122px;
+      height: 148px;
+    }
+    #root .lock .shackle {
+      position: absolute;
+      left: 31px;
+      top: 0;
+      width: 60px;
+      height: 58px;
+      border: 12px solid #8290bd;
+      border-bottom: none;
+      border-radius: 34px 34px 0 0;
+      box-sizing: border-box;
+    }
+    #root .lock .body {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 122px;
+      height: 96px;
+      background: #232c4d;
+      border: 2px solid #8290bd;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #root .lock .keyhole {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #8290bd;
+      position: relative;
+    }
+    #root .lock .keyhole::after {
+      content: "";
+      position: absolute;
+      left: 6px;
+      top: 13px;
+      width: 4px;
+      height: 16px;
+      background: #8290bd;
+    }
+
+    /* ---- stamp ---- */
+    #root .stamp {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 706px;
+      text-align: center;
+      font-size: 84px;
+      letter-spacing: 0.02em;
+      color: #9aa6cf;
+      line-height: 1;
+    }
+    #root .stamp .yours { position: relative; display: inline-block; }
+    #root .stamp .strike {
+      position: absolute;
+      left: -4px;
+      right: -4px;
+      top: 52%;
+      height: 7px;
+      background: #9aa6cf;
+    }
+  </style>
+
+  <div
+    id="root"
+    data-composition-id="02-problem"
+    data-start="0"
+    data-duration="8.408"
+    data-width="1920"
+    data-height="1080"
+  >
+    <div class="ground clip" data-start="0" data-duration="7.808" data-track-index="0"></div>
+    <div class="grid clip" data-start="0" data-duration="7.808" data-track-index="1"></div>
+    <div class="chill clip" data-start="0" data-duration="7.808" data-track-index="2"></div>
+    <div class="vignette clip" data-start="0" data-duration="7.808" data-track-index="3"></div>
+
+    <div class="hairline top clip" data-start="0" data-duration="7.808" data-track-index="4"></div>
+    <div class="hairline bottom clip" data-start="0" data-duration="7.808" data-track-index="5"></div>
+
+    <div class="micro clip" data-start="0.2" data-duration="7.6" data-track-index="6">
+      <span class="sq">&#9632;</span>&nbsp; THE CATCH
+    </div>
+
+    <!-- Panel 1 — YOUR MONEY -> THEIR APP -->
+    <div class="panel clip" id="panel1" data-start="0.2" data-duration="7.6" data-track-index="7">
+      <div class="cell">
+        <div class="coin"><span>$</span></div>
+        <div class="mlabel">YOUR<br />MONEY</div>
+      </div>
+      <div class="arrow">&rarr;</div>
+      <div class="greybox">
+        <div class="appwin">
+          <div class="appbar"><i></i><i></i></div>
+          <div class="appline"></div>
+          <div class="appline short"></div>
+        </div>
+        <div class="glabel">THEIR APP</div>
+      </div>
+    </div>
+
+    <!-- Panel 2 — YOUR CHAT -> THEIR SERVER -->
+    <div class="panel clip" id="panel2" data-start="2.4" data-duration="5.4" data-track-index="8">
+      <div class="cell">
+        <div class="chat"><b class="a"></b><b class="b"></b><span class="tail"></span></div>
+        <div class="mlabel">YOUR<br />CHAT</div>
+      </div>
+      <div class="arrow">&rarr;</div>
+      <div class="greybox">
+        <div class="rack">
+          <div class="unit"><i></i><s></s></div>
+          <div class="unit"><i></i><s></s></div>
+          <div class="unit"><i></i><s></s></div>
+        </div>
+        <div class="glabel">THEIR SERVER</div>
+      </div>
+    </div>
+
+    <!-- Padlock over the seam -->
+    <div class="lock clip" id="lock" data-start="5.0" data-duration="2.808" data-track-index="9">
+      <div class="shackle" id="shackle"></div>
+      <div class="body"><div class="keyhole"></div></div>
+    </div>
+
+    <!-- Stamp -->
+    <div class="stamp clip" id="stamp" data-start="6.0" data-duration="1.808" data-track-index="10">
+      NONE OF IT IS <span class="yours">YOURS<span class="strike" id="strike"></span></span>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <script>
+    (function () {
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      // furniture settles cold
+      tl.fromTo(".grid", { opacity: 0 }, { opacity: 0.7, duration: 1.0, ease: "power2.out" }, 0);
+      tl.fromTo(".hairline", { scaleX: 0, transformOrigin: "50% 50%" }, { scaleX: 1, duration: 0.8, ease: "power2.out" }, 0.15);
+      tl.fromTo(".micro", { opacity: 0, x: -12 }, { opacity: 1, x: 0, duration: 0.6, ease: "power2.out" }, 0.3);
+
+      // Panel 1 slides in from the LEFT and settles
+      tl.fromTo("#panel1", { opacity: 0, x: -560 }, { opacity: 1, x: 0, duration: 1.0, ease: "power3.out" }, 0.35);
+
+      // Panel 2 slides in from the RIGHT and settles
+      tl.fromTo("#panel2", { opacity: 0, x: 560 }, { opacity: 1, x: 0, duration: 1.0, ease: "power3.out" }, 2.6);
+
+      // Padlock scales in over the seam
+      tl.set("#shackle", { y: -16 }, 5.0);
+      tl.fromTo("#lock", { opacity: 0, scale: 0.3, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.55, ease: "power3.out" }, 5.0);
+
+      // snaps shut — shackle drops closed
+      tl.to("#shackle", { y: 0, duration: 0.16, ease: "power4.in" }, 5.55);
+
+      // micro-shake on the clunk
+      tl.to("#lock", { x: -8, duration: 0.05, ease: "power1.inOut" }, 5.62);
+      tl.to("#lock", { x: 8, duration: 0.05, ease: "power1.inOut" }, 5.67);
+      tl.to("#lock", { x: -4, duration: 0.05, ease: "power1.inOut" }, 5.72);
+      tl.to("#lock", { x: 0, duration: 0.06, ease: "power2.out" }, 5.77);
+
+      // stamp appears
+      tl.fromTo("#stamp", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 6.0);
+
+      // strike-through draws across YOURS
+      tl.fromTo("#strike", { scaleX: 0, transformOrigin: "0% 50%" }, { scaleX: 1, duration: 0.4, ease: "power2.out" }, 6.6);
+
+      window.__timelines["02-problem"] = tl;
+    })();
+  </script>
+</template>
