@@ -25,6 +25,7 @@
     "apps/*",
     "!apps/mobile",
     "!apps/pear",
+    "!apps/desktop",
     "packages/*"
   ]
 }

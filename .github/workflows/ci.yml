@@ -44,20 +44,22 @@ jobs:
   desktop:
     name: Desktop app (unit + integration)
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/desktop
     env:
       # tests exercise the Bare worker's room core, not the Electron shell
       ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
     steps:
       - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: bun install (workspace root)
-        run: bun install --frozen-lockfile
+      # standalone npm install — electron-forge's dependency walker needs a
+      # real flat node_modules (bun's symlinked workspace store breaks it)
+      - name: npm ci
+        run: npm ci
       - name: unit tests
         run: npm test
-        working-directory: apps/desktop
       - name: integration tests (node — hermetic DHT)
         run: npm run test:integration
-        working-directory: apps/desktop
