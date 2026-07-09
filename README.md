@@ -133,6 +133,7 @@ kickpact/
 │   ├── duel-evm   # Solidity + Foundry — KickpactDuel, KickpactPacts, MockUSDT (Sepolia)
 │   ├── desktop    # Watch Party for Mac/Win/Linux — Electron + pear-runtime Bare worker
 │   ├── miniapp    # Telegram Mini App — Next.js, same pixel UI + same Sepolia contracts
+│   ├── landing    # Marketing site (Next.js) — Kickpact theme, mockups, download
 │   ├── pear       # Bare terminal peer (interactive CLI) + legacy Pear-1 GUI
 │   └── server     # Bun — oracle/settlement keeper
 └── videos/

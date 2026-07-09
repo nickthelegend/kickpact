@@ -27,6 +27,7 @@
     "!apps/pear",
     "!apps/desktop",
     "!apps/miniapp",
+    "!apps/landing",
     "packages/*"
   ]
 }
