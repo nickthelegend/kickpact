@@ -102,6 +102,10 @@ Open any match and you can **join the room**: a serverless watch party where fan
 - **Desktop app (Mac / Windows / Linux).** [`apps/desktop`](apps/desktop) is the Watch Party as a real desktop app — the same pixel UI, built on the Pears stack: an Electron shell whose P2P layer runs in a **Bare worker** spawned by `pear-runtime` (the [hello-pear-electron](https://github.com/holepunchto/hello-pear-electron) architecture). `apps/pear/` additionally ships an **interactive terminal peer on Bare**: `bare cli.js <gameId> <nick>` — type to chat, same rooms.
 - **Verified live, end‑to‑end.** The Android release build, the Electron desktop app, and Bare CLI peers all met in room `760510` over the **public DHT**: messages flowed every direction, and the phone's reply rendered everywhere as `0x287B…D4d9 ✓ signed` — wallet‑verified, no server anywhere. Screenshots above.
 
+### Telegram Mini App — a third client
+
+[`apps/miniapp`](apps/miniapp) is Kickpact as a **Telegram Mini App** (Next.js): the *exact* pixel UI, hitting the **same live Sepolia contracts**. Self‑custodial wallet with the seed **AES‑GCM‑encrypted into Telegram CloudStorage** behind a passcode (the WDK analogue for the web). Home + live fixtures, group pools, match predictions, Polymarket, profile. Setup + BotFather guide in [`apps/miniapp/README.md`](apps/miniapp/README.md). (The P2P watch party stays native — no Hyperswarm in a browser sandbox.)
+
 ---
 
 ## What's on‑chain
@@ -128,6 +132,7 @@ kickpact/
 │   ├── mobile     # Expo / React Native — the app (WDK wallet, 3 bet tiers, Hyperswarm rooms)
 │   ├── duel-evm   # Solidity + Foundry — KickpactDuel, KickpactPacts, MockUSDT (Sepolia)
 │   ├── desktop    # Watch Party for Mac/Win/Linux — Electron + pear-runtime Bare worker
+│   ├── miniapp    # Telegram Mini App — Next.js, same pixel UI + same Sepolia contracts
 │   ├── pear       # Bare terminal peer (interactive CLI) + legacy Pear-1 GUI
 │   └── server     # Bun — oracle/settlement keeper
 └── videos/

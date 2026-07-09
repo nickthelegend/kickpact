@@ -1,0 +1,108 @@
+/**
+ * On-chain config for the mobile app — Sepolia + the deployed KickpactDuel /
+ * MockUSDT (same contracts as the web app). Source of truth:
+ * apps/duel-evm/deployed.json.
+ */
+export const CHAIN = {
+  chainId: 11155111,
+  rpcUrl: "https://ethereum-sepolia-rpc.publicnode.com",
+  // Dedicated RPC for eth_getLogs (history/leaderboard) — publicnode/1rpc
+  // silently return empty log sets; drpc indexes them reliably.
+  logsRpcUrl: "https://sepolia.drpc.org",
+  explorer: "https://sepolia.etherscan.io",
+  duelAddress: "0x045Ad96EB24CE29f02C4E41542507DE26FE13895",
+  // KickpactPacts v2 — open-room support (counterparty == 0 = anyone joins).
+  pactsAddress: "0xc84a624109e6406d1a5Aa8413B19a1CFFCFe7f5A",
+  usdtAddress: "0x4802B35fFE360CAcF7bc22702544DDA207b950A3",
+  // Keeper/oracle that auto-settles match predictions from official results.
+  keeperAddress: "0x72AE77B55A9195526170bb4D8D2B6f20d37b8262",
+  // Open rooms live on the v2 contract above.
+  openRoomsLive: true,
+  USDT_DECIMALS: 6,
+  ONE_USDT: 1_000_000n,
+  PROB_SCALE: 1_000_000_000n,
+  /** Stake tiers in USD₮ base units (1 / 3 / 5 / 10). */
+  stakeTiers: [1_000_000n, 3_000_000n, 5_000_000n, 10_000_000n] as const,
+} as const
+
+export const KICKPACT_DUEL_ABI = [
+  "function createDuel(uint128 stake, bytes32 deckCommitment) returns (uint256 duelId)",
+  "function createDuelFree(bytes32 deckCommitment) returns (uint256 duelId)",
+  "function joinDuel(uint256 duelId)",
+  "function revealDeck(uint256 duelId, tuple(uint256 strike, uint64 probUp)[] cards, bytes32 salt)",
+  "function recordSwipe(uint256 duelId, uint256 cardIdx, bool isUp)",
+  "function settleCard(uint256 duelId, uint256 cardIdx, uint256 settlementPrice)",
+  "function finalize(uint256 duelId)",
+  "function refundDuel(uint256 duelId)",
+  "function claimRevealTimeout(uint256 duelId)",
+  "function nextDuelId() view returns (uint256)",
+  "function getCard(uint256 duelId, uint256 cardIdx) view returns (tuple(uint256 strike, uint64 probUp))",
+  "function getSwipes(uint256 duelId, uint256 cardIdx) view returns (tuple(bool exists, bool isUp, uint64 pSwiped, uint128 quantity) p0, tuple(bool exists, bool isUp, uint64 pSwiped, uint128 quantity) p1)",
+  "function getDuel(uint256 duelId) view returns (tuple(uint8 status, uint8 tier, address creator, address challenger, uint128 p0Stake, uint128 p1Stake, bytes32 deckCommitment, uint64 deckSize, uint64 startedAt, uint64 settledCount, uint64 p0Next, uint64 p1Next, uint128 p0Payout, uint128 p0Premium, uint128 p1Payout, uint128 p1Premium, tuple(uint256 strike, uint64 probUp)[] cards))",
+  "event DuelCreated(uint256 indexed duelId, address indexed creator, uint8 tier, uint128 stake, bytes32 deckCommitment)",
+  "event DuelJoined(uint256 indexed duelId, address indexed challenger, uint64 startedAt)",
+  "event SwipeRecorded(uint256 indexed duelId, address indexed player, uint256 cardIdx, bool isUp, uint64 pSwiped)",
+  "event DuelFinalized(uint256 indexed duelId, address winner, uint256 payoutToP0, uint256 payoutToP1)",
+] as const
+
+export const USDT_ABI = [
+  "function mint(address to, uint256 amount)",
+  "function approve(address spender, uint256 amount) returns (bool)",
+  "function balanceOf(address) view returns (uint256)",
+  "function allowance(address owner, address spender) view returns (uint256)",
+] as const
+
+export const DUEL_STATUS = { PENDING: 1, ACTIVE: 2, COMPLETE: 3 } as const
+
+export const KICKPACT_PACTS_ABI = [
+  "function createPact(address counterparty, address arbiter, uint128 stake, bytes32 terms, uint64 deadline) returns (uint256 pactId)",
+  "function acceptPact(uint256 pactId)",
+  "function agree(uint256 pactId, address winner)",
+  "function resolveByArbiter(uint256 pactId, address winner)",
+  "function cancelPact(uint256 pactId)",
+  "function refundExpired(uint256 pactId)",
+  "function nextPactId() view returns (uint256)",
+  "function getPact(uint256 pactId) view returns (tuple(address proposer, address counterparty, address arbiter, uint128 stake, uint8 status, address winner, bytes32 terms, uint64 deadline, address p0Vote, address p1Vote, bool p0Voted, bool p1Voted))",
+  "event PactCreated(uint256 indexed pactId, address indexed proposer, address indexed counterparty, address arbiter, uint128 stake, bytes32 terms, uint64 deadline)",
+  "event PactAccepted(uint256 indexed pactId, address indexed counterparty)",
+  "event PactResolved(uint256 indexed pactId, address indexed winner, uint256 payout, bool byArbiter)",
+] as const
+
+export const PACT_STATUS = { PROPOSED: 1, ACTIVE: 2, RESOLVED: 3, REFUNDED: 4 } as const
+
+// ── Group pools (KickpactPools) — watch-party pots split among winners ──────
+// Deploy: apps/duel-evm/script/DeployPools.s.sol. Address is filled at deploy
+// time; `live` gates the UI until then.
+export const POOLS = {
+  address: "0xEd37D097BBA4C7FA514733C62F62787b9Ba6f445",
+  // The pools arbiter / settle-keeper (posts official results).
+  keeperAddress: "0xc37Ec892a1e52637b303035b9107Ee633aEDe978",
+  live: true,
+} as const
+
+export const KICKPACT_POOLS_ABI = [
+  "function createPool(bytes32 gameKey, address arbiter, uint128 stake, uint64 deadline, uint8 pick) returns (uint256 poolId)",
+  "function joinPool(uint256 poolId, uint8 pick)",
+  "function settle(uint256 poolId, uint8 result)",
+  "function claim(uint256 poolId)",
+  "function cancelPool(uint256 poolId)",
+  "function refundExpired(uint256 poolId)",
+  "function nextPoolId() view returns (uint256)",
+  "function getPool(uint256 poolId) view returns (tuple(address creator, bytes32 gameKey, address arbiter, uint128 stake, uint64 deadline, uint8 result, bool settled, uint32 winners, uint32 paid, address[] members))",
+  "function membersOf(uint256 poolId) view returns (address[])",
+  "function poolsForGame(bytes32 gameKey) view returns (uint256[])",
+  "function pickOf(uint256 poolId, address member) view returns (uint8)",
+  "function claimed(uint256 poolId, address member) view returns (bool)",
+  "event PoolCreated(uint256 indexed poolId, address indexed creator, bytes32 indexed gameKey, address arbiter, uint128 stake, uint64 deadline)",
+  "event PoolJoined(uint256 indexed poolId, address indexed member, uint8 pick)",
+  "event PoolSettled(uint256 indexed poolId, uint8 result, uint32 winners, uint256 pot)",
+  "event PoolClaimed(uint256 indexed poolId, address indexed member, uint256 amount)",
+] as const
+
+export function shortAddr(a: string): string {
+  return a ? `${a.slice(0, 6)}…${a.slice(-4)}` : ""
+}
+
+export function explorerTx(hash: string): string {
+  return `${CHAIN.explorer}/tx/${hash}`
+}
