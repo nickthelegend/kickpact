@@ -22,8 +22,8 @@ const CLIENTS = [
     name: "Telegram Mini App",
     tag: "fastest start",
     desc: "Wallet + betting right inside Telegram. Your seed is encrypted into Telegram Cloud Storage. Open the bot and play.",
-    primary: { label: "Open in Telegram", href: REPO + "/tree/main/apps/miniapp" },
-    note: "no install · runs in Telegram",
+    primary: { label: "Open in Telegram", href: "https://t.me/KickPactBot" },
+    note: "@KickPactBot · runs in Telegram",
   },
   {
     icon: "🖥️",
