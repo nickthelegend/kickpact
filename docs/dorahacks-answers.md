@@ -59,6 +59,9 @@ Contents: 60s launch film → live app walkthrough (WDK wallet, USD₮ escrow pa
 | | |
 | --- | --- |
 | Repo | https://github.com/nickthelegend/kickpact |
+| Landing page (live) | https://landing-one-beta-58.vercel.app |
+| Telegram Mini App (live) | https://t.me/KickPactBot |
+| Mini App URL | https://miniapp-liard-seven.vercel.app |
 | Demo video (MP4) | https://github.com/nickthelegend/kickpact/releases/download/v1.0.0/kickpact-demo.mp4 |
 | Android APK | https://github.com/nickthelegend/kickpact/releases/download/v1.0.0/kickpact-android-arm64.apk |
 | macOS desktop app | https://github.com/nickthelegend/kickpact/releases/download/v1.0.0/Kickpact-Watch-Party-macOS-arm64.dmg |
