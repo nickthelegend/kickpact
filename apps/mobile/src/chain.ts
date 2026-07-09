@@ -74,10 +74,10 @@ export const PACT_STATUS = { PROPOSED: 1, ACTIVE: 2, RESOLVED: 3, REFUNDED: 4 } 
 // Deploy: apps/duel-evm/script/DeployPools.s.sol. Address is filled at deploy
 // time; `live` gates the UI until then.
 export const POOLS = {
-  address: "0x0000000000000000000000000000000000000000",
+  address: "0xEd37D097BBA4C7FA514733C62F62787b9Ba6f445",
   // The pools arbiter / settle-keeper (posts official results).
   keeperAddress: "0xc37Ec892a1e52637b303035b9107Ee633aEDe978",
-  live: false,
+  live: true,
 } as const
 
 export const KICKPACT_POOLS_ABI = [
