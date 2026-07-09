@@ -49,7 +49,7 @@
   <tr>
     <td width="33%"><img src="docs/media/screens/shot-11-p2p-signed.png" alt="Wallet-signed P2P chat" /><br/><sub><b>Wallet‑signed chat</b> — the phone's message goes out signed by the WDK key; desktop peers verify it (<code>[0x287B…D4d9 ✓signed]</code>).</sub></td>
     <td width="33%"><img src="docs/media/screens/shot-12-desktop-app.png" alt="Kickpact Watch Party desktop app" /><br/><sub><b>Desktop app (Mac/Win/Linux)</b> — Electron + <code>pear-runtime</code> Bare worker, same pixel UI, same swarm: the phone's <code>✓ SIGNED</code> message rendering live next to desktop peers.</sub></td>
-    <td width="33%"></td>
+    <td width="33%"><img src="docs/media/screens/shot-13-group-pool.png" alt="Group pool in the match room" /><br/><sub><b>Group pool</b> — the watch‑party pot, started from the P2P room: everyone stakes the same, picks an outcome, winners split the pot. The contract holds the money. Live on Sepolia.</sub></td>
   </tr>
 </table>
 

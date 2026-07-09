@@ -95,8 +95,8 @@ Stakes and payouts are in **USD₮** (6 decimals); gas is Sepolia ETH. On Polygo
 | **Pacts** — escrow a bet, no custodian, no KYC. | **PvP Arena** — practice free or stake a 1v1 Duel. | **Duel** — swipe UP/DOWN on live‑price cards. |
 | ![Profile](https://raw.githubusercontent.com/nickthelegend/kickpact/main/docs/media/screens/shot-08-profile.png) | ![Swap](https://raw.githubusercontent.com/nickthelegend/kickpact/main/docs/media/screens/shot-09-swap.png) | ![P2P room live](https://raw.githubusercontent.com/nickthelegend/kickpact/main/docs/media/screens/shot-10-p2p-room-live.png) |
 | **Profile** — keys never leave the device. | **Swap** — the rail that funds the Polymarket tier. | **Match Room, live** — 3 P2P peers over the DHT. |
-| ![Wallet-signed chat](https://raw.githubusercontent.com/nickthelegend/kickpact/main/docs/media/screens/shot-11-p2p-signed.png) | ![Desktop app](https://raw.githubusercontent.com/nickthelegend/kickpact/main/docs/media/screens/shot-12-desktop-app.png) | |
-| **Wallet‑signed chat** — desktops verify the phone's message: `✓signed`. | **Desktop app** — Electron + pear‑runtime Bare worker, same UI, same swarm. | |
+| ![Wallet-signed chat](https://raw.githubusercontent.com/nickthelegend/kickpact/main/docs/media/screens/shot-11-p2p-signed.png) | ![Desktop app](https://raw.githubusercontent.com/nickthelegend/kickpact/main/docs/media/screens/shot-12-desktop-app.png) | ![Group pool](https://raw.githubusercontent.com/nickthelegend/kickpact/main/docs/media/screens/shot-13-group-pool.png) |
+| **Wallet‑signed chat** — desktops verify the phone's message: `✓signed`. | **Desktop app** — Electron + pear‑runtime Bare worker, same UI, same swarm. | **Group pool** — the watch‑party pot: stake together, winners split. Live on Sepolia. |
 
 ---
 
