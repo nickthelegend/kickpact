@@ -93,11 +93,19 @@ test("pool lifecycle settles a real World Cup semifinal via CPI", async () => {
   }
   expect(Number((await getAccount(connection, ata(alice.publicKey))).amount)).toBe(100_000_000)
 
-  // pool #1: England v Argentina, 10 kUSD stake. The join deadline must be
-  // in the future at create time (validator clock is NOW) so use now+3s;
-  // kickoff is the fixture's REAL StartTime, which anchors proof finality.
+  // pool #1: England v Argentina, 10 kUSD stake.
+  //
+  // `settle` compares the deadline against the on-chain Clock, and the test
+  // validator's clock drifts behind wall time as it produces slots — so a
+  // deadline derived from Date.now() can still be in the chain's future when
+  // we settle, and the whole thing fails with MatchNotStarted. Read the
+  // chain's own clock instead, and later wait until IT passes the deadline.
+  const chainNowMs = async () => {
+    const t = await connection.getBlockTime(await connection.getSlot())
+    return (t ?? Math.floor(Date.now() / 1000)) * 1000
+  }
   const STAKE = new BN(10_000_000)
-  const deadlineMs = new BN(Date.now() + 3_000)
+  const deadlineMs = new BN((await chainNowMs()) + 3_000)
   const kickoffMs = new BN(1784142000000) // 2026-07-15 19:00 UTC
   const poolId = new BN(1)
   const [pool] = PublicKey.findProgramAddressSync([Buffer.from("pool"), poolId.toBuffer("le", 8)], program.programId)
@@ -119,21 +127,26 @@ test("pool lifecycle settles a real World Cup semifinal via CPI", async () => {
   }
   expect(Number((await getAccount(connection, vault)).amount)).toBe(30_000_000)
 
-  await new Promise((r) => setTimeout(r, 3_500)) // kickoff passes
+  // wait for the CHAIN's clock to pass the join deadline — not ours
+  for (let i = 0; i < 40 && (await chainNowMs()) < deadlineMs.toNumber() + 500; i++) {
+    await new Promise((r) => setTimeout(r, 500))
+  }
+  expect(await chainNowMs()).toBeGreaterThan(deadlineMs.toNumber())
 
   const cu = ComputeBudgetProgram.setComputeUnitLimit({ units: 1_400_000 })
 
-  // a lying keeper claims HOME (England) — the oracle must refute it
-  let refuted = false
+  // A lying keeper claims HOME (England). This must fail for exactly one
+  // reason — the oracle refused the claim. Matching any error (or any "0x")
+  // would let an unrelated failure pass as proof the oracle works.
+  let refusal = ""
   try {
     await program.methods.settle(1, payload()).accounts({
       caller: admin.publicKey, pool, dailyScoresMerkleRoots: dailyRootsPda, txoracleProgram: TXORACLE_ID,
     }).preInstructions([cu]).rpc()
   } catch (e: any) {
-    console.log("[settle home] error:", String(e.message ?? e).slice(0, 400), JSON.stringify(e.logs ?? []).slice(0, 600))
-    refuted = /OracleRefuted|0x/.test(String(e))
+    refusal = String(e.message ?? e) + JSON.stringify(e.logs ?? [])
   }
-  expect(refuted).toBe(true)
+  expect(refusal).toContain("OracleRefuted")
 
   // the true outcome (AWAY, Argentina 2–1) settles via CPI into txoracle
   await program.methods.settle(3, payload()).accounts({
