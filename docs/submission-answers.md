@@ -13,7 +13,7 @@
 | Devnet program (IDL on-chain) | `4tAPD5tVaWt9TBSMGKfUnguppbg8KLcc2jXbBPufgWDa` |
 | Real settlement tx (England 1–2 Argentina, CPI validateStatV2) | https://explorer.solana.com/tx/21CFfLsx6Mqy7XmZUeTiPZ6PAMwGqBpwFgi4GkZvqUPbUJ9oXxV8QA6kDuqX6qWaM8vDdKWTihugkXa528uh6voS?cluster=devnet |
 | Android APK | GitHub release on the solana branch |
-| Demo video | *(YouTube link — see docs/demo plan)* |
+| Demo video (3:01) | [kickpact-demo.mp4](https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana/kickpact-demo.mp4) — upload to YouTube *unlisted* and paste the link here |
 | Technical documentation | [docs/TECHNICAL.md](TECHNICAL.md) |
 | TxLINE API feedback | [docs/FEEDBACK.md](FEEDBACK.md) |
 
@@ -28,7 +28,11 @@
 
 nickthelegend (+ Claude as AI pair). Prize-eligible individual submission via Superteam Earn.
 
-## Demo video script (≤5 min) — for the recording session
+## Demo video (3:01) — recorded, in the v2.0.0-solana release
+
+Every beat below is a real capture: the APK on-device against devnet, the real `anchor test` CPI logs, and the live dashboard. Nothing is mocked.
+
+### Beats
 
 1. **Cold open (15s)** — "Group bets die arguing about results. Kickpact pools can only settle to what TxLINE proves."
 2. **Wallet + data (45s)** — create burner (or MWA connect), fixtures/odds board straight from TxLINE, mint kUSD faucet.

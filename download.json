@@ -12,5 +12,13 @@
   },
   "repo": {
     "url": "https://github.com/nickthelegend/kickpact/tree/solana"
+  },
+  "demo": {
+    "url": "https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana/kickpact-demo.mp4",
+    "length": "3:01"
+  },
+  "launch_film": {
+    "url": "https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana/kickpact-launch.mp4",
+    "length": "0:50"
   }
 }
