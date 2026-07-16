@@ -47,3 +47,7 @@ apps/server/.data/
 
 # superpowers brainstorm artifacts (local)
 .superpowers/
+
+# HyperFrames render intermediates — the shipped film is docs/media/kickpact-launch.mp4
+videos/*/renders/
+videos/*/.hyperframes/
