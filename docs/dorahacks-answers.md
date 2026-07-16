@@ -32,12 +32,12 @@
 
 ## 🎥 Demo video link (YouTube, unlisted, 3 minutes max)
 
-**The video is ready**: [`docs/media/kickpact-demo.mp4`](media/kickpact-demo.mp4) (2:17, 1080p) — also on the [GitHub release](https://github.com/nickthelegend/kickpact/releases/download/v1.0.0/kickpact-demo.mp4).
+**The video is ready**: [`docs/media/kickpact-demo-narrated.mp4`](media/kickpact-demo-narrated.mp4) (1:59, 1080p, fully narrated) — also on the [GitHub release](https://github.com/nickthelegend/kickpact/releases/download/v1.0.0/kickpact-demo-narrated.mp4).
 
 **To finish this field:** upload that MP4 to YouTube as *Unlisted* → paste the link.
 Suggested title: `Kickpact — self-custodial World Cup betting (Tether Developers Cup demo)`
 
-Contents: 60s launch film → live app walkthrough (WDK wallet, USD₮ escrow pacts, PvP duel on live prices) → the 3-platform P2P room recorded live (phone + desktop + terminal, wallet-signed chat) → outro.
+Contents (narrated, feature-by-feature, one flow end-to-end): title → **WDK self-custodial wallet** (on-device seed, keychain-sealed) → **mint USD₮ live on-chain** (WDK money stack: mint/swap/bridge/off-ramp) → **join the P2P room + open a group pool** → **a friend joins the pot / lock a 1-on-1 Pact in escrow** → **Duels** (swipe the live market) → **peer-to-peer watch party** over Hyperswarm, wallet-signed → the **Telegram Mini App** creating a wallet and reaching home on the same contracts (recorded live) → the **landing site** (recorded live) → outro. Every phone beat is a real release-build screen; the Mini App and landing are live-captured; voice-over is Kokoro TTS (`am_michael`) over a music bed.
 
 ## 🐦 A Twitter/X post about your project (link)
 
@@ -62,7 +62,7 @@ Contents: 60s launch film → live app walkthrough (WDK wallet, USD₮ escrow pa
 | Landing page (live) | https://landing-one-beta-58.vercel.app |
 | Telegram Mini App (live) | https://t.me/KickPactBot |
 | Mini App URL | https://miniapp-liard-seven.vercel.app |
-| Demo video (MP4) | https://github.com/nickthelegend/kickpact/releases/download/v1.0.0/kickpact-demo.mp4 |
+| Demo video (MP4, narrated) | https://github.com/nickthelegend/kickpact/releases/download/v1.0.0/kickpact-demo-narrated.mp4 |
 | Android APK | https://github.com/nickthelegend/kickpact/releases/download/v1.0.0/kickpact-android-arm64.apk |
 | macOS desktop app | https://github.com/nickthelegend/kickpact/releases/download/v1.0.0/Kickpact-Watch-Party-macOS-arm64.dmg |
 | Launch film (60s) | https://github.com/nickthelegend/kickpact/releases/download/v1.0.0/kickpact-launch.mp4 |
