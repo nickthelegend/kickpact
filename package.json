@@ -28,6 +28,8 @@
     "!apps/desktop",
     "!apps/miniapp",
     "!apps/landing",
-    "packages/*"
+    "packages/*",
+    "!apps/dashboard",
+    "!apps/solana"
   ]
 }

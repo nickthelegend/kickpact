@@ -59,8 +59,20 @@ export const kusdAta = (owner: PublicKey, allowOffCurve = false) =>
 export function kickpact(connection: Connection): Program {
   return new Program(kickpactIdl as any, { connection })
 }
+
+/**
+ * The oracle handle carries a full AnchorProvider because `.view()` simulates
+ * a transaction — the "wallet" is a funded devnet pubkey that never signs.
+ */
 export function txoracle(connection: Connection): Program {
-  return new Program(txoracleIdl as any, { connection })
+  const roWallet = {
+    publicKey: new PublicKey("Ab5vEaLwkdvGwrmYwUpA4cok6EUzdgRbCyyNrV7pBqMP"),
+    signTransaction: async (t: any) => t,
+    signAllTransactions: async (t: any) => t,
+  }
+  const { AnchorProvider } = require("@coral-xyz/anchor")
+  const provider = new AnchorProvider(connection, roWallet, { commitment: "confirmed" })
+  return new Program(txoracleIdl as any, provider)
 }
 
 // ── balances ────────────────────────────────────────────────────────────────
