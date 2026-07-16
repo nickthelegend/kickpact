@@ -5,19 +5,30 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 
-const REPO = "https://github.com/nickthelegend/kickpact"
+const REPO = "https://github.com/nickthelegend/kickpact/tree/solana"
+const DASHBOARD = "https://dashboard-alpha-peach-11.vercel.app"
 
-const TIERS = [
-  { icon: "🤝", name: "Pacts", desc: "Escrow a bet with a friend. Both stake equal USD₮; the winner claims the pot, the loser's escrow auto-releases. No custodian, no KYC." },
-  { icon: "⚔️", name: "Duels", desc: "A Tinder-style 1v1 — swipe UP/DOWN through a live-price deck. The contract escrows both stakes and pays the better market-reader." },
-  { icon: "🏆", name: "Group Pools", desc: "The watch-party pot: friends stake the same, pick an outcome, winners split it. Nobody right? Everyone refunds. The contract holds the money." },
-  { icon: "📈", name: "Polymarket", desc: "Trade real-money World Cup markets in-app — your wallet EIP-712-signs orders straight to the CLOB on Polygon." },
-]
-
-const CLIENTS = [
-  { icon: "📱", name: "Android app", desc: "The full experience — wallet, all bet tiers, and the P2P watch party.", cta: "Get the APK" },
-  { icon: "✈️", name: "Telegram Mini App", desc: "Wallet + betting inside Telegram. Fastest way to start.", cta: "Open in Telegram" },
-  { icon: "🖥️", name: "Desktop Watch Party", desc: "Mac / Windows / Linux — join the same P2P rooms from your laptop.", cta: "Download" },
+const WAYS = [
+  {
+    icon: "📡",
+    name: "Bluetooth duels",
+    desc: "Friends in the room with you? Find each other over Bluetooth, talk trash in the room chat, and pot up — the invite never touches a server.",
+  },
+  {
+    icon: "🌐",
+    name: "Online duels",
+    desc: "Friends across the world? Open a duel, share the code, and everyone lands in the same on-chain pot.",
+  },
+  {
+    icon: "🏆",
+    name: "Group pools",
+    desc: "Everyone stakes the same and picks a side. Winners split the pot; if nobody called it, everyone refunds.",
+  },
+  {
+    icon: "🧾",
+    name: "Proof receipts",
+    desc: "Every settlement shows its work — the Merkle proof, the roots account, the validation call. Verify it yourself, in the app.",
+  },
 ]
 
 function Mock({ src, w = 250, className = "" }: { src: string; w?: number; className?: string }) {
@@ -35,32 +46,33 @@ export default function HomePageContent() {
       <section className="max-w-6xl mx-auto px-4 pt-20 pb-16 md:pt-28">
         <div className="grid md:grid-cols-2 gap-10 items-center">
           <div>
-            <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 * 0.08, duration: 0.5 }}
+            <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0, duration: 0.5 }}
               className="inline-flex items-center gap-2 rounded-full border border-[#627eea]/40 bg-[#627eea]/10 px-3 py-1 mb-6">
-              <span className="font-pixel text-[10px] tracking-widest text-[#8aa0f5]">TETHER DEVELOPERS CUP · WDK + PEARS</span>
+              <span className="font-pixel text-[10px] tracking-widest text-[#8aa0f5]">TXLINE HACKATHON · SOLANA DEVNET</span>
             </motion.div>
-            <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 * 0.08, duration: 0.5 }}
+            <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08, duration: 0.5 }}
               className="font-display text-5xl md:text-6xl leading-[1.05] text-white">
-              Back your team.<br /><span className="text-[#627eea]">Own</span> the bet.
+              The pot pays out<br /><span className="text-[#627eea]">because the match</span> said so.
             </motion.h1>
-            <motion.p initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 2 * 0.08, duration: 0.5 }}
+            <motion.p initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16, duration: 0.5 }}
               className="mt-5 text-white/60 text-lg max-w-md leading-relaxed">
-              Self-custodial World Cup betting. Your WDK wallet holds <span className="text-white">USD₮</span> and never leaves your phone — bet three ways, split friendly pots, and watch matches peer-to-peer.
+              Bet the World Cup with your mates. The stakes sit in a Solana escrow that can only release what{" "}
+              <span className="text-white">TxLINE&apos;s cryptographic proof</span> of the final score supports — no bookie, no admin key, nobody to argue with.
             </motion.p>
-            <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 3 * 0.08, duration: 0.5 }} className="mt-8 flex flex-wrap gap-3">
+            <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24, duration: 0.5 }} className="mt-8 flex flex-wrap gap-3">
               <Link href="/download">
                 <Button className="font-pixel text-xs tracking-wider bg-[#627eea] hover:bg-[#8aa0f5] text-white rounded-xl px-6 py-6 transition-all hover:shadow-[0_0_22px_rgba(98,126,234,0.55)]">
-                  ⬇ DOWNLOAD KICKPACT
+                  ⬇ GET THE APP
                 </Button>
               </Link>
-              <Link href={REPO} target="_blank">
+              <Link href={DASHBOARD} target="_blank">
                 <Button variant="outline" className="font-pixel text-xs tracking-wider border-white/20 bg-transparent text-white hover:bg-white/5 rounded-xl px-6 py-6">
-                  ★ VIEW ON GITHUB
+                  ▶ LIVE DASHBOARD
                 </Button>
               </Link>
             </motion.div>
-            <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 4 * 0.08, duration: 0.5 }} className="mt-8 flex gap-6">
-              {[["3", "bet tiers"], ["3", "clients"], ["94", "tests · CI green"]].map(([n, l]) => (
+            <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32, duration: 0.5 }} className="mt-8 flex gap-6">
+              {[["0", "trusted oracles"], ["104", "match schedule"], ["CPI", "settled on-chain"]].map(([n, l]) => (
                 <div key={l}>
                   <div className="font-display text-3xl text-white">{n}</div>
                   <div className="font-pixel text-[9px] tracking-widest text-white/45 uppercase">{l}</div>
@@ -71,19 +83,48 @@ export default function HomePageContent() {
 
           <motion.div initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.2 }}
             className="relative flex justify-center">
-            <Mock src="/mockups/shot-03-home.png" w={260} className="kp-glow rotate-[-4deg] z-10" />
-            <Mock src="/mockups/shot-13-group-pool.png" w={220} className="absolute -right-2 top-16 rotate-[6deg] opacity-90 hidden sm:block" />
+            <Mock src="/mockups/sol-02-match.png" w={260} className="kp-glow rotate-[-4deg] z-10" />
+            <Mock src="/mockups/sol-05-nearby-room.png" w={220} className="absolute -right-2 top-16 rotate-[6deg] opacity-90 hidden sm:block" />
           </motion.div>
         </div>
       </section>
 
-      {/* ── THREE WAYS TO BET ── */}
+      {/* ── HOW THE MONEY MOVES ── */}
       <section className="max-w-6xl mx-auto px-4 py-16">
-        <h2 className="font-display text-3xl md:text-4xl text-white text-center">Four ways to bet — one wallet</h2>
-        <p className="text-center text-white/50 mt-3 max-w-xl mx-auto">Every stake sits in on-chain escrow only the outcome can release. One USD₮ balance across all of them.</p>
+        <div className="kp-panel p-8 md:p-12 border-[#e8b84b]/30">
+          <div className="font-pixel text-[10px] tracking-widest text-[#e8b84b] mb-3">THE WHOLE TRICK</div>
+          <h2 className="font-display text-3xl md:text-4xl text-white leading-tight max-w-2xl">
+            Anyone can settle the pot. Only the truth settles it.
+          </h2>
+          <p className="mt-4 text-white/60 leading-relaxed max-w-3xl">
+            When the match ends, <span className="text-white">anyone</span> — a friend, a keeper bot, a stranger — submits TxLINE&apos;s Merkle proof of the final goals. Our program doesn&apos;t take their word for the result: it rebuilds the winning condition <span className="text-white">on-chain</span> from what they claimed, then calls into TxLINE&apos;s{" "}
+            <code className="text-[#8aa0f5] font-pixel text-xs">validate_stat_v2</code> to check it against the roots TxODDS anchored on Solana. Lie about the score and the transaction simply fails.
+          </p>
+          <div className="grid sm:grid-cols-3 gap-4 mt-8">
+            {[
+              ["1", "Everyone stakes", "Equal kUSD into a program escrow. Pick home, draw or away."],
+              ["2", "The match happens", "TxLINE streams the scores and anchors them on Solana."],
+              ["3", "The proof pays", "A proof settles the pool by CPI; winners split. Nobody right? Everyone refunds."],
+            ].map(([n, t, d]) => (
+              <div key={n} className="kp-panel p-5">
+                <div className="font-display text-2xl text-[#627eea]">{n}</div>
+                <div className="font-pixel text-xs tracking-wide text-white mt-2">{t}</div>
+                <p className="text-white/50 text-sm leading-relaxed mt-2">{d}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── WAYS TO PLAY ── */}
+      <section className="max-w-6xl mx-auto px-4 py-16">
+        <h2 className="font-display text-3xl md:text-4xl text-white text-center">Four ways in — one pot</h2>
+        <p className="text-center text-white/50 mt-3 max-w-xl mx-auto">
+          However your friends gather, the money always lands in the same on-chain escrow.
+        </p>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-10">
-          {TIERS.map((t, i) => (
-            <motion.div key={t.name} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: (i) * 0.08, duration: 0.5 }}
+          {WAYS.map((t, i) => (
+            <motion.div key={t.name} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08, duration: 0.5 }}
               className="kp-panel p-5">
               <div className="text-3xl mb-3">{t.icon}</div>
               <div className="font-pixel text-sm tracking-wide text-white mb-2">{t.name}</div>
@@ -93,73 +134,63 @@ export default function HomePageContent() {
         </div>
       </section>
 
-      {/* ── PEARS / CHAT CTA ── */}
+      {/* ── BLUETOOTH ── */}
       <section className="max-w-6xl mx-auto px-4 py-16">
-        <div className="kp-panel p-8 md:p-12 grid md:grid-cols-2 gap-8 items-center border-[#e8b84b]/30">
+        <div className="kp-panel p-8 md:p-12 grid md:grid-cols-2 gap-8 items-center border-[#627eea]/30">
           <div>
-            <div className="font-pixel text-[10px] tracking-widest text-[#e8b84b] mb-3">PEERS · NO SERVER</div>
-            <h2 className="font-display text-3xl md:text-4xl text-white leading-tight">Watch together, peer-to-peer.</h2>
+            <div className="font-pixel text-[10px] tracking-widest text-[#8aa0f5] mb-3">NEARBY · NO SERVER</div>
+            <h2 className="font-display text-3xl md:text-4xl text-white leading-tight">Watching together? Bet together.</h2>
             <p className="mt-4 text-white/60 leading-relaxed">
-              Fans of the same match meet in a serverless Hyperswarm room — signed chat, live reactions, and bets proposed right in the room. Every message is signed by your wallet.
+              Kickpact finds the friends in the room with you over Bluetooth — Google Nearby Connections, a real mesh, no internet needed to coordinate. Chat in the room, and when the host opens a duel every phone gets the invite and joins the same pot.
             </p>
             <p className="mt-4 text-white/80">
-              Want to chat or start a watch party? <Link href="/download" className="text-[#627eea] underline underline-offset-4">Download the app</Link> — the P2P rooms run natively.
+              Bluetooth carries the chat and the invite. <span className="text-[#627eea]">The money never leaves Solana.</span>
             </p>
           </div>
           <div className="flex justify-center gap-3">
-            <Mock src="/mockups/shot-10-p2p-room-live.png" w={200} className="rotate-[-3deg]" />
-            <Mock src="/mockups/shot-11-p2p-signed.png" w={200} className="rotate-[3deg] mt-8 hidden sm:block" />
+            <Mock src="/mockups/sol-05-nearby-room.png" w={200} className="rotate-[-3deg]" />
+            <Mock src="/mockups/sol-04-duels.png" w={200} className="rotate-[3deg] mt-8 hidden sm:block" />
           </div>
         </div>
       </section>
 
-      {/* ── CLIENTS ── */}
+      {/* ── RECEIPTS ── */}
       <section className="max-w-6xl mx-auto px-4 py-16">
-        <h2 className="font-display text-3xl md:text-4xl text-white text-center">Three clients, one on-chain backend</h2>
-        <div className="grid md:grid-cols-3 gap-4 mt-10">
-          {CLIENTS.map((c, i) => (
-            <motion.div key={c.name} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: (i) * 0.08, duration: 0.5 }}
-              className="kp-panel p-6 flex flex-col">
-              <div className="text-3xl mb-3">{c.icon}</div>
-              <div className="font-pixel text-sm tracking-wide text-white mb-2">{c.name}</div>
-              <p className="text-white/55 text-sm leading-relaxed flex-1">{c.desc}</p>
-              <Link href="/download" className="mt-4">
-                <Button variant="ghost" className="font-pixel text-[11px] tracking-wider text-[#627eea] hover:bg-[#627eea]/10 px-0">{c.cta} →</Button>
-              </Link>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── SCREEN STRIP ── */}
-      <section className="max-w-6xl mx-auto px-4 py-16">
-        <h2 className="font-display text-3xl md:text-4xl text-white text-center mb-10">Every screen, self-custodial</h2>
-        <div className="flex gap-4 overflow-x-auto pb-4" style={{ scrollbarWidth: "none" }}>
-          {["shot-01-onboarding", "shot-03-home", "shot-04-match", "shot-05-pacts", "shot-06-pvp", "shot-07-duel-game", "shot-08-profile", "shot-09-swap"].map((s) => (
-            <Mock key={s} src={`/mockups/${s}.png`} w={190} className="shrink-0" />
-          ))}
-        </div>
-      </section>
-
-      {/* ── FINAL CTA ── */}
-      <section className="max-w-4xl mx-auto px-4 py-20 text-center">
-        <h2 className="font-display text-4xl md:text-5xl text-white">Your keys. Your USD₮.<br />Your call on the match.</h2>
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link href="/download"><Button className="font-pixel text-xs tracking-wider bg-[#627eea] hover:bg-[#8aa0f5] text-white rounded-xl px-8 py-6">⬇ DOWNLOAD</Button></Link>
-          <Link href="/features"><Button variant="outline" className="font-pixel text-xs tracking-wider border-white/20 bg-transparent text-white hover:bg-white/5 rounded-xl px-8 py-6">SEE FEATURES</Button></Link>
-        </div>
-      </section>
-
-      <footer className="border-t border-white/10 py-10 mt-10">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">⚽️</span>
-            <span className="font-pixel text-sm tracking-widest text-white">KICKPACT</span>
+        <div className="kp-panel p-8 md:p-12 grid md:grid-cols-2 gap-8 items-center border-[#e8b84b]/30">
+          <div className="flex justify-center order-2 md:order-1">
+            <Mock src="/mockups/sol-07-receipts.png" w={230} className="rotate-[-2deg]" />
           </div>
-          <div className="font-pixel text-[10px] tracking-widest text-white/40">BUILT FOR THE TETHER DEVELOPERS CUP · WDK + PEARS</div>
-          <Link href={REPO} target="_blank" className="font-pixel text-[10px] tracking-widest text-[#627eea]">GITHUB ↗</Link>
+          <div className="order-1 md:order-2">
+            <div className="font-pixel text-[10px] tracking-widest text-[#e8b84b] mb-3">RECEIPTS · VERIFY IT YOURSELF</div>
+            <h2 className="font-display text-3xl md:text-4xl text-white leading-tight">Don&apos;t trust us. Check.</h2>
+            <p className="mt-4 text-white/60 leading-relaxed">
+              Every settled pool keeps its receipt: the stats that were proven, the Merkle branches, the daily-roots account it was checked against, and the transaction that did it. Tap verify and the app re-runs the oracle&apos;s validation live — you never have to take our word for a result.
+            </p>
+            <Link href={DASHBOARD} target="_blank" className="inline-block mt-5">
+              <Button variant="outline" className="font-pixel text-xs tracking-wider border-white/20 bg-transparent text-white hover:bg-white/5 rounded-xl px-5 py-5">
+                OPEN THE DASHBOARD →
+              </Button>
+            </Link>
+          </div>
         </div>
-      </footer>
+      </section>
+
+      {/* ── CTA ── */}
+      <section className="max-w-6xl mx-auto px-4 py-20 text-center">
+        <h2 className="font-display text-4xl md:text-5xl text-white">Your keys. Your pot.<br />The match decides.</h2>
+        <div className="mt-8 flex flex-wrap gap-3 justify-center">
+          <Link href="/download">
+            <Button className="font-pixel text-xs tracking-wider bg-[#627eea] hover:bg-[#8aa0f5] text-white rounded-xl px-6 py-6">
+              ⬇ GET THE APP
+            </Button>
+          </Link>
+          <Link href={REPO} target="_blank">
+            <Button variant="outline" className="font-pixel text-xs tracking-wider border-white/20 bg-transparent text-white hover:bg-white/5 rounded-xl px-6 py-6">
+              ★ VIEW ON GITHUB
+            </Button>
+          </Link>
+        </div>
+      </section>
     </main>
   )
 }

@@ -22,14 +22,10 @@
     "node": ">=20"
   },
   "workspaces": [
-    "apps/*",
-    "!apps/mobile",
-    "!apps/pear",
-    "!apps/desktop",
-    "!apps/miniapp",
-    "!apps/landing",
-    "packages/*",
-    "!apps/dashboard",
-    "!apps/solana"
+    "apps/dashboard",
+    "apps/landing",
+    "apps/mobile",
+    "apps/solana",
+    "apps/solana/keeper"
   ]
 }

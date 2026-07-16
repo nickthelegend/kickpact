@@ -3,9 +3,9 @@ import "./globals.css"
 import Nav from "@/components/nav"
 
 export const metadata: Metadata = {
-  title: "Kickpact — bet on football with a wallet that's yours",
+  title: "Kickpact — World Cup pots that settle themselves",
   description:
-    "Self-custodial World Cup betting. Your WDK wallet holds USD₮ — bet three ways, split friendly pots, and watch matches peer-to-peer. No custodian, no KYC.",
+    "Pot up with friends on a World Cup match. The pot lives in a Solana escrow that can only pay out what TxLINE's cryptographic proof says happened. Bluetooth duels for friends nearby, a duel code for friends anywhere.",
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
