@@ -1,3 +1,4 @@
+import "./src/polyfills"
 import { useState } from "react"
 import { ActivityIndicator, Image, Pressable, View } from "react-native"
 import { StatusBar } from "expo-status-bar"
@@ -8,35 +9,27 @@ import { C } from "./src/theme"
 import { PixelText } from "./src/ui"
 import { WalletProvider, useWallet } from "./src/wallet"
 import {
-  BridgeScreen,
-  DuelScreen,
   GameScreen,
   HomeScreen,
-  MarketsScreen,
-  PactsScreen,
-  PracticeScreen,
   ProfileScreen,
-  PvpScreen,
-  RankScreen,
+  ReceiptScreen,
+  ReceiptsScreen,
   SignInScreen,
-  SwapScreen,
 } from "./src/screens"
+import type { PoolState } from "./src/solana"
 
 /**
- * Kickpact mobile — Expo / React Native. Self-custodial WDK wallet (seed in the
- * device keychain) + real on-chain features on Sepolia:
- *   • PvP prediction duels (KickpactDuel)
- *   • Pacts — P2P friend bets in escrow (KickpactPacts)
- * Premium pixel UI rebuilt natively (RN StyleSheet).
+ * Kickpact mobile — Expo / React Native on SOLANA. Self-custodial wallet
+ * (burner in the device keychain, or Phantom/Solflare via Mobile Wallet
+ * Adapter) + kUSD prediction pools escrowed on devnet and settled
+ * trustlessly by TxLINE's cryptographically-anchored World Cup data.
  */
 
-type Tab = "home" | "pacts" | "pvp" | "rank" | "profile"
+type Tab = "home" | "receipts" | "profile"
 
 const TABS: { key: Tab; icon: number; label: string }[] = [
   { key: "home", icon: require("./assets/icons/main_menu.png"), label: "home" },
-  { key: "pacts", icon: require("./assets/icons/link.png"), label: "pacts" },
-  { key: "pvp", icon: require("./assets/icons/swords.png"), label: "pvp" },
-  { key: "rank", icon: require("./assets/icons/star.png"), label: "rank" },
+  { key: "receipts", icon: require("./assets/icons/book.png"), label: "receipts" },
   { key: "profile", icon: require("./assets/icons/portrait.png"), label: "profile" },
 ]
 
@@ -55,31 +48,12 @@ function BottomNav({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
         const active = t.key === tab
         return (
           <Pressable key={t.key} onPress={() => onTab(t.key)} style={{ flex: 1, alignItems: "center", gap: 2 }}>
-            <View
-              style={
-                t.key === "pvp"
-                  ? {
-                      width: 60,
-                      height: 60,
-                      marginTop: -10,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderRadius: 12,
-                      borderWidth: 2,
-                      borderColor: C.gold,
-                      backgroundColor: C.frameDark,
-                      opacity: active ? 1 : 0.85,
-                    }
-                  : { opacity: active ? 1 : 0.5 }
-              }
-            >
+            <View style={{ opacity: active ? 1 : 0.5 }}>
               <Image source={t.icon} style={{ width: 38, height: 38 }} resizeMode="contain" />
             </View>
-            {t.key !== "pvp" && (
-              <PixelText size={9} color={active ? C.white : C.white45} tracking={1}>
-                {t.label}
-              </PixelText>
-            )}
+            <PixelText size={9} color={active ? C.white : C.white45} tracking={1}>
+              {t.label}
+            </PixelText>
           </Pressable>
         )
       })}
@@ -90,12 +64,8 @@ function BottomNav({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
 function Game() {
   const { status } = useWallet()
   const [tab, setTab] = useState<Tab>("home")
-  const [duelId, setDuelId] = useState<string | null>(null)
   const [gameId, setGameId] = useState<string | null>(null)
-  const [swapOpen, setSwapOpen] = useState(false)
-  const [bridgeOpen, setBridgeOpen] = useState(false)
-  const [marketsOpen, setMarketsOpen] = useState(false)
-  const [soloOpen, setSoloOpen] = useState(false)
+  const [receipt, setReceipt] = useState<PoolState | null>(null)
 
   if (status === "INITIALIZING") {
     return (
@@ -108,35 +78,22 @@ function Game() {
   if (status === "NO_WALLET" || status === "BACKUP_PENDING") return <SignInScreen />
 
   // Full-screen flows (no tab bar).
-  if (duelId) return <DuelScreen duelId={duelId} onExit={() => setDuelId(null)} />
-  if (gameId) return <GameScreen gameId={gameId} onBack={() => setGameId(null)} />
-  if (swapOpen) return <SwapScreen onBack={() => setSwapOpen(false)} />
-  if (bridgeOpen) return <BridgeScreen onBack={() => setBridgeOpen(false)} />
-  if (marketsOpen) return <MarketsScreen onBack={() => setMarketsOpen(false)} />
-  if (soloOpen) return <PracticeScreen onExit={() => setSoloOpen(false)} />
+  if (receipt) return <ReceiptScreen pool={receipt} onBack={() => setReceipt(null)} />
+  if (gameId)
+    return (
+      <GameScreen
+        gameId={gameId}
+        onBack={() => setGameId(null)}
+        onReceipt={(p) => setReceipt(p)}
+      />
+    )
 
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
-        {tab === "home" && (
-          <HomeScreen
-            onProfile={() => setTab("profile")}
-            onGame={(id) => setGameId(id)}
-            onSwap={() => setSwapOpen(true)}
-            onBridge={() => setBridgeOpen(true)}
-            onMarkets={() => setMarketsOpen(true)}
-          />
-        )}
-        {tab === "pacts" && <PactsScreen />}
-        {tab === "pvp" && (
-          <PvpScreen
-            onBack={() => setTab("home")}
-            onEnterDuel={(id) => setDuelId(id)}
-            onSolo={() => setSoloOpen(true)}
-          />
-        )}
-        {tab === "rank" && <RankScreen />}
-        {tab === "profile" && <ProfileScreen onSwap={() => setSwapOpen(true)} />}
+        {tab === "home" && <HomeScreen onProfile={() => setTab("profile")} onGame={setGameId} />}
+        {tab === "receipts" && <ReceiptsScreen onOpen={setReceipt} />}
+        {tab === "profile" && <ProfileScreen />}
       </View>
       <BottomNav tab={tab} onTab={setTab} />
     </View>
@@ -149,16 +106,22 @@ export default function App() {
     KickpactDisplay: require("./assets/fonts/landing.ttf"),
   })
 
-  if (!fontsLoaded) return <View style={{ flex: 1, backgroundColor: C.frame }} />
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, backgroundColor: C.frameDeep, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator color={C.eth} />
+      </View>
+    )
+  }
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={{ flex: 1, backgroundColor: C.frame }} edges={["top", "bottom"]}>
-        <StatusBar style="light" />
-        <WalletProvider>
+      <WalletProvider>
+        <SafeAreaView style={{ flex: 1, backgroundColor: C.frameDeep }} edges={["top", "bottom"]}>
+          <StatusBar style="light" />
           <Game />
-        </WalletProvider>
-      </SafeAreaView>
+        </SafeAreaView>
+      </WalletProvider>
     </SafeAreaProvider>
   )
 }

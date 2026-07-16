@@ -1,88 +1,90 @@
 /**
- * Wallet context — self-custodial EVM wallet for the mobile app.
+ * Wallet context — self-custodial SOLANA wallet for the mobile app.
  *
- * The key is a BIP-39 seed generated on-device and stored in the OS keychain
- * (expo-secure-store on native; localStorage on web preview). Signing + reads
- * go through an ethers wallet connected to Sepolia, so every duel action is a
- * real on-chain transaction.
+ * Two ways in, one interface out:
+ *   • Burner (default): an ed25519 keypair generated on-device, secret stored
+ *     in the OS keychain via the same secure-storage path as the EVM era —
+ *     the app signs transactions locally. Backup/restore via base58 secret.
+ *   • Mobile Wallet Adapter: connect Phantom/Solflare/etc. on Android — the
+ *     wallet app signs; we only ever hold the public key.
  *
- * The status machine (INITIALIZING → NO_WALLET → READY) mirrors WDK RN core's
- * shape so the native build can swap this for @tetherto/wdk-react-native-core
- * (device keystore + Bare worklet) without touching the screens.
+ * The status machine (INITIALIZING → NO_WALLET → BACKUP_PENDING → READY)
+ * is unchanged from the EVM build so screens port 1:1.
  */
 import * as React from "react"
-import { ethers } from "ethers"
+import { Keypair, PublicKey, Transaction, Connection } from "@solana/web3.js"
+import bs58 from "bs58"
 
-import { CHAIN } from "./chain"
+import { RPC_URL } from "./solana"
 import { loadSecret, saveSecret, clearSecret } from "./storage"
-import { getEthBalance, getUsdtBalance } from "./duel"
 
-const SEED_KEY = "kickpact.wallet.seed"
+const SECRET_KEY = "kickpact.solana.secret"
 
 type Status = "INITIALIZING" | "NO_WALLET" | "BACKUP_PENDING" | "READY"
+type Mode = "burner" | "mwa"
 
-interface WalletContextValue {
+export interface WalletContextValue {
   status: Status
+  mode: Mode
   address: string | null
-  signer: ethers.HDNodeWallet | null
-  provider: ethers.JsonRpcProvider
-  usdt: number
-  eth: number
+  publicKey: PublicKey | null
+  /** Local keypair when mode === "burner", null under MWA. */
+  keypair: Keypair | null
+  connection: Connection
+  sol: number
+  kusd: number
   createWallet(): Promise<string>
   confirmBackup(): void
-  importWallet(phrase: string): Promise<void>
+  importWallet(secretBase58: string): Promise<void>
+  connectMwa(): Promise<void>
+  signAndSend(tx: Transaction): Promise<string>
   logout(): Promise<void>
   refresh(): Promise<void>
-  getSeedPhrase(): Promise<string | null>
+  getSecret(): Promise<string | null>
 }
 
 const WalletContext = React.createContext<WalletContextValue | null>(null)
 
-function makeProvider() {
-  return new ethers.JsonRpcProvider(CHAIN.rpcUrl, CHAIN.chainId, {
-    staticNetwork: true,
-  })
-}
-
 export function WalletProvider({ children }: { children: React.ReactNode }) {
-  const providerRef = React.useRef<ethers.JsonRpcProvider | null>(null)
-  if (!providerRef.current) providerRef.current = makeProvider()
+  const connectionRef = React.useRef<Connection | null>(null)
+  if (!connectionRef.current)
+    connectionRef.current = new Connection(RPC_URL, { commitment: "confirmed" })
 
   const [status, setStatus] = React.useState<Status>("INITIALIZING")
-  const [signer, setSigner] = React.useState<ethers.HDNodeWallet | null>(null)
-  const [address, setAddress] = React.useState<string | null>(null)
-  const [usdt, setUsdt] = React.useState(0)
-  const [eth, setEth] = React.useState(0)
-
-  const connect = React.useCallback(async (phrase: string) => {
-    const w = ethers.Wallet.fromPhrase(phrase).connect(providerRef.current!)
-    setSigner(w)
-    setAddress(w.address)
-    return w
-  }, [])
+  const [mode, setMode] = React.useState<Mode>("burner")
+  const [keypair, setKeypair] = React.useState<Keypair | null>(null)
+  const [publicKey, setPublicKey] = React.useState<PublicKey | null>(null)
+  const [mwaToken, setMwaToken] = React.useState<string | null>(null)
+  const [sol, setSol] = React.useState(0)
+  const [kusd, setKusd] = React.useState(0)
 
   const refresh = React.useCallback(async () => {
-    if (!address) return
+    if (!publicKey) return
     try {
-      const [u, e] = await Promise.all([
-        getUsdtBalance(providerRef.current!, address),
-        getEthBalance(providerRef.current!, address),
+      const conn = connectionRef.current!
+      const { getKusdBalance } = await import("./solana")
+      const [lamports, k] = await Promise.all([
+        conn.getBalance(publicKey),
+        getKusdBalance(conn, publicKey),
       ])
-      setUsdt(Number(u) / Number(CHAIN.ONE_USDT))
-      setEth(Number(e) / 1e18)
+      setSol(lamports / 1e9)
+      setKusd(k)
     } catch (err) {
       console.warn("balance refresh failed", err)
     }
-  }, [address])
+  }, [publicKey])
 
   // Restore on mount.
   React.useEffect(() => {
     let cancelled = false
-    loadSecret(SEED_KEY)
-      .then(async (seed) => {
+    loadSecret(SECRET_KEY)
+      .then((secret) => {
         if (cancelled) return
-        if (seed) {
-          await connect(seed)
+        if (secret) {
+          const kp = Keypair.fromSecretKey(bs58.decode(secret))
+          setKeypair(kp)
+          setPublicKey(kp.publicKey)
+          setMode("burner")
           setStatus("READY")
         } else setStatus("NO_WALLET")
       })
@@ -90,68 +92,119 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [connect])
+  }, [])
 
   // Poll balances while signed in.
   React.useEffect(() => {
     if (status !== "READY") return
     refresh()
-    const id = setInterval(refresh, 7000)
+    const id = setInterval(refresh, 8000)
     return () => clearInterval(id)
   }, [status, refresh])
 
   const createWallet = React.useCallback(async () => {
-    const w = ethers.Wallet.createRandom()
-    const phrase = w.mnemonic!.phrase
-    await saveSecret(SEED_KEY, phrase)
-    await connect(phrase)
-    // Hold at BACKUP_PENDING so the user must see + save the phrase first.
+    const kp = Keypair.generate()
+    const secret = bs58.encode(kp.secretKey)
+    await saveSecret(SECRET_KEY, secret)
+    setKeypair(kp)
+    setPublicKey(kp.publicKey)
+    setMode("burner")
     setStatus("BACKUP_PENDING")
-    return phrase
-  }, [connect])
+    return secret
+  }, [])
 
   const confirmBackup = React.useCallback(() => setStatus("READY"), [])
 
-  const importWallet = React.useCallback(
-    async (phrase: string) => {
-      const normalized = phrase.trim().toLowerCase()
-      if (!ethers.Mnemonic.isValidMnemonic(normalized)) {
-        throw new Error("Invalid recovery phrase")
-      }
-      await saveSecret(SEED_KEY, normalized)
-      await connect(normalized)
+  const importWallet = React.useCallback(async (secretBase58: string) => {
+    const cleaned = secretBase58.trim()
+    const kp = Keypair.fromSecretKey(bs58.decode(cleaned)) // throws if invalid
+    await saveSecret(SECRET_KEY, cleaned)
+    setKeypair(kp)
+    setPublicKey(kp.publicKey)
+    setMode("burner")
+    setStatus("READY")
+  }, [])
+
+  /** Connect an installed MWA wallet (Phantom, Solflare, fakewallet…). */
+  const connectMwa = React.useCallback(async () => {
+    const { transact } = await import("@solana-mobile/mobile-wallet-adapter-protocol-web3js")
+    await transact(async (wallet: any) => {
+      const auth = await wallet.authorize({
+        cluster: "devnet",
+        identity: { name: "Kickpact", uri: "https://kickpact.app" },
+      })
+      const addr = auth.accounts[0].address
+      // MWA returns base64 account addresses
+      const pk = new PublicKey(Buffer.from(addr, "base64"))
+      setPublicKey(pk)
+      setMwaToken(auth.auth_token)
+      setKeypair(null)
+      setMode("mwa")
       setStatus("READY")
+    })
+  }, [])
+
+  /** Sign + send through whichever wallet is active. */
+  const signAndSend = React.useCallback(
+    async (tx: Transaction): Promise<string> => {
+      const conn = connectionRef.current!
+      if (mode === "burner") {
+        if (!keypair) throw new Error("no wallet")
+        const bh = await conn.getLatestBlockhash("confirmed")
+        tx.recentBlockhash = bh.blockhash
+        tx.feePayer = keypair.publicKey
+        tx.sign(keypair)
+        const sig = await conn.sendRawTransaction(tx.serialize())
+        await conn.confirmTransaction({ signature: sig, ...bh }, "confirmed")
+        return sig
+      }
+      // MWA path — the wallet app signs
+      const { transact } = await import("@solana-mobile/mobile-wallet-adapter-protocol-web3js")
+      return await transact(async (wallet: any) => {
+        await wallet.reauthorize({ auth_token: mwaToken })
+        const bh = await conn.getLatestBlockhash("confirmed")
+        tx.recentBlockhash = bh.blockhash
+        tx.feePayer = publicKey!
+        const [sig] = await wallet.signAndSendTransactions({ transactions: [tx] })
+        await conn.confirmTransaction({ signature: sig, ...bh }, "confirmed")
+        return sig
+      })
     },
-    [connect],
+    [mode, keypair, publicKey, mwaToken],
   )
 
   const logout = React.useCallback(async () => {
-    await clearSecret(SEED_KEY)
-    setSigner(null)
-    setAddress(null)
-    setUsdt(0)
-    setEth(0)
+    await clearSecret(SECRET_KEY)
+    setKeypair(null)
+    setPublicKey(null)
+    setMwaToken(null)
+    setSol(0)
+    setKusd(0)
     setStatus("NO_WALLET")
   }, [])
 
-  const getSeedPhrase = React.useCallback(() => loadSecret(SEED_KEY), [])
+  const getSecret = React.useCallback(() => loadSecret(SECRET_KEY), [])
 
   const value = React.useMemo<WalletContextValue>(
     () => ({
       status,
-      address,
-      signer,
-      provider: providerRef.current!,
-      usdt,
-      eth,
+      mode,
+      address: publicKey?.toBase58() ?? null,
+      publicKey,
+      keypair,
+      connection: connectionRef.current!,
+      sol,
+      kusd,
       createWallet,
       confirmBackup,
       importWallet,
+      connectMwa,
+      signAndSend,
       logout,
       refresh,
-      getSeedPhrase,
+      getSecret,
     }),
-    [status, address, signer, usdt, eth, createWallet, confirmBackup, importWallet, logout, refresh, getSeedPhrase],
+    [status, mode, publicKey, keypair, sol, kusd, createWallet, confirmBackup, importWallet, connectMwa, signAndSend, logout, refresh, getSecret],
   )
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>
