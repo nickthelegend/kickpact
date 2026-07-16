@@ -4,8 +4,8 @@
   "network": "solana-devnet",
   "android": {
     "url": "https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana/kickpact-android-arm64.apk",
-    "size": "126 MB",
-    "sha_note": "universal APK · io.kickpact.app · Solana devnet + TxLINE feeds"
+    "size": "124 MB",
+    "sha_note": "universal APK \u00b7 io.kickpact.app \u00b7 Solana devnet + TxLINE feeds"
   },
   "dashboard": {
     "url": "https://dashboard-alpha-peach-11.vercel.app"
