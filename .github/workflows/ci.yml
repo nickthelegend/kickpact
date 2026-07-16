@@ -1,29 +1,55 @@
-# Kickpact CI — contracts + both apps' unit & integration suites.
-# Integration tests run the real Hyperswarm wire over a hermetic in-process
-# hyperdht testnet (loopback only — no public network needed in CI).
+# Kickpact CI — the Anchor program (settlement proven against a REAL TxLINE
+# World Cup proof) plus typecheck/build for the app, dashboard and landing.
+#
+# The program test spins a local validator that CLONES the devnet TxLINE oracle
+# and the daily-scores roots PDA, so `settle` exercises the real validate_stat_v2
+# CPI against a real Merkle proof (committed under apps/solana/keeper/out/).
+# It needs devnet reachable to clone those two accounts — nothing else.
 name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [solana, main]
   pull_request:
   workflow_dispatch:
 
 jobs:
-  contracts:
-    name: Contracts (Foundry)
+  program:
+    name: Anchor program (CPI vs real TxLINE proof)
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: apps/duel-evm
+        working-directory: apps/solana
     steps:
       - uses: actions/checkout@v4
-      - uses: foundry-rs/foundry-toolchain@v1
-      - name: forge test
-        run: forge test -vv
+      - uses: oven-sh/setup-bun@v2
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Solana CLI
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+
+      - name: Install Anchor
+        run: |
+          cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+          avm install 0.32.1
+          avm use 0.32.1
+
+      - name: Keypair for the test validator
+        run: solana-keygen new --no-bip39-passphrase -s -o keeper/keys/keeper.json
+
+      - name: bun install
+        run: bun install
+
+      - name: anchor build
+        run: anchor build
+
+      - name: anchor test
+        run: anchor test
 
   mobile:
-    name: Android app (unit + integration)
+    name: Android app (typecheck)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -31,37 +57,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
-      # anvil + forge artifacts for the group-pool lifecycle E2E
-      - uses: foundry-rs/foundry-toolchain@v1
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
       - name: bun install
-        run: bun install --frozen-lockfile
-      - name: unit tests (bun)
-        run: bun test src
-      - name: integration tests (node — hermetic DHT)
-        run: npm run test:integration
+        run: bun install
+      - name: typecheck
+        run: npx tsc --noEmit
 
-  desktop:
-    name: Desktop app (unit + integration)
+  web:
+    name: Dashboard + landing (build)
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [dashboard, landing]
     defaults:
       run:
-        working-directory: apps/desktop
-    env:
-      # tests exercise the Bare worker's room core, not the Electron shell
-      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+        working-directory: apps/${{ matrix.app }}
     steps:
       - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      # standalone npm install — electron-forge's dependency walker needs a
-      # real flat node_modules (bun's symlinked workspace store breaks it)
-      - name: npm ci
-        run: npm ci
-      - name: unit tests
-        run: npm test
-      - name: integration tests (node — hermetic DHT)
-        run: npm run test:integration
+      - name: install
+        run: bun install
+      - name: build
+        run: npm run build

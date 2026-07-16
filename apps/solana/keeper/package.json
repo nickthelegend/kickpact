@@ -1,8 +1,8 @@
 {
-  "name": "goalline-keeper",
+  "name": "kickpact-keeper",
   "private": true,
   "type": "module",
-  "description": "GoalLine keeper — TxLINE activation, live scores watcher, and proof-driven settlement on Solana devnet.",
+  "description": "Kickpact keeper \u2014 TxLINE activation, live scores watcher, and proof-driven settlement on Solana devnet.",
   "dependencies": {
     "@coral-xyz/anchor": "0.32.1",
     "@solana/spl-token": "^0.4.12",

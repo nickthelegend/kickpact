@@ -8,6 +8,13 @@
     "@solana/spl-token": "^0.4.12",
     "@solana/web3.js": "^1.91.9",
     "eventsource": "^4.0.0",
-    "tweetnacl": "^1.0.3"
+    "tweetnacl": "^1.0.3",
+    "bn.js": "^5.2.1"
+  },
+  "workspaces": [
+    "keeper"
+  ],
+  "devDependencies": {
+    "@types/bn.js": "^5.2.0"
   }
 }
