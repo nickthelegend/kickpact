@@ -340,3 +340,12 @@ export async function latestPoolTx(connection: Connection, poolId: bigint | numb
 export function shortAddr(a: string | null): string {
   return a ? `${a.slice(0, 4)}…${a.slice(-4)}` : "—"
 }
+
+/**
+ * A duel's join deadline: friends gathering around a match should be able to
+ * join a bit into it, so we allow joins until the 75th minute (but always at
+ * least a minute out so `create_pool`'s deadline > now check passes).
+ */
+export function duelDeadlineMs(kickoffMs: number): number {
+  return Math.max(Date.now() + 60_000, kickoffMs + 75 * 60_000)
+}

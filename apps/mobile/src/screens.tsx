@@ -5,9 +5,10 @@
  *   • settlement receipts backed by TxLINE Merkle proofs — verifiable from
  *     the phone with a live read-only call into the oracle program
  */
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import {
-  ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, TextInput, View,
+  ActivityIndicator, Linking, PermissionsAndroid, Platform, Pressable, ScrollView, Share,
+  StyleSheet, TextInput, View,
 } from "react-native"
 
 import { C } from "./theme"
@@ -21,53 +22,56 @@ import {
 } from "./txline"
 import {
   EXPLORER, EXPLORER_ACCT, OUTCOMES, buildClaimTx, buildCreatePoolTx, buildFaucetTx,
-  buildJoinPoolTx, dailyRootsPda, latestPoolTx, allPools, poolsForFixture,
-  myPick, pickName, shortAddr, verifyProofOnChain, KICKPACT_ID, TXORACLE_ID,
+  buildJoinPoolTx, dailyRootsPda, duelDeadlineMs, getPool, latestPoolTx, allPools,
+  poolsForFixture, myPick, pickName, shortAddr, verifyProofOnChain, KICKPACT_ID, TXORACLE_ID,
   type PoolOutcome, type PoolState,
 } from "./solana"
+import * as nearby from "./nearby"
 
 const USDT_ICON = require("../assets/tokens/usdc-icon.png")
 
 // ─────────────────────────────────────────────────────────────── sign in ──
 export function SignInScreen() {
-  const { createWallet, importWallet, connectMwa, confirmBackup, status } = useWallet()
-  const [busy, setBusy] = useState(false)
+  const { connect, createBurner, importBurner, confirmBackup, status, mwaAvailable } = useWallet()
+  const [busy, setBusy] = useState<"connect" | "burner" | "import" | null>(null)
   const [secret, setSecret] = useState<string | null>(null)
+  const [showBurner, setShowBurner] = useState(false)
   const [importing, setImporting] = useState(false)
   const [phrase, setPhrase] = useState("")
   const [err, setErr] = useState<string | null>(null)
 
-  const doCreate = async () => {
-    setBusy(true)
+  const doConnect = async () => {
+    setBusy("connect")
     setErr(null)
     try {
-      setSecret(await createWallet())
+      await connect()
+    } catch {
+      setErr("couldn't reach a wallet app — install Phantom/Solflare, or use a burner below")
+      setShowBurner(true)
+    } finally {
+      setBusy(null)
+    }
+  }
+  const doCreateBurner = async () => {
+    setBusy("burner")
+    setErr(null)
+    try {
+      setSecret(await createBurner())
     } catch (e: any) {
       setErr(String(e.message ?? e))
     } finally {
-      setBusy(false)
+      setBusy(null)
     }
   }
   const doImport = async () => {
-    setBusy(true)
+    setBusy("import")
     setErr(null)
     try {
-      await importWallet(phrase)
+      await importBurner(phrase)
     } catch {
       setErr("invalid secret key")
     } finally {
-      setBusy(false)
-    }
-  }
-  const doMwa = async () => {
-    setBusy(true)
-    setErr(null)
-    try {
-      await connectMwa()
-    } catch {
-      setErr("no MWA wallet found — install Phantom/Solflare or use a burner")
-    } finally {
-      setBusy(false)
+      setBusy(null)
     }
   }
 
@@ -76,7 +80,7 @@ export function SignInScreen() {
       <ScrollView contentContainerStyle={s.signWrap}>
         <PixelText size={26} style={{ textAlign: "center" }}>Back up your key</PixelText>
         <PixelText size={11} color={C.white60} style={{ textAlign: "center", marginTop: 8 }} upper={false}>
-          This base58 secret IS your wallet. Store it somewhere safe.
+          This base58 secret IS your burner wallet. Store it somewhere safe.
         </PixelText>
         <Panel style={{ padding: 14, marginTop: 18 }}>
           <PixelText size={12} upper={false} style={{ lineHeight: 20 }}>{secret}</PixelText>
@@ -106,14 +110,53 @@ export function SignInScreen() {
               style={s.input}
             />
           </Panel>
-          <PixelButton label={busy ? "…" : "IMPORT"} onPress={doImport} style={{ marginTop: 14 }} />
+          <PixelButton label={busy === "import" ? "…" : "IMPORT"} onPress={doImport} style={{ marginTop: 14 }} />
           <PixelButton label="BACK" color={C.importBlue} onPress={() => setImporting(false)} style={{ marginTop: 10 }} />
         </>
       ) : (
         <>
-          <PixelButton label={busy ? "…" : "◆ CREATE SOLANA WALLET"} onPress={doCreate} color={C.eth} style={{ marginTop: 26 }} />
-          <PixelButton label="CONNECT WALLET (MWA)" onPress={doMwa} color={C.green} style={{ marginTop: 12 }} />
-          <PixelButton label="IMPORT SECRET KEY" onPress={() => setImporting(true)} color={C.importBlue} style={{ marginTop: 12 }} />
+          {/* PRIMARY — connect a real wallet */}
+          {mwaAvailable && (
+            <>
+              <PixelButton
+                label={busy === "connect" ? "OPENING WALLET…" : "◆ CONNECT WALLET"}
+                onPress={doConnect}
+                color={C.eth}
+                style={{ marginTop: 26 }}
+              />
+              <PixelText size={9} color={C.white45} style={{ textAlign: "center", marginTop: 8 }} upper={false}>
+                Phantom · Solflare · any Mobile Wallet Adapter wallet — your keys stay in your wallet app
+              </PixelText>
+            </>
+          )}
+
+          {/* FALLBACK — burner, folded away unless needed */}
+          {showBurner || !mwaAvailable ? (
+            <>
+              <View style={{ height: 1, backgroundColor: C.white15, marginVertical: 20 }} />
+              <PixelText size={9} color={C.white45} style={{ textAlign: "center" }} tracking={2}>
+                NO WALLET APP? USE A BURNER
+              </PixelText>
+              <PixelButton
+                label={busy === "burner" ? "…" : "CREATE A BURNER WALLET"}
+                onPress={doCreateBurner}
+                color={C.green}
+                style={{ marginTop: 12 }}
+              />
+              <PixelButton
+                label="IMPORT SECRET KEY"
+                onPress={() => setImporting(true)}
+                color={C.importBlue}
+                style={{ marginTop: 10 }}
+              />
+            </>
+          ) : (
+            <Pressable onPress={() => setShowBurner(true)} style={{ marginTop: 18 }}>
+              <PixelText size={10} color={C.white45} style={{ textAlign: "center" }} upper={false}>
+                or use a burner wallet instead →
+              </PixelText>
+            </Pressable>
+          )}
         </>
       )}
       {err && (
@@ -800,6 +843,459 @@ export function ProfileScreen() {
   )
 }
 
+// ──────────────────────────────────────────────────────────────── duels ──
+// A "duel" is a group pot: friends stake the same kUSD on a match and pick an
+// outcome — settled trustlessly by TxLINE. They gather two ways: over Bluetooth
+// (in person, with live chat) or by an online code (from anywhere).
+
+async function requestNearbyPerms(): Promise<boolean> {
+  if (Platform.OS !== "android") return false
+  const P: any = PermissionsAndroid.PERMISSIONS
+  const want = [
+    P.ACCESS_FINE_LOCATION,
+    P.BLUETOOTH_ADVERTISE,
+    P.BLUETOOTH_CONNECT,
+    P.BLUETOOTH_SCAN,
+    P.NEARBY_WIFI_DEVICES,
+  ].filter(Boolean)
+  try {
+    const res = await PermissionsAndroid.requestMultiple(want)
+    return Object.values(res).every((v) => v === PermissionsAndroid.RESULTS.GRANTED)
+  } catch {
+    return false
+  }
+}
+
+function FixturePicker({ games, value, onPick }: { games: Game[]; value: Game | null; onPick: (g: Game) => void }) {
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+      {games.map((g) => {
+        const on = value?.id === g.id
+        return (
+          <Pressable key={g.id} onPress={() => onPick(g)} style={[s.fxChip, on && s.fxChipOn]}>
+            <PixelText size={11} upper={false}>{g.home.flag} {g.home.abbrev} v {g.away.abbrev} {g.away.flag}</PixelText>
+            <PixelText size={8} color={C.white45} style={{ marginTop: 3 }} upper={false}>{kickoffLabel(g)}</PixelText>
+          </Pressable>
+        )
+      })}
+      {games.length === 0 && <PixelText size={10} color={C.white45} upper={false}>loading fixtures…</PixelText>}
+    </ScrollView>
+  )
+}
+
+export function DuelsScreen({ onGame, onReceipt }: { onGame: (id: string) => void; onReceipt: (p: PoolState) => void }) {
+  const [view, setView] = useState<"menu" | "nearby" | "online">("menu")
+  if (view === "nearby") return <NearbyDuel onBack={() => setView("menu")} onGame={onGame} />
+  if (view === "online") return <OnlineDuel onBack={() => setView("menu")} onGame={onGame} />
+  return (
+    <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 110 }}>
+      <PixelText size={20}>Duels</PixelText>
+      <PixelText size={9} color={C.white45} style={{ marginTop: 4 }} upper={false}>
+        pot up with friends on a match — everyone stakes, winners split, TxLINE settles it
+      </PixelText>
+
+      <Pressable onPress={() => setView("nearby")}>
+        <Panel style={{ padding: 16, marginTop: 14, borderColor: C.eth }}>
+          <PixelText size={30} upper={false}>📡</PixelText>
+          <PixelText size={14} style={{ marginTop: 8 }}>Nearby · Bluetooth</PixelText>
+          <PixelText size={10} color={C.white60} style={{ marginTop: 6 }} upper={false}>
+            Friends around you? Discover each other over Bluetooth, chat live, and pot up together — no server, no internet needed to coordinate.
+          </PixelText>
+        </Panel>
+      </Pressable>
+
+      <Pressable onPress={() => setView("online")}>
+        <Panel style={{ padding: 16, marginTop: 12, borderColor: C.gold }}>
+          <PixelText size={30} upper={false}>🌐</PixelText>
+          <PixelText size={14} style={{ marginTop: 8 }}>Online · Duel code</PixelText>
+          <PixelText size={10} color={C.white60} style={{ marginTop: 6 }} upper={false}>
+            Friends far away? Open a duel, share the code, and everyone joins the same on-chain pot from anywhere.
+          </PixelText>
+        </Panel>
+      </Pressable>
+
+      <PixelText size={8} color={C.white35} style={{ marginTop: 16 }} upper={false}>
+        The money always lives on Solana — Bluetooth/online only carry the chat and the invite. Multiple friends can join one pot.
+      </PixelText>
+    </ScrollView>
+  )
+}
+
+// ── Bluetooth room ──────────────────────────────────────────────────────────
+interface ChatLine {
+  from: string
+  text: string
+  mine?: boolean
+  system?: boolean
+}
+
+function NearbyDuel({ onBack, onGame }: { onBack: () => void; onGame: (id: string) => void }) {
+  const { publicKey, connection, signAndSend, address } = useWallet()
+  const myName = address ? address.slice(0, 6) : "me"
+
+  const [ready, setReady] = useState<"idle" | "starting" | "on" | "unsupported">("idle")
+  const [found, setFound] = useState<nearby.Peer[]>([])
+  const [peers, setPeers] = useState<Record<string, string>>({}) // peerId -> name
+  const [chat, setChat] = useState<ChatLine[]>([])
+  const [draft, setDraft] = useState("")
+  const [games, setGames] = useState<Game[]>([])
+  const [fixture, setFixture] = useState<Game | null>(null)
+  const [stake, setStake] = useState("10")
+  const [pick, setPick] = useState<PoolOutcome>("home")
+  const [duel, setDuel] = useState<nearby.NearbyMsg & { t: "duel" } | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [note, setNote] = useState<string | null>(null)
+  const peersRef = useRef<Record<string, string>>({})
+  peersRef.current = peers
+
+  const say = (line: ChatLine) => setChat((c) => [...c.slice(-60), line])
+
+  useEffect(() => {
+    fetchGames().then((all) => setGames(filterGames(all, "upcoming").concat(filterGames(all, "live")).slice(0, 12))).catch(() => {})
+  }, [])
+
+  // start advertise + discover (mesh) and wire events
+  useEffect(() => {
+    if (!nearby.nearbyAvailable()) {
+      setReady("unsupported")
+      return
+    }
+    let subs: nearby.Unsub[] = []
+    let alive = true
+    ;(async () => {
+      setReady("starting")
+      const ok = await requestNearbyPerms()
+      if (!ok) {
+        setNote("Bluetooth/location permission denied")
+        setReady("idle")
+        return
+      }
+      if (!(await nearby.playServicesOk())) {
+        setNote("Google Play services required")
+        setReady("unsupported")
+        return
+      }
+      subs = [
+        nearby.onPeerFound((p) => alive && setFound((f) => (f.some((x) => x.peerId === p.peerId) ? f : [...f, p]))),
+        nearby.onPeerLost(({ peerId }) => alive && setFound((f) => f.filter((x) => x.peerId !== peerId))),
+        nearby.onInvitation((p) => nearby.acceptConnection(p.peerId)), // auto-accept friends
+        nearby.onConnected((p) => {
+          if (!alive) return
+          setPeers((m) => ({ ...m, [p.peerId]: p.name }))
+          setFound((f) => f.filter((x) => x.peerId !== p.peerId))
+          say({ from: p.name, text: "joined the room", system: true })
+          if (address) nearby.send(p.peerId, { t: "hello", addr: address, name: myName })
+        }),
+        nearby.onDisconnected(({ peerId }) => {
+          if (!alive) return
+          setPeers((m) => {
+            const n = { ...m }
+            delete n[peerId]
+            return n
+          })
+        }),
+        nearby.onMessage((peerId, msg) => {
+          if (!alive) return
+          if (msg.t === "chat") say({ from: peersRef.current[peerId] ?? msg.from, text: msg.text })
+          else if (msg.t === "duel") {
+            setDuel(msg)
+            say({ from: "★", text: `duel opened on the match · ${msg.stake} kUSD stake`, system: true })
+          }
+        }),
+      ]
+      try {
+        await nearby.startAdvertise(myName)
+        await nearby.startDiscovery(myName)
+        if (alive) setReady("on")
+      } catch (e: any) {
+        setNote(String(e?.message ?? e).slice(0, 80))
+        setReady("idle")
+      }
+    })()
+    return () => {
+      alive = false
+      subs.forEach((u) => u())
+      nearby.stopAll()
+      nearby.disconnect()
+    }
+  }, [address])
+
+  const peerIds = Object.keys(peers)
+
+  const sendChat = () => {
+    const text = draft.trim()
+    if (!text) return
+    say({ from: myName, text, mine: true })
+    nearby.broadcast(peerIds, { t: "chat", from: myName, text, at: Date.now() })
+    setDraft("")
+  }
+
+  const startDuel = async () => {
+    if (!publicKey || !fixture || busy) return
+    const stakeN = Number(stake)
+    if (!stakeN) return setNote("enter a stake")
+    setBusy(true)
+    setNote(null)
+    try {
+      const deadline = duelDeadlineMs(fixture.kickoffMs)
+      const { tx, poolId } = await buildCreatePoolTx(connection, publicKey, fixture.fixtureId, stakeN, deadline, fixture.kickoffMs, pick)
+      await signAndSend(tx)
+      const d = { t: "duel" as const, poolId: String(poolId), fixtureId: fixture.fixtureId, stake: stakeN, host: address! }
+      setDuel(d)
+      nearby.broadcast(peerIds, d)
+      say({ from: myName, text: `opened a duel · ${stakeN} kUSD · picked ${pick.toUpperCase()}`, system: true })
+    } catch (e: any) {
+      setNote(String(e.message ?? e).slice(0, 90))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const joinDuel = async (dpick: PoolOutcome) => {
+    if (!publicKey || !duel || busy) return
+    setBusy(true)
+    setNote(null)
+    try {
+      const tx = await buildJoinPoolTx(connection, publicKey, BigInt(duel.poolId), dpick)
+      await signAndSend(tx)
+      say({ from: myName, text: `joined the pot · picked ${dpick.toUpperCase()}`, system: true })
+      nearby.broadcast(peerIds, { t: "chat", from: myName, text: `I'm in — ${dpick.toUpperCase()}`, at: Date.now() })
+    } catch (e: any) {
+      setNote(String(e.message ?? e).slice(0, 90))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <View style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 20 }}>
+        <Pressable onPress={onBack}><PixelText size={11} color={C.white60}>‹ DUELS</PixelText></Pressable>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", marginTop: 10 }}>
+          <PixelText size={18}>Nearby room</PixelText>
+          <PixelText size={9} color={ready === "on" ? C.greenLight : C.white45} tracking={1}>
+            {ready === "on" ? `● LIVE · ${peerIds.length + 1} here` : ready === "starting" ? "starting…" : ready === "unsupported" ? "unavailable" : "off"}
+          </PixelText>
+        </View>
+
+        {ready === "unsupported" && (
+          <Panel style={{ padding: 12, marginTop: 12 }}>
+            <PixelText size={10} color={C.amber} upper={false}>
+              Bluetooth duels run on the Android app (Google Nearby Connections). Install the APK and open this on a device with a friend nearby.
+            </PixelText>
+          </Panel>
+        )}
+
+        {/* discovered friends */}
+        {found.length > 0 && (
+          <Panel style={{ padding: 12, marginTop: 12 }}>
+            <PixelText size={9} color={C.white45} tracking={2}>FRIENDS NEARBY</PixelText>
+            {found.map((p) => (
+              <Pressable key={p.peerId} onPress={() => nearby.requestConnection(p.peerId)} style={s.peerRow}>
+                <PixelText size={11} upper={false}>📲 {p.name}</PixelText>
+                <PixelText size={9} color={C.ethLight}>CONNECT ›</PixelText>
+              </Pressable>
+            ))}
+          </Panel>
+        )}
+
+        {/* connected peers */}
+        {peerIds.length > 0 && (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
+            <View style={s.peerPill}><PixelText size={9} upper={false}>🟢 you</PixelText></View>
+            {peerIds.map((id) => (
+              <View key={id} style={s.peerPill}><PixelText size={9} upper={false}>🟢 {peers[id]}</PixelText></View>
+            ))}
+          </View>
+        )}
+
+        {/* the duel */}
+        {duel ? (
+          <Panel style={{ padding: 12, marginTop: 12, borderColor: C.gold }}>
+            <PixelText size={11} color={C.gold}>DUEL · POOL #{duel.poolId} · {duel.stake} kUSD</PixelText>
+            <PixelText size={9} color={C.white45} style={{ marginTop: 4 }} upper={false}>pick your side to join the pot</PixelText>
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+              {OUTCOMES.map((o) => (
+                <PixelButton key={o} label={busy ? "…" : o.toUpperCase()} size={10} color={C.eth} style={{ flex: 1, paddingVertical: 8 }} onPress={() => joinDuel(o)} />
+              ))}
+            </View>
+            <Pressable onPress={() => onGame(String(duel.fixtureId))} style={{ marginTop: 10 }}>
+              <PixelText size={9} color={C.ethLight} upper={false}>open the match to watch + settle ›</PixelText>
+            </Pressable>
+          </Panel>
+        ) : (
+          <Panel style={{ padding: 12, marginTop: 12 }}>
+            <PixelText size={11} color={C.gold}>OPEN A DUEL</PixelText>
+            <FixturePicker games={games} value={fixture} onPick={setFixture} />
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 10, alignItems: "center" }}>
+              <Panel style={{ flex: 1, paddingHorizontal: 10 }}>
+                <TextInput value={stake} onChangeText={setStake} keyboardType="numeric" placeholder="stake" placeholderTextColor={C.white35} style={[s.input, { paddingVertical: 8 }]} />
+              </Panel>
+              <PixelText size={10} color={C.white45}>KUSD</PixelText>
+            </View>
+            {fixture && (
+              <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+                {OUTCOMES.map((o) => {
+                  const label = o === "home" ? fixture.home.abbrev : o === "away" ? fixture.away.abbrev : "DRAW"
+                  return (
+                    <Pressable key={o} onPress={() => setPick(o)} style={[s.pickBtn, pick === o && s.pickOn]}>
+                      <PixelText size={10} color={pick === o ? C.white : C.white60} upper={false}>{label}</PixelText>
+                    </Pressable>
+                  )
+                })}
+              </View>
+            )}
+            <PixelButton label={busy ? "…" : "OPEN DUEL & INVITE ROOM"} onPress={startDuel} size={11} style={{ marginTop: 10 }} />
+          </Panel>
+        )}
+        {note && <PixelText size={9} color={C.amber} style={{ marginTop: 8 }} upper={false}>{note}</PixelText>}
+      </ScrollView>
+
+      {/* chat dock */}
+      <View style={s.chatDock}>
+        <ScrollView style={{ maxHeight: 150 }} contentContainerStyle={{ padding: 10 }}>
+          {chat.length === 0 && <PixelText size={9} color={C.white35} upper={false}>say hi to the room…</PixelText>}
+          {chat.map((m, i) => (
+            <PixelText key={i} size={10} upper={false} color={m.system ? C.white45 : m.mine ? C.ethLight : C.white} style={{ marginBottom: 3 }}>
+              {m.system ? `— ${m.text} —` : `${m.from}: ${m.text}`}
+            </PixelText>
+          ))}
+        </ScrollView>
+        <View style={{ flexDirection: "row", gap: 8, padding: 8 }}>
+          <Panel style={{ flex: 1, paddingHorizontal: 10 }}>
+            <TextInput value={draft} onChangeText={setDraft} placeholder="message the room" placeholderTextColor={C.white35} style={[s.input, { paddingVertical: 8 }]} onSubmitEditing={sendChat} />
+          </Panel>
+          <PixelButton label="SEND" size={10} onPress={sendChat} style={{ paddingHorizontal: 14 }} />
+        </View>
+      </View>
+    </View>
+  )
+}
+
+// ── Online duel by code ─────────────────────────────────────────────────────
+function OnlineDuel({ onBack, onGame }: { onBack: () => void; onGame: (id: string) => void }) {
+  const { publicKey, connection, signAndSend } = useWallet()
+  const [tab, setTab] = useState<"create" | "join">("create")
+  const [games, setGames] = useState<Game[]>([])
+  const [fixture, setFixture] = useState<Game | null>(null)
+  const [stake, setStake] = useState("10")
+  const [pick, setPick] = useState<PoolOutcome>("home")
+  const [code, setCode] = useState("")
+  const [joinPickState, setJoinPick] = useState<PoolOutcome>("home")
+  const [created, setCreated] = useState<{ poolId: string; fixtureId: number } | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [note, setNote] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchGames().then((all) => setGames(filterGames(all, "upcoming").concat(filterGames(all, "live")).slice(0, 12))).catch(() => {})
+  }, [])
+
+  const doCreate = async () => {
+    if (!publicKey || !fixture || busy) return
+    const stakeN = Number(stake)
+    if (!stakeN) return setNote("enter a stake")
+    setBusy(true)
+    setNote(null)
+    try {
+      const deadline = duelDeadlineMs(fixture.kickoffMs)
+      const { tx, poolId } = await buildCreatePoolTx(connection, publicKey, fixture.fixtureId, stakeN, deadline, fixture.kickoffMs, pick)
+      await signAndSend(tx)
+      setCreated({ poolId: String(poolId), fixtureId: fixture.fixtureId })
+    } catch (e: any) {
+      setNote(String(e.message ?? e).slice(0, 90))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const doJoin = async () => {
+    if (!publicKey || busy) return
+    const id = code.trim().replace(/[^0-9]/g, "")
+    if (!id) return setNote("enter a duel code")
+    setBusy(true)
+    setNote(null)
+    try {
+      const p = await getPool(connection, BigInt(id)) // validates it exists
+      const tx = await buildJoinPoolTx(connection, publicKey, p.id, joinPickState)
+      await signAndSend(tx)
+      setNote(`joined duel #${id} · picked ${joinPickState.toUpperCase()}`)
+      onGame(String(p.fixtureId))
+    } catch (e: any) {
+      setNote(String(e.message ?? e).slice(0, 120))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 110 }}>
+      <Pressable onPress={onBack}><PixelText size={11} color={C.white60}>‹ DUELS</PixelText></Pressable>
+      <PixelText size={18} style={{ marginTop: 10 }}>Online duel</PixelText>
+
+      <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
+        <Pressable onPress={() => setTab("create")} style={[s.filter, tab === "create" && s.filterOn]}><PixelText size={10} color={tab === "create" ? C.white : C.white45}>create</PixelText></Pressable>
+        <Pressable onPress={() => setTab("join")} style={[s.filter, tab === "join" && s.filterOn]}><PixelText size={10} color={tab === "join" ? C.white : C.white45}>join by code</PixelText></Pressable>
+      </View>
+
+      {tab === "create" ? (
+        created ? (
+          <Panel style={{ padding: 16, marginTop: 14, borderColor: C.gold, alignItems: "center" }}>
+            <PixelText size={9} color={C.white45} tracking={2}>DUEL CODE</PixelText>
+            <PixelText size={40} style={{ marginTop: 6 }}>#{created.poolId}</PixelText>
+            <PixelText size={9} color={C.white60} style={{ marginTop: 6, textAlign: "center" }} upper={false}>
+              share this code — friends join the same pot from anywhere
+            </PixelText>
+            <PixelButton label="SHARE CODE" size={11} style={{ marginTop: 12 }} onPress={() => Share.share({ message: `Join my Kickpact duel — enter code #${created.poolId} in the app.` })} />
+            <Pressable onPress={() => onGame(String(created.fixtureId))} style={{ marginTop: 10 }}>
+              <PixelText size={9} color={C.ethLight} upper={false}>open the match ›</PixelText>
+            </Pressable>
+          </Panel>
+        ) : (
+          <Panel style={{ padding: 12, marginTop: 14 }}>
+            <PixelText size={11} color={C.gold}>PICK A MATCH</PixelText>
+            <FixturePicker games={games} value={fixture} onPick={setFixture} />
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 10, alignItems: "center" }}>
+              <Panel style={{ flex: 1, paddingHorizontal: 10 }}>
+                <TextInput value={stake} onChangeText={setStake} keyboardType="numeric" placeholder="stake" placeholderTextColor={C.white35} style={[s.input, { paddingVertical: 8 }]} />
+              </Panel>
+              <PixelText size={10} color={C.white45}>KUSD</PixelText>
+            </View>
+            {fixture && (
+              <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+                {OUTCOMES.map((o) => {
+                  const label = o === "home" ? fixture.home.abbrev : o === "away" ? fixture.away.abbrev : "DRAW"
+                  return (
+                    <Pressable key={o} onPress={() => setPick(o)} style={[s.pickBtn, pick === o && s.pickOn]}>
+                      <PixelText size={10} color={pick === o ? C.white : C.white60} upper={false}>{label}</PixelText>
+                    </Pressable>
+                  )
+                })}
+              </View>
+            )}
+            <PixelButton label={busy ? "…" : "CREATE DUEL"} onPress={doCreate} size={11} style={{ marginTop: 10 }} />
+          </Panel>
+        )
+      ) : (
+        <Panel style={{ padding: 12, marginTop: 14 }}>
+          <PixelText size={11} color={C.gold}>ENTER A DUEL CODE</PixelText>
+          <Panel style={{ paddingHorizontal: 10, marginTop: 10 }}>
+            <TextInput value={code} onChangeText={setCode} keyboardType="numeric" placeholder="# duel code" placeholderTextColor={C.white35} style={[s.input, { paddingVertical: 10 }]} />
+          </Panel>
+          <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+            {OUTCOMES.map((o) => (
+              <Pressable key={o} onPress={() => setJoinPick(o)} style={[s.pickBtn, joinPickState === o && s.pickOn]}>
+                <PixelText size={10} color={joinPickState === o ? C.white : C.white60} upper={false}>{o.toUpperCase()}</PixelText>
+              </Pressable>
+            ))}
+          </View>
+          <PixelButton label={busy ? "…" : "JOIN THE POT"} onPress={doJoin} size={11} style={{ marginTop: 10 }} />
+        </Panel>
+      )}
+      {note && <PixelText size={9} color={C.amber} style={{ marginTop: 10 }} upper={false}>{note}</PixelText>}
+    </ScrollView>
+  )
+}
+
 // ─────────────────────────────────────────────────────────────── styles ──
 const s = StyleSheet.create({
   signWrap: { flexGrow: 1, justifyContent: "center", padding: 22 },
@@ -824,4 +1320,12 @@ const s = StyleSheet.create({
     backgroundColor: C.panel, borderWidth: 1, borderColor: C.white15,
   },
   pickOn: { backgroundColor: C.eth, borderColor: C.eth },
+  fxChip: {
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, marginRight: 8,
+    backgroundColor: C.panel, borderWidth: 1, borderColor: C.white15,
+  },
+  fxChipOn: { borderColor: C.eth, backgroundColor: "rgba(98,126,234,0.15)" },
+  peerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 8 },
+  peerPill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: C.panel, borderWidth: 1, borderColor: C.white15 },
+  chatDock: { borderTopWidth: 1, borderTopColor: C.white15, backgroundColor: C.frameDark },
 })

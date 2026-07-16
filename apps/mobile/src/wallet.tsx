@@ -1,42 +1,53 @@
 /**
- * Wallet context — self-custodial SOLANA wallet for the mobile app.
+ * Wallet context — Solana, self-custodial, two ways in:
  *
- * Two ways in, one interface out:
- *   • Burner (default): an ed25519 keypair generated on-device, secret stored
- *     in the OS keychain via the same secure-storage path as the EVM era —
- *     the app signs transactions locally. Backup/restore via base58 secret.
- *   • Mobile Wallet Adapter: connect Phantom/Solflare/etc. on Android — the
- *     wallet app signs; we only ever hold the public key.
+ *   • CONNECT (primary) — Mobile Wallet Adapter via @wallet-ui/react-native-web3js.
+ *     A real wallet app (Phantom / Solflare / fakewallet) holds the keys and
+ *     signs; we only ever see the public key. The connection persists across
+ *     launches (the library stores the auth token), so it reconnects silently.
+ *   • BURNER (fallback) — an ed25519 keypair generated on-device and sealed in
+ *     the OS keychain, for when there's no wallet app installed or on web.
  *
- * The status machine (INITIALIZING → NO_WALLET → BACKUP_PENDING → READY)
- * is unchanged from the EVM build so screens port 1:1.
+ * MWA is native-only. On web the hook is a stub and only the burner path runs,
+ * so the web preview never crashes.
  */
 import * as React from "react"
+import { Platform } from "react-native"
 import { Keypair, PublicKey, Transaction, Connection } from "@solana/web3.js"
 import bs58 from "bs58"
 
 import { RPC_URL } from "./solana"
 import { loadSecret, saveSecret, clearSecret } from "./storage"
 
+// Native-only MWA hook; a stable stub on web (Platform.OS is constant per run,
+// so this conditional require keeps the hook call order stable).
+let useMobileWallet: () => any = () => ({ account: null })
+if (Platform.OS !== "web") {
+  try {
+    useMobileWallet = require("@wallet-ui/react-native-web3js").useMobileWallet
+  } catch {
+    /* keep stub */
+  }
+}
+
 const SECRET_KEY = "kickpact.solana.secret"
 
 type Status = "INITIALIZING" | "NO_WALLET" | "BACKUP_PENDING" | "READY"
-type Mode = "burner" | "mwa"
+type Mode = "mwa" | "burner"
 
 export interface WalletContextValue {
   status: Status
-  mode: Mode
+  mode: Mode | null
   address: string | null
   publicKey: PublicKey | null
-  /** Local keypair when mode === "burner", null under MWA. */
-  keypair: Keypair | null
   connection: Connection
   sol: number
   kusd: number
-  createWallet(): Promise<string>
+  mwaAvailable: boolean
+  connect(): Promise<void>
+  createBurner(): Promise<string>
   confirmBackup(): void
-  importWallet(secretBase58: string): Promise<void>
-  connectMwa(): Promise<void>
+  importBurner(secretBase58: string): Promise<void>
   signAndSend(tx: Transaction): Promise<string>
   logout(): Promise<void>
   refresh(): Promise<void>
@@ -45,28 +56,48 @@ export interface WalletContextValue {
 
 const WalletContext = React.createContext<WalletContextValue | null>(null)
 
+const mwaAccountPk = (account: any): PublicKey | null => {
+  if (!account) return null
+  try {
+    if (account.publicKey) return new PublicKey(account.publicKey)
+    if (account.address) return new PublicKey(account.address)
+  } catch {}
+  return null
+}
+
 export function WalletProvider({ children }: { children: React.ReactNode }) {
   const connectionRef = React.useRef<Connection | null>(null)
-  if (!connectionRef.current)
-    connectionRef.current = new Connection(RPC_URL, { commitment: "confirmed" })
+  if (!connectionRef.current) connectionRef.current = new Connection(RPC_URL, { commitment: "confirmed" })
 
-  const [status, setStatus] = React.useState<Status>("INITIALIZING")
-  const [mode, setMode] = React.useState<Mode>("burner")
-  const [keypair, setKeypair] = React.useState<Keypair | null>(null)
-  const [publicKey, setPublicKey] = React.useState<PublicKey | null>(null)
-  const [mwaToken, setMwaToken] = React.useState<string | null>(null)
+  const mwa = useMobileWallet()
+  const mwaAvailable = Platform.OS !== "web"
+  const mwaPk = mwaAccountPk(mwa?.account)
+
+  const [booted, setBooted] = React.useState(false)
+  const [backupPending, setBackupPending] = React.useState(false)
+  const [burner, setBurner] = React.useState<Keypair | null>(null)
   const [sol, setSol] = React.useState(0)
   const [kusd, setKusd] = React.useState(0)
+
+  // effective identity — MWA wins when connected, else the burner
+  const mode: Mode | null = mwaPk ? "mwa" : burner ? "burner" : null
+  const publicKey = mwaPk ?? burner?.publicKey ?? null
+
+  // Status is derived, never a racing state machine.
+  const status: Status = backupPending
+    ? "BACKUP_PENDING"
+    : publicKey
+      ? "READY"
+      : booted
+        ? "NO_WALLET"
+        : "INITIALIZING"
 
   const refresh = React.useCallback(async () => {
     if (!publicKey) return
     try {
       const conn = connectionRef.current!
       const { getKusdBalance } = await import("./solana")
-      const [lamports, k] = await Promise.all([
-        conn.getBalance(publicKey),
-        getKusdBalance(conn, publicKey),
-      ])
+      const [lamports, k] = await Promise.all([conn.getBalance(publicKey), getKusdBalance(conn, publicKey)])
       setSol(lamports / 1e9)
       setKusd(k)
     } catch (err) {
@@ -74,21 +105,15 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }
   }, [publicKey])
 
-  // Restore on mount.
+  // Restore a stored burner on mount (MWA restores itself via the library).
   React.useEffect(() => {
     let cancelled = false
     loadSecret(SECRET_KEY)
       .then((secret) => {
-        if (cancelled) return
-        if (secret) {
-          const kp = Keypair.fromSecretKey(bs58.decode(secret))
-          setKeypair(kp)
-          setPublicKey(kp.publicKey)
-          setMode("burner")
-          setStatus("READY")
-        } else setStatus("NO_WALLET")
+        if (!cancelled && secret) setBurner(Keypair.fromSecretKey(bs58.decode(secret)))
       })
-      .catch(() => setStatus("NO_WALLET"))
+      .catch(() => {})
+      .finally(() => !cancelled && setBooted(true))
     return () => {
       cancelled = true
     }
@@ -102,86 +127,61 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     return () => clearInterval(id)
   }, [status, refresh])
 
-  const createWallet = React.useCallback(async () => {
+  const connect = React.useCallback(async () => {
+    if (!mwa?.connect) throw new Error("wallet connect unavailable")
+    await mwa.connect()
+  }, [mwa])
+
+  const createBurner = React.useCallback(async () => {
     const kp = Keypair.generate()
     const secret = bs58.encode(kp.secretKey)
     await saveSecret(SECRET_KEY, secret)
-    setKeypair(kp)
-    setPublicKey(kp.publicKey)
-    setMode("burner")
-    setStatus("BACKUP_PENDING")
+    setBurner(kp)
+    setBackupPending(true)
     return secret
   }, [])
 
-  const confirmBackup = React.useCallback(() => setStatus("READY"), [])
+  const confirmBackup = React.useCallback(() => setBackupPending(false), [])
 
-  const importWallet = React.useCallback(async (secretBase58: string) => {
+  const importBurner = React.useCallback(async (secretBase58: string) => {
     const cleaned = secretBase58.trim()
     const kp = Keypair.fromSecretKey(bs58.decode(cleaned)) // throws if invalid
     await saveSecret(SECRET_KEY, cleaned)
-    setKeypair(kp)
-    setPublicKey(kp.publicKey)
-    setMode("burner")
-    setStatus("READY")
+    setBurner(kp)
+    setBackupPending(false)
   }, [])
 
-  /** Connect an installed MWA wallet (Phantom, Solflare, fakewallet…). */
-  const connectMwa = React.useCallback(async () => {
-    const { transact } = await import("@solana-mobile/mobile-wallet-adapter-protocol-web3js")
-    await transact(async (wallet: any) => {
-      const auth = await wallet.authorize({
-        cluster: "devnet",
-        identity: { name: "Kickpact", uri: "https://kickpact.app" },
-      })
-      const addr = auth.accounts[0].address
-      // MWA returns base64 account addresses
-      const pk = new PublicKey(Buffer.from(addr, "base64"))
-      setPublicKey(pk)
-      setMwaToken(auth.auth_token)
-      setKeypair(null)
-      setMode("mwa")
-      setStatus("READY")
-    })
-  }, [])
-
-  /** Sign + send through whichever wallet is active. */
   const signAndSend = React.useCallback(
     async (tx: Transaction): Promise<string> => {
       const conn = connectionRef.current!
-      if (mode === "burner") {
-        if (!keypair) throw new Error("no wallet")
-        const bh = await conn.getLatestBlockhash("confirmed")
+      const bh = await conn.getLatestBlockhash("confirmed")
+      if (mode === "mwa") {
         tx.recentBlockhash = bh.blockhash
-        tx.feePayer = keypair.publicKey
-        tx.sign(keypair)
-        const sig = await conn.sendRawTransaction(tx.serialize())
-        await conn.confirmTransaction({ signature: sig, ...bh }, "confirmed")
-        return sig
+        tx.feePayer = mwaPk!
+        const sig = await mwa.signAndSendTransaction(tx)
+        const signature = typeof sig === "string" ? sig : bs58.encode(sig)
+        await conn.confirmTransaction({ signature, ...bh }, "confirmed")
+        return signature
       }
-      // MWA path — the wallet app signs
-      const { transact } = await import("@solana-mobile/mobile-wallet-adapter-protocol-web3js")
-      return await transact(async (wallet: any) => {
-        await wallet.reauthorize({ auth_token: mwaToken })
-        const bh = await conn.getLatestBlockhash("confirmed")
-        tx.recentBlockhash = bh.blockhash
-        tx.feePayer = publicKey!
-        const [sig] = await wallet.signAndSendTransactions({ transactions: [tx] })
-        await conn.confirmTransaction({ signature: sig, ...bh }, "confirmed")
-        return sig
-      })
+      if (!burner) throw new Error("no wallet")
+      tx.recentBlockhash = bh.blockhash
+      tx.feePayer = burner.publicKey
+      tx.sign(burner)
+      const sig = await conn.sendRawTransaction(tx.serialize())
+      await conn.confirmTransaction({ signature: sig, ...bh }, "confirmed")
+      return sig
     },
-    [mode, keypair, publicKey, mwaToken],
+    [mode, mwa, mwaPk, burner],
   )
 
   const logout = React.useCallback(async () => {
+    if (mode === "mwa" && mwa?.disconnect) await mwa.disconnect().catch(() => {})
     await clearSecret(SECRET_KEY)
-    setKeypair(null)
-    setPublicKey(null)
-    setMwaToken(null)
+    setBurner(null)
     setSol(0)
     setKusd(0)
-    setStatus("NO_WALLET")
-  }, [])
+    setBackupPending(false)
+  }, [mode, mwa])
 
   const getSecret = React.useCallback(() => loadSecret(SECRET_KEY), [])
 
@@ -191,20 +191,20 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       mode,
       address: publicKey?.toBase58() ?? null,
       publicKey,
-      keypair,
       connection: connectionRef.current!,
       sol,
       kusd,
-      createWallet,
+      mwaAvailable,
+      connect,
+      createBurner,
       confirmBackup,
-      importWallet,
-      connectMwa,
+      importBurner,
       signAndSend,
       logout,
       refresh,
       getSecret,
     }),
-    [status, mode, publicKey, keypair, sol, kusd, createWallet, confirmBackup, importWallet, connectMwa, signAndSend, logout, refresh, getSecret],
+    [status, mode, publicKey, sol, kusd, mwaAvailable, connect, createBurner, confirmBackup, importBurner, signAndSend, logout, refresh, getSecret],
   )
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>

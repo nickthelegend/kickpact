@@ -1,14 +1,16 @@
-import "./src/polyfills"
+import "./polyfill"
 import { useState } from "react"
-import { ActivityIndicator, Image, Pressable, View } from "react-native"
+import { ActivityIndicator, Image, Platform, Pressable, View } from "react-native"
 import { StatusBar } from "expo-status-bar"
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context"
 import { useFonts } from "expo-font"
+import { clusterApiUrl } from "@solana/web3.js"
 
 import { C } from "./src/theme"
 import { PixelText } from "./src/ui"
 import { WalletProvider, useWallet } from "./src/wallet"
 import {
+  DuelsScreen,
   GameScreen,
   HomeScreen,
   ProfileScreen,
@@ -19,16 +21,34 @@ import {
 import type { PoolState } from "./src/solana"
 
 /**
- * Kickpact mobile — Expo / React Native on SOLANA. Self-custodial wallet
- * (burner in the device keychain, or Phantom/Solflare via Mobile Wallet
- * Adapter) + kUSD prediction pools escrowed on devnet and settled
- * trustlessly by TxLINE's cryptographically-anchored World Cup data.
+ * Kickpact mobile — Expo / React Native on SOLANA. Connect a real wallet with
+ * Mobile Wallet Adapter (or a keychain burner) and back World Cup prediction
+ * pools settled trustlessly by TxLINE's proofs — plus Bluetooth & online duels
+ * where a whole group of friends pot together.
  */
 
-type Tab = "home" | "receipts" | "profile"
+// MWA provider is native-only; on web we render children directly so the
+// preview still runs on the burner path.
+function WalletHost({ children }: { children: React.ReactNode }) {
+  if (Platform.OS === "web") return <>{children}</>
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { MobileWalletProvider } = require("@wallet-ui/react-native-web3js")
+  return (
+    <MobileWalletProvider
+      chain="solana:devnet"
+      endpoint={clusterApiUrl("devnet")}
+      identity={{ name: "Kickpact", uri: "https://kickpact.app", icon: "favicon.png" }}
+    >
+      {children}
+    </MobileWalletProvider>
+  )
+}
+
+type Tab = "home" | "duels" | "receipts" | "profile"
 
 const TABS: { key: Tab; icon: number; label: string }[] = [
   { key: "home", icon: require("./assets/icons/main_menu.png"), label: "home" },
+  { key: "duels", icon: require("./assets/icons/swords.png"), label: "duels" },
   { key: "receipts", icon: require("./assets/icons/book.png"), label: "receipts" },
   { key: "profile", icon: require("./assets/icons/portrait.png"), label: "profile" },
 ]
@@ -49,7 +69,7 @@ function BottomNav({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
         return (
           <Pressable key={t.key} onPress={() => onTab(t.key)} style={{ flex: 1, alignItems: "center", gap: 2 }}>
             <View style={{ opacity: active ? 1 : 0.5 }}>
-              <Image source={t.icon} style={{ width: 38, height: 38 }} resizeMode="contain" />
+              <Image source={t.icon} style={{ width: 34, height: 34 }} resizeMode="contain" />
             </View>
             <PixelText size={9} color={active ? C.white : C.white45} tracking={1}>
               {t.label}
@@ -77,21 +97,15 @@ function Game() {
 
   if (status === "NO_WALLET" || status === "BACKUP_PENDING") return <SignInScreen />
 
-  // Full-screen flows (no tab bar).
   if (receipt) return <ReceiptScreen pool={receipt} onBack={() => setReceipt(null)} />
   if (gameId)
-    return (
-      <GameScreen
-        gameId={gameId}
-        onBack={() => setGameId(null)}
-        onReceipt={(p) => setReceipt(p)}
-      />
-    )
+    return <GameScreen gameId={gameId} onBack={() => setGameId(null)} onReceipt={(p) => setReceipt(p)} />
 
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flex: 1 }}>
         {tab === "home" && <HomeScreen onProfile={() => setTab("profile")} onGame={setGameId} />}
+        {tab === "duels" && <DuelsScreen onGame={setGameId} onReceipt={setReceipt} />}
         {tab === "receipts" && <ReceiptsScreen onOpen={setReceipt} />}
         {tab === "profile" && <ProfileScreen />}
       </View>
@@ -116,12 +130,14 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <WalletProvider>
-        <SafeAreaView style={{ flex: 1, backgroundColor: C.frameDeep }} edges={["top", "bottom"]}>
-          <StatusBar style="light" />
-          <Game />
-        </SafeAreaView>
-      </WalletProvider>
+      <WalletHost>
+        <WalletProvider>
+          <SafeAreaView style={{ flex: 1, backgroundColor: C.frameDeep }} edges={["top", "bottom"]}>
+            <StatusBar style="light" />
+            <Game />
+          </SafeAreaView>
+        </WalletProvider>
+      </WalletHost>
     </SafeAreaProvider>
   )
 }
