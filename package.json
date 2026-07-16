@@ -26,6 +26,7 @@
     "!apps/mobile",
     "!apps/landing",
     "!apps/dashboard",
-    "!apps/solana"
+    "!apps/solana",
+    "!apps/desktop"
   ]
 }

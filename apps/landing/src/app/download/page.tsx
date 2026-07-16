@@ -26,20 +26,44 @@ const SHOTS: [string, string][] = [
   ["sol-08-profile", "Profile — your keys"],
 ]
 
+type Links = {
+  apk: string
+  mac: string
+  win: string
+  linux: string
+  linuxArm: string
+}
+
+const FALLBACK: Links = {
+  apk: `${REL}/kickpact-android-arm64.apk`,
+  mac: `${REL}/Kickpact-2.0.0-mac-arm64.dmg`,
+  win: `${REL}/Kickpact-2.0.0-win-x64.exe`,
+  linux: `${REL}/Kickpact-2.0.0-linux-x86_64.AppImage`,
+  linuxArm: `${REL}/Kickpact-2.0.0-linux-arm64.AppImage`,
+}
+
 export default function DownloadPage() {
-  const [apk, setApk] = useState(`${REL}/kickpact-android-arm64.apk`)
+  const [links, setLinks] = useState<Links>(FALLBACK)
   useEffect(() => {
     let alive = true
     fetch(POINTER, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (alive && d?.android?.url) setApk(d.android.url)
+        if (!alive || !d) return
+        setLinks({
+          apk: d?.android?.url ?? FALLBACK.apk,
+          mac: d?.desktop?.mac?.url ?? FALLBACK.mac,
+          win: d?.desktop?.windows?.url ?? FALLBACK.win,
+          linux: d?.desktop?.linux?.url ?? FALLBACK.linux,
+          linuxArm: d?.desktop?.linux_arm64?.url ?? FALLBACK.linuxArm,
+        })
       })
       .catch(() => {})
     return () => {
       alive = false
     }
   }, [])
+  const apk = links.apk
 
   return (
     <main className="pt-16 min-h-screen">
@@ -48,7 +72,7 @@ export default function DownloadPage() {
           <div className="font-pixel text-[10px] tracking-widest text-[#8aa0f5] mb-4">GET KICKPACT</div>
           <h1 className="font-display text-4xl md:text-5xl text-white">Grab the app</h1>
           <p className="text-white/55 mt-4 max-w-xl mx-auto">
-            Android, on Solana devnet, fed by live TxLINE World Cup data. Bluetooth duels need two phones in the same room — that&apos;s the fun part.
+            Android and desktop, on Solana devnet, fed by live TxLINE World Cup data. Bluetooth duels need two phones in the same room — that&apos;s the fun part.
           </p>
         </motion.div>
       </section>
@@ -61,10 +85,10 @@ export default function DownloadPage() {
             <div className="text-4xl mb-3">📱</div>
             <div className="flex items-baseline gap-2">
               <div className="font-pixel text-base tracking-wide text-white">Android</div>
-              <span className="font-pixel text-[9px] tracking-widest text-[#e8b84b] uppercase">the app</span>
+              <span className="font-pixel text-[9px] tracking-widest text-[#e8b84b] uppercase">the full app</span>
             </div>
             <p className="text-white/55 text-sm leading-relaxed mt-3 flex-1">
-              Connect a wallet, mint testnet kUSD, pot up with friends over Bluetooth or a duel code, and watch a pool settle itself off a TxLINE proof.
+              The only client with Bluetooth duels and Mobile Wallet Adapter — connect a real wallet, pot up with the friends in the room, and watch a pool settle itself off a TxLINE proof.
             </p>
             <Link href={apk} target="_blank" className="mt-5">
               <Button className="w-full font-pixel text-xs tracking-wider bg-[#627eea] hover:bg-[#8aa0f5] text-white rounded-xl py-6 transition-all hover:shadow-[0_0_18px_rgba(98,126,234,0.5)]">
@@ -76,26 +100,53 @@ export default function DownloadPage() {
             </div>
           </motion.div>
 
-          {/* judges / no phone */}
+          {/* desktop — the same client, packaged with Electron */}
           <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.08 }}
-            className="kp-panel p-6 flex flex-col border-[#e8b84b]/30">
+            className="kp-panel p-6 flex flex-col border-[#e8b84b]/40">
             <div className="text-4xl mb-3">🖥️</div>
             <div className="flex items-baseline gap-2">
-              <div className="font-pixel text-base tracking-wide text-white">Dashboard</div>
-              <span className="font-pixel text-[9px] tracking-widest text-[#e8b84b] uppercase">no install</span>
+              <div className="font-pixel text-base tracking-wide text-white">Desktop</div>
+              <span className="font-pixel text-[9px] tracking-widest text-[#e8b84b] uppercase">mac · win · linux</span>
             </div>
             <p className="text-white/55 text-sm leading-relaxed mt-3 flex-1">
-              The live market viewer — TxLINE odds with implied probabilities, every pool on devnet, and a receipts explorer that re-runs the oracle&apos;s proof check in your browser.
+              The same client, packaged with Electron — wallet, live TxLINE odds, pools, duel codes and proof receipts. Bluetooth duels stay on the phone.
             </p>
-            <Link href={DASHBOARD} target="_blank" className="mt-5">
-              <Button className="w-full font-pixel text-xs tracking-wider bg-transparent border border-white/20 hover:bg-white/5 text-white rounded-xl py-6">
-                Open the dashboard →
+            <Link href={links.mac} target="_blank" className="mt-5">
+              <Button className="w-full font-pixel text-xs tracking-wider bg-[#e8b84b] hover:bg-[#f3cd72] text-[#10162e] rounded-xl py-6 transition-all">
+                ⬇ Download for macOS
               </Button>
             </Link>
+            <div className="flex gap-2 mt-2">
+              <Link href={links.win} target="_blank" className="flex-1">
+                <Button variant="outline" className="w-full font-pixel text-[10px] tracking-wider border-white/20 bg-transparent text-white hover:bg-white/5 rounded-xl py-4">
+                  ⬇ WINDOWS
+                </Button>
+              </Link>
+              <Link href={links.linux} target="_blank" className="flex-1">
+                <Button variant="outline" className="w-full font-pixel text-[10px] tracking-wider border-white/20 bg-transparent text-white hover:bg-white/5 rounded-xl py-4">
+                  ⬇ LINUX
+                </Button>
+              </Link>
+            </div>
             <div className="font-pixel text-[9px] tracking-widest text-white/35 text-center mt-3 uppercase">
-              runs in any browser
+              apple silicon · x64 · <Link href={links.linuxArm} target="_blank" className="underline hover:text-white/60">linux arm64</Link>
             </div>
           </motion.div>
+        </div>
+
+        {/* no install at all */}
+        <div className="kp-panel p-5 mt-4 flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex-1">
+            <div className="font-pixel text-xs tracking-wide text-white">Don&apos;t want to install anything?</div>
+            <p className="text-white/50 text-sm mt-1">
+              The dashboard runs in any browser — live odds, every pool on devnet, and a receipts explorer that re-runs the oracle&apos;s proof check right there.
+            </p>
+          </div>
+          <Link href={DASHBOARD} target="_blank">
+            <Button variant="outline" className="font-pixel text-xs tracking-wider border-white/20 bg-transparent text-white hover:bg-white/5 rounded-xl px-5 py-5 whitespace-nowrap">
+              Open the dashboard →
+            </Button>
+          </Link>
         </div>
 
         <div className="text-center mt-8">
