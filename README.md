@@ -35,7 +35,8 @@ The settle caller is **untrusted by design**: the program rebuilds the 1X2 predi
 | Piece | Where | Status |
 | --- | --- | --- |
 | **`kickpact` Anchor program** — pools escrow + CPI settlement + faucet | [`apps/solana/programs/kickpact`](apps/solana/programs/kickpact/src/lib.rs) | ✅ devnet [`4tAPD5…gWDa`](https://explorer.solana.com/address/4tAPD5tVaWt9TBSMGKfUnguppbg8KLcc2jXbBPufgWDa?cluster=devnet) |
-| **Mobile app** — Expo RN, burner wallet + Mobile Wallet Adapter, live TxLINE fixtures/scores/odds, pools, proof receipts | [`apps/mobile`](apps/mobile) | ✅ APK in releases |
+| **Mobile app** — Expo RN, burner wallet + Mobile Wallet Adapter, live TxLINE fixtures/scores/odds, pools, **Bluetooth + online duels**, proof receipts | [`apps/mobile`](apps/mobile) | ✅ [APK](https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana/kickpact-android-arm64.apk) |
+| **Desktop app** — the same client packaged with Electron (wallet, odds, pools, duel codes, receipts) | [`apps/desktop`](apps/desktop) | ✅ [macOS](https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana/Kickpact-2.0.0-mac-arm64.dmg) · [Windows](https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana/Kickpact-2.0.0-win-x64.exe) · [Linux](https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana/Kickpact-2.0.0-linux-x86_64.AppImage) |
 | **Market-viewer dashboard** — odds board (StablePrice 1X2 + implied %), receipts explorer with **browser-side on-chain re-verification** | [`apps/dashboard`](apps/dashboard) | ✅ [dashboard-alpha-peach-11.vercel.app](https://dashboard-alpha-peach-11.vercel.app) |
 | **Settle-keeper** — watches the TxLINE SSE scores stream, auto-settles pools at full time with the fetched proof | [`apps/solana/keeper`](apps/solana/keeper/src/keeper.ts) | ✅ running |
 | **A real settlement** — England 1–2 Argentina (semifinal), settled on devnet by CPI with TxLINE's proof | [settle tx](https://explorer.solana.com/tx/21CFfLsx6Mqy7XmZUeTiPZ6PAMwGqBpwFgi4GkZvqUPbUJ9oXxV8QA6kDuqX6qWaM8vDdKWTihugkXa528uh6voS?cluster=devnet) | ✅ on-chain |
@@ -57,6 +58,9 @@ cd apps/solana && anchor test
 # mobile (Expo web preview or Android)
 cd apps/mobile && bun install && bunx expo start --web   # or: bunx expo run:android
 
+# desktop (exports the app to web, then runs it in Electron)
+cd apps/desktop && bun install && npm start              # npm run dist → dmg/exe/AppImage
+
 # dashboard
 cd apps/dashboard && bun install && bun run dev          # http://localhost:3070
 
@@ -70,19 +74,22 @@ TxLINE free-tier access ships in the repo (guest JWT + the API token minted by o
 
 ```
 apps/
-├── mobile      # ⭐ Expo RN app — wallet (burner + MWA), TxLINE data, pools, receipts
+├── mobile      # ⭐ Expo RN app — wallet (burner + MWA), TxLINE data, pools,
+│               #   Bluetooth + online duels, receipts. Also targets web.
 ├── solana      # ⭐ Anchor workspace — kickpact program, tests vs cloned oracle, keeper
 ├── dashboard   # ⭐ Next.js market viewer + verifiable receipts (Vercel)
-├── miniapp     # Telegram Mini App (EVM era — being ported)
-├── landing     # marketing site
-└── duel-evm…   # EVM-era contracts (see the evm branch for that product)
+├── desktop     #   Electron shell around mobile's web export → mac/win/linux
+└── landing     #   marketing site (Vercel)
 ```
+
+Every app here is Solana. The pre-pivot Tether Cup product (EVM + WDK wallet, Pears/Hyperswarm watch party, Telegram Mini App) lives on the [`evm` branch](https://github.com/nickthelegend/kickpact/tree/evm) — nothing on it is part of this one.
 
 ## The stack
 
 - **Data**: TxLINE devnet — `fixtures/snapshot`, `scores/snapshot`, `odds/snapshot` + windows, `scores/stream` (SSE, Last-Event-ID resume), `scores/stat-validation` (Merkle proofs)
 - **Chain**: Solana devnet — Anchor 0.32, `declare_program!` CPI into txoracle [`6pW64g…yP2J`](https://explorer.solana.com/address/6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J?cluster=devnet)
-- **App**: Expo / React Native (Android), `@solana/web3.js`, Mobile Wallet Adapter, keychain-stored burner
+- **App**: Expo / React Native (Android), `@solana/web3.js`, Mobile Wallet Adapter, keychain-stored burner; proximity duels over Google Nearby Connections (`expo-nearby-connections`)
+- **Desktop**: Electron around the app's own `expo export --platform web` output — one client, three OSes, no second codebase
 - **kUSD**: a 6-dp SPL demo-dollar with an in-program faucet (testnet stand-in for USDC)
 
 ---
