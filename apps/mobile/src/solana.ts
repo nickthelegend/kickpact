@@ -39,17 +39,17 @@ export const mintPda = () => PublicKey.findProgramAddressSync([Buffer.from("mint
 export const mintAuthPda = () => PublicKey.findProgramAddressSync([Buffer.from("mint_auth")], KICKPACT_ID)[0]
 export const poolPda = (id: bigint | number) =>
   PublicKey.findProgramAddressSync(
-    [Buffer.from("pool"), new BN(id.toString()).toBuffer("le", 8)],
+    [Buffer.from("pool"), new BN(id.toString()).toArrayLike(Buffer, "le", 8)],
     KICKPACT_ID,
   )[0]
 export const memberPda = (poolId: bigint | number, wallet: PublicKey) =>
   PublicKey.findProgramAddressSync(
-    [Buffer.from("member"), new BN(poolId.toString()).toBuffer("le", 8), wallet.toBuffer()],
+    [Buffer.from("member"), new BN(poolId.toString()).toArrayLike(Buffer, "le", 8), wallet.toBuffer()],
     KICKPACT_ID,
   )[0]
 export const dailyRootsPda = (tsMs: number) =>
   PublicKey.findProgramAddressSync(
-    [Buffer.from("daily_scores_roots"), new BN(Math.floor(tsMs / 86_400_000)).toBuffer("le", 2)],
+    [Buffer.from("daily_scores_roots"), new BN(Math.floor(tsMs / 86_400_000)).toArrayLike(Buffer, "le", 2)],
     TXORACLE_ID,
   )[0]
 export const kusdAta = (owner: PublicKey, allowOffCurve = false) =>
@@ -128,7 +128,7 @@ const asState = (address: PublicKey, p: any): PoolState => ({
 export async function poolsForFixture(connection: Connection, fixtureId: number | bigint): Promise<PoolState[]> {
   const prog = kickpact(connection)
   const all = await (prog.account as any).pool.all([
-    { memcmp: { offset: 16, bytes: bs58encode(new BN(fixtureId.toString()).toBuffer("le", 8)) } },
+    { memcmp: { offset: 16, bytes: bs58encode(new BN(fixtureId.toString()).toArrayLike(Buffer, "le", 8)) } },
   ])
   return all.map((a: any) => asState(a.publicKey, a.account)).sort((x: PoolState, y: PoolState) => Number(x.id - y.id))
 }

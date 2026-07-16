@@ -1202,7 +1202,7 @@ function OnlineDuel({ onBack, onGame }: { onBack: () => void; onGame: (id: strin
       await signAndSend(tx)
       setCreated({ poolId: String(poolId), fixtureId: fixture.fixtureId })
     } catch (e: any) {
-      setNote(String(e.message ?? e).slice(0, 90))
+      setNote(String(e?.message ?? e).slice(0, 120))
     } finally {
       setBusy(false)
     }

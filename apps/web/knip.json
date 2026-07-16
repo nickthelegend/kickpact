@@ -1,6 +1,0 @@
-{
-  "$schema": "https://unpkg.com/knip@5/schema.json",
-  "entry": ["src/lib/deepbook.ts!", "src/lib/sponsor.ts!"],
-  "ignore": ["src/sui/gen/**"],
-  "ignoreDependencies": ["@workspace/ui"]
-}
