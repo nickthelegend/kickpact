@@ -83,7 +83,7 @@ Networks: `https://txline-dev.txodds.com` + Solana devnet + txoracle `6pW64gN1s2
 
 - kickpact program: [`4tAPD5tVaWt9TBSMGKfUnguppbg8KLcc2jXbBPufgWDa`](https://explorer.solana.com/address/4tAPD5tVaWt9TBSMGKfUnguppbg8KLcc2jXbBPufgWDa?cluster=devnet) (IDL on-chain)
 - Real settlement of the England v Argentina semifinal: [`21CFfLsx…6voS`](https://explorer.solana.com/tx/21CFfLsx6Mqy7XmZUeTiPZ6PAMwGqBpwFgi4GkZvqUPbUJ9oXxV8QA6kDuqX6qWaM8vDdKWTihugkXa528uh6voS?cluster=devnet) — all lifecycle signatures in [`apps/solana/keeper/out/live-demo-sigs.json`](../apps/solana/keeper/out/live-demo-sigs.json)
-- Dashboard: <https://dashboard-alpha-peach-11.vercel.app> (odds board + receipts with browser-side `validate_stat_v2` re-verification)
+- Dashboard: <https://kickpact-solana.vercel.app> (odds board + receipts with browser-side `validate_stat_v2` re-verification)
 - Downloads — all on the [`v2.0.0-solana`](https://github.com/nickthelegend/kickpact/releases/tag/v2.0.0-solana) release, and re-pointable at runtime via [`download.json`](../download.json) without redeploying the landing:
 
   | Client | Artifact |

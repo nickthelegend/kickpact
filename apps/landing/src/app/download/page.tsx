@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 
 const REL = "https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana"
 const REPO = "https://github.com/nickthelegend/kickpact/tree/solana"
-const DASHBOARD = "https://dashboard-alpha-peach-11.vercel.app"
+const DASHBOARD = "https://kickpact-solana.vercel.app"
 
 // Download targets are resolved at runtime from a raw pointer file in the repo,
 // so the APK URL can be re-pointed (new release, mirror) by editing one file on

@@ -8,7 +8,7 @@
     "sha_note": "universal APK \u00b7 io.kickpact.app \u00b7 Solana devnet + TxLINE feeds"
   },
   "dashboard": {
-    "url": "https://dashboard-alpha-peach-11.vercel.app"
+    "url": "https://kickpact-solana.vercel.app"
   },
   "repo": {
     "url": "https://github.com/nickthelegend/kickpact/tree/solana"

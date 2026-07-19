@@ -9,7 +9,7 @@
 | | |
 | --- | --- |
 | Public repo (solana branch) | https://github.com/nickthelegend/kickpact/tree/solana |
-| Application access — dashboard (live) | https://dashboard-alpha-peach-11.vercel.app |
+| Application access — dashboard (live) | https://kickpact-solana.vercel.app |
 | Devnet program (IDL on-chain) | `4tAPD5tVaWt9TBSMGKfUnguppbg8KLcc2jXbBPufgWDa` |
 | Real settlement tx (England 1–2 Argentina, CPI validateStatV2) | https://explorer.solana.com/tx/21CFfLsx6Mqy7XmZUeTiPZ6PAMwGqBpwFgi4GkZvqUPbUJ9oXxV8QA6kDuqX6qWaM8vDdKWTihugkXa528uh6voS?cluster=devnet |
 | Android APK | GitHub release on the solana branch |

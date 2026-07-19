@@ -6,7 +6,7 @@ import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 
 const REPO = "https://github.com/nickthelegend/kickpact/tree/solana"
-const DASHBOARD = "https://dashboard-alpha-peach-11.vercel.app"
+const DASHBOARD = "https://kickpact-solana.vercel.app"
 
 const WAYS = [
   {
