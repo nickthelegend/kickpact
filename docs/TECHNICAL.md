@@ -84,11 +84,11 @@ Networks: `https://txline-dev.txodds.com` + Solana devnet + txoracle `6pW64gN1s2
 - kickpact program: [`4tAPD5tVaWt9TBSMGKfUnguppbg8KLcc2jXbBPufgWDa`](https://explorer.solana.com/address/4tAPD5tVaWt9TBSMGKfUnguppbg8KLcc2jXbBPufgWDa?cluster=devnet) (IDL on-chain)
 - Real settlement of the England v Argentina semifinal: [`21CFfLsx…6voS`](https://explorer.solana.com/tx/21CFfLsx6Mqy7XmZUeTiPZ6PAMwGqBpwFgi4GkZvqUPbUJ9oXxV8QA6kDuqX6qWaM8vDdKWTihugkXa528uh6voS?cluster=devnet) — all lifecycle signatures in [`apps/solana/keeper/out/live-demo-sigs.json`](../apps/solana/keeper/out/live-demo-sigs.json)
 - Dashboard: <https://kickpact-solana.vercel.app> (odds board + receipts with browser-side `validate_stat_v2` re-verification)
-- Downloads — all on the [`v2.0.0-solana`](https://github.com/nickthelegend/kickpact/releases/tag/v2.0.0-solana) release, and re-pointable at runtime via [`download.json`](../download.json) without redeploying the landing:
+- Downloads — the Android build is on [`v2.1.0-solana`](https://github.com/nickthelegend/kickpact/releases/tag/v2.1.0-solana), the desktop builds on [`v2.0.0-solana`](https://github.com/nickthelegend/kickpact/releases/tag/v2.0.0-solana), and re-pointable at runtime via [`download.json`](../download.json) without redeploying the landing:
 
   | Client | Artifact |
   | --- | --- |
-  | Android (`io.kickpact.app`) | [`kickpact-android-arm64.apk`](https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana/kickpact-android-arm64.apk) · 124 MB |
+  | Android (`io.kickpact.app`) | [`kickpact-android-arm64.apk`](https://github.com/nickthelegend/kickpact/releases/download/v2.1.0-solana/kickpact-android-arm64.apk) · 136 MB |
   | macOS (Apple silicon) | [`Kickpact-2.0.0-mac-arm64.dmg`](https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana/Kickpact-2.0.0-mac-arm64.dmg) · 94 MB |
   | Windows (portable x64) | [`Kickpact-2.0.0-win-x64.exe`](https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana/Kickpact-2.0.0-win-x64.exe) · 71 MB |
   | Linux (AppImage x64 / arm64) | [`x86_64`](https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana/Kickpact-2.0.0-linux-x86_64.AppImage) · [`arm64`](https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana/Kickpact-2.0.0-linux-arm64.AppImage) · 103 MB |

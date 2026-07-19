@@ -6,7 +6,10 @@ import { motion } from "framer-motion"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 
-const REL = "https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana"
+// Keep this in step with download.json's `version`. It is what the first paint
+// serves and what a visitor gets if the pointer fetch fails, so a stale value
+// here quietly hands people an old APK.
+const REL = "https://github.com/nickthelegend/kickpact/releases/download/v2.1.0-solana"
 const REPO = "https://github.com/nickthelegend/kickpact/tree/solana"
 const DASHBOARD = "https://kickpact-solana.vercel.app"
 
