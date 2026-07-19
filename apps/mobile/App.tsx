@@ -9,6 +9,7 @@ import { clusterApiUrl } from "@solana/web3.js"
 import { C } from "./src/theme"
 import { PixelText } from "./src/ui"
 import { WalletProvider, useWallet } from "./src/wallet"
+import { PrivyHost } from "./src/privy"
 import {
   DuelsScreen,
   GameScreen,
@@ -130,14 +131,16 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <WalletHost>
-        <WalletProvider>
+      <PrivyHost>
+        <WalletHost>
+          <WalletProvider>
           <SafeAreaView style={{ flex: 1, backgroundColor: C.frameDeep }} edges={["top", "bottom"]}>
             <StatusBar style="light" />
             <Game />
           </SafeAreaView>
-        </WalletProvider>
-      </WalletHost>
+          </WalletProvider>
+        </WalletHost>
+      </PrivyHost>
     </SafeAreaProvider>
   )
 }

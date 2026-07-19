@@ -5,6 +5,7 @@
 import { Program } from "@coral-xyz/anchor"
 import { Connection, PublicKey } from "@solana/web3.js"
 import kickpactIdl from "../idl/kickpact.json"
+import snapshot from "./txline-fixtures.cache.json"
 
 export const WORLD_CUP = 72
 export const KICKPACT_ID = (kickpactIdl as { address: string }).address
@@ -22,9 +23,31 @@ export interface Fixture {
   Participant2: string
 }
 
+/**
+ * Feed status — the board reads this to say whether it's live.
+ *
+ * TxODDS waived World Cup data fees only through 19 Jul 2026 23:59 UTC, but
+ * judging runs to 29 Jul. When the token starts 403'ing we fall back to a real
+ * snapshot captured from the live feed and label it CACHED. It is never shown
+ * as live. The pools/receipts half of this dashboard reads Solana directly and
+ * is unaffected.
+ */
+export const feed: { live: boolean; capturedAt: string | null } = { live: true, capturedAt: null }
+
 export async function fixtures(): Promise<Fixture[]> {
   const startEpochDay = Math.floor(Date.now() / 86_400_000) - 25
-  const raw: Fixture[] = await tx(`fixtures/snapshot?competitionId=${WORLD_CUP}&startEpochDay=${startEpochDay}`)
+  let raw: Fixture[]
+  try {
+    raw = await tx(`fixtures/snapshot?competitionId=${WORLD_CUP}&startEpochDay=${startEpochDay}`)
+    if (!Array.isArray(raw)) throw new Error("feed returned no fixture array")
+    feed.live = true
+    feed.capturedAt = null
+  } catch {
+    const snap = snapshot as { capturedAt: string; fixtures: Fixture[] }
+    raw = snap.fixtures
+    feed.live = false
+    feed.capturedAt = snap.capturedAt
+  }
   const byId = new Map<number, Fixture>()
   for (const f of raw) byId.set(f.FixtureId, f)
   return [...byId.values()].sort((a, b) => a.StartTime - b.StartTime)

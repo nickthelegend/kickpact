@@ -17,6 +17,7 @@ import { Keypair, PublicKey, Transaction, Connection } from "@solana/web3.js"
 import bs58 from "bs58"
 
 import { RPC_URL } from "./solana"
+import { usePrivyWallet, privyAvailable } from "./privy"
 import { loadSecret, saveSecret, clearSecret } from "./storage"
 
 // Native-only MWA hook; a stable stub on web (Platform.OS is constant per run,
@@ -33,7 +34,7 @@ if (Platform.OS !== "web") {
 const SECRET_KEY = "kickpact.solana.secret"
 
 type Status = "INITIALIZING" | "NO_WALLET" | "BACKUP_PENDING" | "READY"
-type Mode = "mwa" | "burner"
+type Mode = "privy" | "mwa" | "burner"
 
 export interface WalletContextValue {
   status: Status
@@ -44,6 +45,9 @@ export interface WalletContextValue {
   sol: number
   kusd: number
   mwaAvailable: boolean
+  privyAvailable: boolean
+  privyReady: boolean
+  loginPrivy(): Promise<void>
   connect(): Promise<void>
   createBurner(): Promise<string>
   confirmBackup(): void
@@ -73,6 +77,18 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const mwaAvailable = Platform.OS !== "web"
   const mwaPk = mwaAccountPk(mwa?.account)
 
+  // Privy — the primary path. An embedded Solana wallet from an email/social
+  // login; falls through to MWA then burner when it isn't connected.
+  const privy = usePrivyWallet()
+  const privyPk = React.useMemo(() => {
+    if (!privy.address) return null
+    try {
+      return new PublicKey(privy.address)
+    } catch {
+      return null
+    }
+  }, [privy.address])
+
   const [booted, setBooted] = React.useState(false)
   const [backupPending, setBackupPending] = React.useState(false)
   const [burner, setBurner] = React.useState<Keypair | null>(null)
@@ -80,8 +96,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [kusd, setKusd] = React.useState(0)
 
   // effective identity — MWA wins when connected, else the burner
-  const mode: Mode | null = mwaPk ? "mwa" : burner ? "burner" : null
-  const publicKey = mwaPk ?? burner?.publicKey ?? null
+  const mode: Mode | null = privyPk ? "privy" : mwaPk ? "mwa" : burner ? "burner" : null
+  const publicKey = privyPk ?? mwaPk ?? burner?.publicKey ?? null
 
   // Status is derived, never a racing state machine.
   const status: Status = backupPending
@@ -155,6 +171,13 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     async (tx: Transaction): Promise<string> => {
       const conn = connectionRef.current!
       const bh = await conn.getLatestBlockhash("confirmed")
+      if (mode === "privy") {
+        tx.recentBlockhash = bh.blockhash
+        tx.feePayer = privyPk!
+        const sig = await privy.signAndSend(tx, conn)
+        await conn.confirmTransaction({ signature: sig, ...bh }, "confirmed")
+        return sig
+      }
       if (mode === "mwa") {
         tx.recentBlockhash = bh.blockhash
         tx.feePayer = mwaPk!
@@ -171,17 +194,18 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       await conn.confirmTransaction({ signature: sig, ...bh }, "confirmed")
       return sig
     },
-    [mode, mwa, mwaPk, burner],
+    [mode, mwa, mwaPk, burner, privy, privyPk],
   )
 
   const logout = React.useCallback(async () => {
+    if (mode === "privy") await privy.logout().catch(() => {})
     if (mode === "mwa" && mwa?.disconnect) await mwa.disconnect().catch(() => {})
     await clearSecret(SECRET_KEY)
     setBurner(null)
     setSol(0)
     setKusd(0)
     setBackupPending(false)
-  }, [mode, mwa])
+  }, [mode, mwa, privy])
 
   const getSecret = React.useCallback(() => loadSecret(SECRET_KEY), [])
 
@@ -195,6 +219,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       sol,
       kusd,
       mwaAvailable,
+      privyAvailable: privy.available,
+      privyReady: privy.ready,
+      loginPrivy: privy.login,
       connect,
       createBurner,
       confirmBackup,
@@ -204,7 +231,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       refresh,
       getSecret,
     }),
-    [status, mode, publicKey, sol, kusd, mwaAvailable, connect, createBurner, confirmBackup, importBurner, signAndSend, logout, refresh, getSecret],
+    [status, mode, publicKey, sol, kusd, mwaAvailable, privy, connect, createBurner, confirmBackup, importBurner, signAndSend, logout, refresh, getSecret],
   )
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>

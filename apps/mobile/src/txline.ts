@@ -130,12 +130,42 @@ interface RawFixture {
 
 let cache: { at: number; games: Game[] } | null = null
 
+/**
+ * Feed status — the UI reads this so it can say which it's showing.
+ *
+ * TxODDS waived data fees for the World Cup only through 19 Jul 2026 23:59 UTC.
+ * Judging runs to 29 Jul, so this token will very likely be 403'ing by the time
+ * anyone reviews. When that happens we fall back to a *real* fixture snapshot
+ * captured from the live feed (`txline-fixtures.cache.json`) so the app is still
+ * usable — and we label it CACHED everywhere. It is never presented as live.
+ *
+ * Nothing on-chain depends on the feed: pools, settlement and proof receipts
+ * keep working, because the proofs are already anchored on Solana.
+ */
+export type FeedStatus = { live: boolean; reason: string | null; capturedAt: string | null }
+export const feed: FeedStatus = { live: true, reason: null, capturedAt: null }
+
 export async function fetchGames(): Promise<Game[]> {
   if (cache && Date.now() - cache.at < 25_000) return cache.games
   const startEpochDay = Math.floor(Date.now() / 86_400_000) - 25
-  const fixtures: RawFixture[] = await get(
-    `/fixtures/snapshot?competitionId=${WORLD_CUP_COMPETITION_ID}&startEpochDay=${startEpochDay}`,
-  )
+  let fixtures: RawFixture[]
+  try {
+    fixtures = await get(
+      `/fixtures/snapshot?competitionId=${WORLD_CUP_COMPETITION_ID}&startEpochDay=${startEpochDay}`,
+    )
+    feed.live = true
+    feed.reason = null
+    feed.capturedAt = null
+  } catch (e: any) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const snap = require("./txline-fixtures.cache.json")
+    fixtures = snap.fixtures as RawFixture[]
+    feed.live = false
+    feed.capturedAt = snap.capturedAt
+    feed.reason = /40[13]/.test(String(e?.message ?? e))
+      ? "TxLINE's free World Cup window has closed — showing the last snapshot we captured from the live feed."
+      : `TxLINE unreachable (${String(e?.message ?? e).slice(0, 40)}) — showing the last snapshot.`
+  }
 
   // de-dup by FixtureId (snapshot can repeat records)
   const byId = new Map<number, RawFixture>()

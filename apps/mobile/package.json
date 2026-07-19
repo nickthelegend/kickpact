@@ -29,7 +29,13 @@
     "@wallet-ui/react-native-web3js": "^4.2.1",
     "expo-nearby-connections": "^1.1.0",
     "react-native-nitro-modules": "^0.36.1",
-    "expo-dev-client": "~56.0.15"
+    "expo-dev-client": "~56.0.15",
+    "@privy-io/expo": "^0.65.5",
+    "@privy-io/expo-native-extensions": "^0.0.11",
+    "expo-apple-authentication": "~8.0.7",
+    "react-native-passkeys": "^0.3.3",
+    "@craftzdog/react-native-buffer": "^6.1.0",
+    "fast-text-encoding": "^1.0.6"
   },
   "devDependencies": {
     "@types/bn.js": "^5.2.0",

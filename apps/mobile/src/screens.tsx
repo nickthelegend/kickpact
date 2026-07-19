@@ -16,7 +16,7 @@ import { BalanceChip, Panel, PixelButton, PixelText } from "./ui"
 import { QRCode } from "./qr"
 import { useWallet } from "./wallet"
 import {
-  fetchGames, fetchScore, fetchOdds, fetchProof, filterGames, kickoffLabel,
+  fetchGames, fetchScore, fetchOdds, fetchProof, filterGames, kickoffLabel, feed,
   PHASE_ENDED,
   type Filter, type Game, type LiveScore, type OddsLine,
 } from "./txline"
@@ -32,14 +32,26 @@ const USDT_ICON = require("../assets/tokens/usdc-icon.png")
 
 // ─────────────────────────────────────────────────────────────── sign in ──
 export function SignInScreen() {
-  const { connect, createBurner, importBurner, confirmBackup, status, mwaAvailable } = useWallet()
-  const [busy, setBusy] = useState<"connect" | "burner" | "import" | null>(null)
+  const { connect, createBurner, importBurner, confirmBackup, status, mwaAvailable, privyAvailable, loginPrivy } = useWallet()
+  const [busy, setBusy] = useState<"privy" | "connect" | "burner" | "import" | null>(null)
   const [secret, setSecret] = useState<string | null>(null)
   const [showBurner, setShowBurner] = useState(false)
   const [importing, setImporting] = useState(false)
   const [phrase, setPhrase] = useState("")
   const [err, setErr] = useState<string | null>(null)
 
+  const doPrivy = async () => {
+    setBusy("privy")
+    setErr(null)
+    try {
+      await loginPrivy()
+    } catch (e: any) {
+      setErr(String(e?.message ?? e).slice(0, 110))
+      setShowBurner(true)
+    } finally {
+      setBusy(null)
+    }
+  }
   const doConnect = async () => {
     setBusy("connect")
     setErr(null)
@@ -115,14 +127,30 @@ export function SignInScreen() {
         </>
       ) : (
         <>
-          {/* PRIMARY — connect a real wallet */}
+          {/* PRIMARY — Privy: email or a social account, wallet created for you */}
+          {privyAvailable && (
+            <>
+              <PixelButton
+                label={busy === "privy" ? "OPENING…" : "◆ SIGN IN"}
+                onPress={doPrivy}
+                color={C.eth}
+                style={{ marginTop: 26 }}
+              />
+              <PixelText size={9} color={C.white45} style={{ textAlign: "center", marginTop: 8 }} upper={false}>
+                Email · Google · X · GitHub · LinkedIn — a self-custodial Solana wallet is created for you. No seed phrase.
+              </PixelText>
+              <View style={{ height: 1, backgroundColor: C.white15, marginVertical: 18 }} />
+            </>
+          )}
+
+          {/* or bring your own wallet */}
           {mwaAvailable && (
             <>
               <PixelButton
-                label={busy === "connect" ? "OPENING WALLET…" : "◆ CONNECT WALLET"}
+                label={busy === "connect" ? "OPENING WALLET…" : "CONNECT AN EXISTING WALLET"}
                 onPress={doConnect}
-                color={C.eth}
-                style={{ marginTop: 26 }}
+                color={C.importBlue}
+                style={{ marginTop: 0 }}
               />
               <PixelText size={9} color={C.white45} style={{ textAlign: "center", marginTop: 8 }} upper={false}>
                 Phantom · Solflare · any Mobile Wallet Adapter wallet — your keys stay in your wallet app
@@ -223,10 +251,15 @@ export function HomeScreen({ onProfile, onGame }: { onProfile?: () => void; onGa
   const [minting, setMinting] = useState(false)
   const [note, setNote] = useState<string | null>(null)
 
+  const [feedDown, setFeedDown] = useState<{ reason: string; capturedAt: string | null } | null>(null)
+
   const load = useCallback(async () => {
     try {
       setGames(await fetchGames())
       setNote(null)
+      // fetchGames falls back to the captured snapshot rather than throwing —
+      // say so plainly instead of pretending the feed is live.
+      setFeedDown(feed.live ? null : { reason: feed.reason ?? "TxLINE unavailable", capturedAt: feed.capturedAt })
     } catch (e: any) {
       setNote(`txline: ${String(e.message ?? e).slice(0, 60)}`)
     } finally {
@@ -276,8 +309,25 @@ export function HomeScreen({ onProfile, onGame }: { onProfile?: () => void; onGa
 
         <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" }}>
           <PixelText size={20}>World Cup</PixelText>
-          <PixelText size={8} color={C.white45} tracking={2}>TXLINE · PROOFS ON SOLANA</PixelText>
+          <PixelText size={8} color={feedDown ? C.amber : C.white45} tracking={2}>
+            {feedDown ? "TXLINE · CACHED SNAPSHOT" : "TXLINE · PROOFS ON SOLANA"}
+          </PixelText>
         </View>
+
+        {feedDown && (
+          <Panel style={{ padding: 12, marginTop: 10, borderColor: C.amber }}>
+            <PixelText size={9} color={C.amber} tracking={2}>FEED WINDOW CLOSED</PixelText>
+            <PixelText size={10} color={C.white60} style={{ marginTop: 6 }} upper={false}>
+              {feedDown.reason}
+            </PixelText>
+            <PixelText size={9} color={C.white45} style={{ marginTop: 8 }} upper={false}>
+              These fixtures are a real snapshot of TxLINE&apos;s feed
+              {feedDown.capturedAt ? ` from ${feedDown.capturedAt.slice(0, 10)}` : ""} — not live, and not invented.
+              Live scores and odds need the feed, but everything on-chain still works: pools, settlement and proof
+              receipts all read from Solana, where the proofs are already anchored.
+            </PixelText>
+          </Panel>
+        )}
 
         <View style={s.filters}>
           {(["live", "upcoming", "completed"] as Filter[]).map((f) => (

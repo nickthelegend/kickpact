@@ -7,7 +7,7 @@
  */
 import { useEffect, useMemo, useState } from "react"
 import {
-  fixtures, odds, pools, score, flag, phaseLabel,
+  fixtures, odds, pools, score, flag, phaseLabel, feed,
   type Fixture, type Odds, type Pool, type Score,
 } from "../lib/data"
 
@@ -21,6 +21,7 @@ export default function OddsBoard() {
   const [rows, setRows] = useState<Row[]>([])
   const [poolList, setPoolList] = useState<Pool[]>([])
   const [loaded, setLoaded] = useState(false)
+  const [cached, setCached] = useState<string | null>(null)
 
   useEffect(() => {
     let dead = false
@@ -41,7 +42,11 @@ export default function OddsBoard() {
             return { f, s, o }
           }),
         )
-        if (!dead) setRows(enriched.sort((a, b) => b.f.StartTime - a.f.StartTime))
+        if (!dead) {
+          setRows(enriched.sort((a, b) => b.f.StartTime - a.f.StartTime))
+          // fixtures() falls back to the captured snapshot rather than throwing
+          setCached(feed.live ? null : feed.capturedAt)
+        }
       } finally {
         if (!dead) setLoaded(true)
       }
@@ -83,7 +88,12 @@ export default function OddsBoard() {
         <div className="panel" style={{ flex: 1, minWidth: 180 }}>
           <div className="small dim">DATA SOURCE</div>
           <div style={{ fontSize: 13, marginTop: 10 }}>
-            TxLINE StablePrice · <span className="live">devnet stream</span>
+            TxLINE StablePrice ·{" "}
+            {cached ? (
+              <span style={{ color: "#e8b84b" }}>cached {cached.slice(0, 10)}</span>
+            ) : (
+              <span className="live">devnet stream</span>
+            )}
           </div>
         </div>
       </div>
