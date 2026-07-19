@@ -22,7 +22,7 @@ import {
 } from "./txline"
 import {
   EXPLORER, EXPLORER_ACCT, OUTCOMES, buildClaimTx, buildCreatePoolTx, buildFaucetTx,
-  buildJoinPoolTx, dailyRootsPda, duelDeadlineMs, getPool, latestPoolTx, allPools,
+  buildJoinPoolTx, dailyRootsPda, duelDeadlineMs, duelJoinable, getPool, latestPoolTx, allPools,
   poolsForFixture, myPick, pickName, shortAddr, verifyProofOnChain, KICKPACT_ID, TXORACLE_ID,
   type PoolOutcome, type PoolState,
 } from "./solana"
@@ -46,7 +46,16 @@ export function SignInScreen() {
     try {
       await loginPrivy()
     } catch (e: any) {
-      setErr(String(e?.message ?? e).slice(0, 110))
+      // Privy rejects the whole app when this build's package id / scheme isn't
+      // on the dashboard allowlist — the SDK surfaces that as a generic
+      // "login flow was closed", which reads like the user cancelled. Say what
+      // actually happened and point at the way in that always works.
+      const raw = String(e?.message ?? e)
+      setErr(
+        /native_app_id|not allowed|allowlist/i.test(raw)
+          ? "this build isn't on the Privy allowlist yet — use a wallet or burner below"
+          : `${raw.slice(0, 80)} — you can still use a wallet or burner below`,
+      )
       setShowBurner(true)
     } finally {
       setBusy(null)
@@ -993,6 +1002,10 @@ function NearbyDuel({ onBack, onGame }: { onBack: () => void; onGame: (id: strin
   const [stake, setStake] = useState("10")
   const [pick, setPick] = useState<PoolOutcome>("home")
   const [duel, setDuel] = useState<nearby.NearbyMsg & { t: "duel" } | null>(null)
+  // Which side THIS device already staked in the current duel. The host is
+  // entered by create_pool itself, so without this we'd keep offering them the
+  // join buttons and every tap would bounce off the program as a duplicate.
+  const [myPick, setMyPick] = useState<PoolOutcome | null>(null)
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
   const peersRef = useRef<Record<string, string>>({})
@@ -1001,7 +1014,16 @@ function NearbyDuel({ onBack, onGame }: { onBack: () => void; onGame: (id: strin
   const say = (line: ChatLine) => setChat((c) => [...c.slice(-60), line])
 
   useEffect(() => {
-    fetchGames().then((all) => setGames(filterGames(all, "upcoming").concat(filterGames(all, "live")).slice(0, 12))).catch(() => {})
+    fetchGames()
+      .then((all) =>
+        setGames(
+          filterGames(all, "upcoming")
+            .concat(filterGames(all, "live"))
+            .filter((g) => duelJoinable(g.kickoffMs))
+            .slice(0, 12),
+        ),
+      )
+      .catch(() => {})
   }, [])
 
   // start advertise + discover (mesh) and wire events
@@ -1049,6 +1071,7 @@ function NearbyDuel({ onBack, onGame }: { onBack: () => void; onGame: (id: strin
           if (msg.t === "chat") say({ from: peersRef.current[peerId] ?? msg.from, text: msg.text })
           else if (msg.t === "duel") {
             setDuel(msg)
+            setMyPick(null) // somebody else's duel — we haven't staked in it yet
             say({ from: "★", text: `duel opened on the match · ${msg.stake} kUSD stake`, system: true })
           }
         }),
@@ -1092,6 +1115,7 @@ function NearbyDuel({ onBack, onGame }: { onBack: () => void; onGame: (id: strin
       await signAndSend(tx)
       const d = { t: "duel" as const, poolId: String(poolId), fixtureId: fixture.fixtureId, stake: stakeN, host: address! }
       setDuel(d)
+      setMyPick(pick) // create_pool already staked us on this side
       nearby.broadcast(peerIds, d)
       say({ from: myName, text: `opened a duel · ${stakeN} kUSD · picked ${pick.toUpperCase()}`, system: true })
     } catch (e: any) {
@@ -1108,10 +1132,18 @@ function NearbyDuel({ onBack, onGame }: { onBack: () => void; onGame: (id: strin
     try {
       const tx = await buildJoinPoolTx(connection, publicKey, BigInt(duel.poolId), dpick)
       await signAndSend(tx)
+      setMyPick(dpick)
       say({ from: myName, text: `joined the pot · picked ${dpick.toUpperCase()}`, system: true })
       nearby.broadcast(peerIds, { t: "chat", from: myName, text: `I'm in — ${dpick.toUpperCase()}`, at: Date.now() })
     } catch (e: any) {
-      setNote(String(e.message ?? e).slice(0, 90))
+      // The program rejects a second entry from the same wallet (the member PDA
+      // already exists). Raw simulation text tells the user nothing.
+      const raw = String(e?.message ?? e)
+      setNote(
+        /already in use|custom program error: 0x0/.test(raw)
+          ? "you're already in this pot — one entry per wallet"
+          : raw.slice(0, 90),
+      )
     } finally {
       setBusy(false)
     }
@@ -1163,12 +1195,20 @@ function NearbyDuel({ onBack, onGame }: { onBack: () => void; onGame: (id: strin
         {duel ? (
           <Panel style={{ padding: 12, marginTop: 12, borderColor: C.gold }}>
             <PixelText size={11} color={C.gold}>DUEL · POOL #{duel.poolId} · {duel.stake} kUSD</PixelText>
-            <PixelText size={9} color={C.white45} style={{ marginTop: 4 }} upper={false}>pick your side to join the pot</PixelText>
-            <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
-              {OUTCOMES.map((o) => (
-                <PixelButton key={o} label={busy ? "…" : o.toUpperCase()} size={10} color={C.eth} style={{ flex: 1, paddingVertical: 8 }} onPress={() => joinDuel(o)} />
-              ))}
-            </View>
+            {myPick ? (
+              <PixelText size={10} color={C.greenLight} style={{ marginTop: 6 }} upper={false}>
+                you're in — staked {duel.stake} kUSD on {myPick.toUpperCase()}
+              </PixelText>
+            ) : (
+              <>
+                <PixelText size={9} color={C.white45} style={{ marginTop: 4 }} upper={false}>pick your side to join the pot</PixelText>
+                <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+                  {OUTCOMES.map((o) => (
+                    <PixelButton key={o} label={busy ? "…" : o.toUpperCase()} size={10} color={C.eth} style={{ flex: 1, paddingVertical: 8 }} onPress={() => joinDuel(o)} />
+                  ))}
+                </View>
+              </>
+            )}
             <Pressable onPress={() => onGame(String(duel.fixtureId))} style={{ marginTop: 10 }}>
               <PixelText size={9} color={C.ethLight} upper={false}>open the match to watch + settle ›</PixelText>
             </Pressable>
@@ -1237,7 +1277,16 @@ function OnlineDuel({ onBack, onGame }: { onBack: () => void; onGame: (id: strin
   const [note, setNote] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchGames().then((all) => setGames(filterGames(all, "upcoming").concat(filterGames(all, "live")).slice(0, 12))).catch(() => {})
+    fetchGames()
+      .then((all) =>
+        setGames(
+          filterGames(all, "upcoming")
+            .concat(filterGames(all, "live"))
+            .filter((g) => duelJoinable(g.kickoffMs))
+            .slice(0, 12),
+        ),
+      )
+      .catch(() => {})
   }, [])
 
   const doCreate = async () => {
@@ -1266,12 +1315,22 @@ function OnlineDuel({ onBack, onGame }: { onBack: () => void; onGame: (id: strin
     setNote(null)
     try {
       const p = await getPool(connection, BigInt(id)) // validates it exists
+      if (p.deadlineMs <= Date.now()) throw new Error("DEADLINE_PASSED")
       const tx = await buildJoinPoolTx(connection, publicKey, p.id, joinPickState)
       await signAndSend(tx)
       setNote(`joined duel #${id} · picked ${joinPickState.toUpperCase()}`)
       onGame(String(p.fixtureId))
     } catch (e: any) {
-      setNote(String(e.message ?? e).slice(0, 120))
+      // Raw "Simulation failed" tells nobody anything. The two ways a join
+      // legitimately bounces are a closed window and a second entry.
+      const raw = String(e?.message ?? e)
+      setNote(
+        raw === "DEADLINE_PASSED"
+          ? `duel #${id}'s join window has closed`
+          : /already in use|custom program error: 0x0/.test(raw)
+            ? "you're already in this pot — one entry per wallet"
+            : raw.slice(0, 120),
+      )
     } finally {
       setBusy(false)
     }

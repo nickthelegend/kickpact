@@ -56,7 +56,9 @@
           "bluetoothUsagePermissionText": "Kickpact uses Bluetooth to find friends nearby for a duel.",
           "localNetworkUsagePermissionText": "Kickpact uses the local network to connect with friends nearby."
         }
-      ]
+      ],
+      "expo-apple-authentication",
+      "expo-web-browser"
     ]
   }
 }

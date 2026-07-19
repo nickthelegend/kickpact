@@ -1,0 +1,9 @@
+# Screen recordings, rendered narration and the assembled film are large
+# binaries — they're reproducible from the scripts here, and the finished video
+# ships as a GitHub release asset instead.
+capture/
+audio/
+kickpact-demo.mp4
+.work/
+.frames/
+.probe/

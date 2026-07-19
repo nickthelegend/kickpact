@@ -349,3 +349,16 @@ export function shortAddr(a: string | null): string {
 export function duelDeadlineMs(kickoffMs: number): number {
   return Math.max(Date.now() + 60_000, kickoffMs + 75 * 60_000)
 }
+
+/**
+ * Can a duel opened on this kickoff still be joined by anyone else?
+ *
+ * A fixture's feed state stays "pre" until the provider advances its phase, so
+ * matches whose kickoff is days past still look upcoming. Opening a duel on one
+ * clamps the deadline to now+60s — the host stakes, and every friend who taps
+ * join a minute later is rejected by the program. Only offer fixtures whose
+ * real join window (kickoff+75m) is still meaningfully open.
+ */
+export function duelJoinable(kickoffMs: number, marginMs = 5 * 60_000): boolean {
+  return kickoffMs + 75 * 60_000 > Date.now() + marginMs
+}
