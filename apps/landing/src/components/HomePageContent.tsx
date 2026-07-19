@@ -48,16 +48,17 @@ export default function HomePageContent() {
           <div>
             <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0, duration: 0.5 }}
               className="inline-flex items-center gap-2 rounded-full border border-[#627eea]/40 bg-[#627eea]/10 px-3 py-1 mb-6">
-              <span className="font-pixel text-[10px] tracking-widest text-[#8aa0f5]">TXLINE HACKATHON · SOLANA DEVNET</span>
+              <span className="font-pixel text-[10px] tracking-widest text-[#8aa0f5]">BLUETOOTH DUELS · TXLINE PROOF · SOLANA</span>
             </motion.div>
             <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08, duration: 0.5 }}
               className="font-display text-5xl md:text-6xl leading-[1.05] text-white">
-              The pot pays out<br /><span className="text-[#627eea]">because the match</span> said so.
+              Bet the mate<br /><span className="text-[#627eea]">sitting next</span> to you.
             </motion.h1>
             <motion.p initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16, duration: 0.5 }}
               className="mt-5 text-white/60 text-lg max-w-md leading-relaxed">
-              Bet the World Cup with your mates. The stakes sit in a Solana escrow that can only release what{" "}
-              <span className="text-white">TxLINE&apos;s cryptographic proof</span> of the final score supports — no bookie, no admin key, nobody to argue with.
+              Kickpact finds the friends in the room with you <span className="text-white">over Bluetooth</span> — no server,
+              no signal, nothing in the middle. You both stake into the same Solana escrow, and it pays out only what{" "}
+              <span className="text-white">TxLINE&apos;s cryptographic proof</span> of the final score supports.
             </motion.p>
             <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24, duration: 0.5 }} className="mt-8 flex flex-wrap gap-3">
               <Link href="/download">
@@ -72,7 +73,7 @@ export default function HomePageContent() {
               </Link>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32, duration: 0.5 }} className="mt-8 flex gap-6">
-              {[["0", "trusted oracles"], ["104", "match schedule"], ["CPI", "settled on-chain"]].map(([n, l]) => (
+              {[["0", "servers between you"], ["0", "trusted oracles"], ["CPI", "settled on-chain"]].map(([n, l]) => (
                 <div key={l}>
                   <div className="font-display text-3xl text-white">{n}</div>
                   <div className="font-pixel text-[9px] tracking-widest text-white/45 uppercase">{l}</div>
@@ -83,8 +84,10 @@ export default function HomePageContent() {
 
           <motion.div initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.2 }}
             className="relative flex justify-center">
-            <Mock src="/mockups/sol-02-match.png" w={260} className="kp-glow rotate-[-4deg] z-10" />
-            <Mock src="/mockups/sol-05-nearby-room.png" w={220} className="absolute -right-2 top-16 rotate-[6deg] opacity-90 hidden sm:block" />
+            {/* the nearby room leads now — the headline is about Bluetooth, so the
+                hero image should be the thing the headline is talking about */}
+            <Mock src="/mockups/sol-05-nearby-room.png" w={260} className="kp-glow rotate-[-4deg] z-10" />
+            <Mock src="/mockups/sol-02-match.png" w={220} className="absolute -right-2 top-16 rotate-[6deg] opacity-90 hidden sm:block" />
           </motion.div>
         </div>
       </section>

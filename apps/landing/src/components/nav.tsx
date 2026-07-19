@@ -19,7 +19,9 @@ export default function Nav() {
       <div className="mx-auto max-w-6xl px-4">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2 group">
-            <span className="text-2xl">⚽️</span>
+            {/* the real mark, not an emoji — it renders identically to the
+                launcher icon and the favicon, all generated from the same grid */}
+            <img src="/kickpact-mark.svg" alt="" width={28} height={28} className="[image-rendering:pixelated]" />
             <span className="font-pixel text-lg tracking-widest text-white group-hover:text-[#627eea] transition-colors">
               KICKPACT
             </span>

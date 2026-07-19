@@ -3,9 +3,13 @@ import "./globals.css"
 import Nav from "@/components/nav"
 
 export const metadata: Metadata = {
-  title: "Kickpact — World Cup pots that settle themselves",
+  title: "Kickpact — Bluetooth World Cup pots that settle themselves",
   description:
     "Pot up with friends on a World Cup match. The pot lives in a Solana escrow that can only pay out what TxLINE's cryptographic proof says happened. Bluetooth duels for friends nearby, a duel code for friends anywhere.",
+  icons: {
+    icon: "/kickpact-mark.svg",
+    apple: "/apple-icon.png",
+  },
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
