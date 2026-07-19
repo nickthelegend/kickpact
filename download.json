@@ -1,6 +1,6 @@
 {
-  "version": "v2.0.0-solana",
-  "updated": "2026-07-16",
+  "version": "v2.1.0-solana",
+  "updated": "2026-07-19",
   "network": "solana-devnet",
   "landing": {
     "url": "https://kickpact.vercel.app"
@@ -9,9 +9,9 @@
     "url": "https://kickpact-solana.vercel.app"
   },
   "android": {
-    "url": "https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana/kickpact-android-arm64.apk",
-    "size": "124 MB",
-    "sha_note": "universal APK \u00b7 io.kickpact.app \u00b7 Solana devnet + TxLINE feeds"
+    "url": "https://github.com/nickthelegend/kickpact/releases/download/v2.1.0-solana/kickpact-android-arm64.apk",
+    "size": "136 MB",
+    "sha_note": "universal APK \u00b7 io.kickpact.app \u00b7 Solana devnet + TxLINE feeds \u00b7 Bluetooth duels fixed"
   },
   "desktop": {
     "mac": {
@@ -39,8 +39,9 @@
     "url": "https://github.com/nickthelegend/kickpact/tree/solana"
   },
   "demo": {
-    "url": "https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana/kickpact-demo.mp4",
-    "length": "3:01"
+    "url": "https://github.com/nickthelegend/kickpact/releases/download/v2.1.0-solana/kickpact-demo.mp4",
+    "length": "4:35",
+    "note": "two-phone Bluetooth duel, narrated, settled by TxLINE proof"
   },
   "launch_film": {
     "url": "https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana/kickpact-launch.mp4",
