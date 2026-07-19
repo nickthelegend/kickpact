@@ -2,24 +2,16 @@
   "version": "v2.0.0-solana",
   "updated": "2026-07-16",
   "network": "solana-devnet",
-  "android": {
-    "url": "https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana/kickpact-android-arm64.apk",
-    "size": "124 MB",
-    "sha_note": "universal APK \u00b7 io.kickpact.app \u00b7 Solana devnet + TxLINE feeds"
+  "landing": {
+    "url": "https://kickpact.vercel.app"
   },
   "dashboard": {
     "url": "https://kickpact-solana.vercel.app"
   },
-  "repo": {
-    "url": "https://github.com/nickthelegend/kickpact/tree/solana"
-  },
-  "demo": {
-    "url": "https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana/kickpact-demo.mp4",
-    "length": "3:01"
-  },
-  "launch_film": {
-    "url": "https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana/kickpact-launch.mp4",
-    "length": "0:50"
+  "android": {
+    "url": "https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana/kickpact-android-arm64.apk",
+    "size": "124 MB",
+    "sha_note": "universal APK \u00b7 io.kickpact.app \u00b7 Solana devnet + TxLINE feeds"
   },
   "desktop": {
     "mac": {
@@ -42,5 +34,16 @@
       "size": "103 MB",
       "note": "AppImage arm64"
     }
+  },
+  "repo": {
+    "url": "https://github.com/nickthelegend/kickpact/tree/solana"
+  },
+  "demo": {
+    "url": "https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana/kickpact-demo.mp4",
+    "length": "3:01"
+  },
+  "launch_film": {
+    "url": "https://github.com/nickthelegend/kickpact/releases/download/v2.0.0-solana/kickpact-launch.mp4",
+    "length": "0:50"
   }
 }
