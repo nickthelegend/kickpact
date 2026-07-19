@@ -49,6 +49,15 @@
       "offset": 34
     },
     {
+      "id": "07b-physical",
+      "source": "blue",
+      "full": true,
+      "offset": 46,
+      "text": "This is not a screen recording. Two phones, one pair of hands, one room. Pool number twelve, ten dollars a side, opened between them over Bluetooth — and staked on Solana.",
+      "note": "user-supplied handheld footage: demo/capture/blue.mp4",
+      "grade": "eq=brightness=0.06:contrast=1.18:saturation=1.05"
+    },
+    {
       "id": "08-bluetooth",
       "source": "p4-duel",
       "both": true,
@@ -90,11 +99,36 @@
       "offset": 93
     },
     {
-      "id": "14-close",
+      "id": "14-recap",
       "source": "landing",
-      "text": "Bluetooth duels with the people next to you, code duels with the people who aren't, one escrow primitive underneath all of it, and settlement that traces back to a proof. Kickpact — built on TxLINE, settled on Solana.",
       "full": true,
-      "offset": 26
+      "offset": 26,
+      "text": "Bluetooth duels with the people next to you, code duels with the people who aren't, and one escrow primitive underneath all of it."
+    },
+    {
+      "id": "15-txline",
+      "source": "p2-pool-A",
+      "offset": 6,
+      "text": "None of this exists without TxLINE. Getting in took a single on-chain subscription and one signature — no sales call, no API key waiting in an email. Minutes later we had World Cup fixtures, live scores over a streaming feed, and StablePrice odds good enough to put straight in front of a user."
+    },
+    {
+      "id": "16-txline-proof",
+      "source": "p6-receipts-A",
+      "offset": 84,
+      "text": "But the feed is not the clever part. TxLINE hashes every score update into a Merkle tree, publishes the daily roots on Solana, and ships an oracle program that will check a stat against them. That is the piece nobody else gives you: it turns a football result into something a smart contract can verify for itself."
+    },
+    {
+      "id": "17-txline-why",
+      "source": "p6-receipts-A",
+      "offset": 93,
+      "text": "Which is why Kickpact never has to be trusted. Our program takes the outcome a caller claims, rebuilds the winning condition on-chain, and hands it to TxLINE's validator. A caller who lies just fails. There is no admin key over the pot, because there is no longer anything for an admin to decide. We built one market on this — one-x-two on goals. TxLINE also proves cards, corners, and each half separately, so the same escrow, unchanged, settles a hundred markets we haven't written yet."
+    },
+    {
+      "id": "18-close",
+      "source": "landing",
+      "full": true,
+      "offset": 30,
+      "text": "Two phones, a Bluetooth handshake, twenty dollars in escrow, and a payout that traces back to a cryptographic proof of the final score. Built on TxLINE. Settled on Solana. Kickpact."
     }
   ]
 }

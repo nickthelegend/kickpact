@@ -32,18 +32,23 @@ command -v ffmpeg >/dev/null || { echo "ffmpeg required"; exit 1; }
 
 dur() { ffprobe -v error -show_entries format=duration -of csv=p=0 "$1"; }
 
+# Captures live in capture/, but hand-shot footage tends to get dropped straight
+# into demo/. Accept either.
+src_for() { [ -f "$CAP/$1.mp4" ] && echo "$CAP/$1.mp4" || echo "$HERE/$1.mp4"; }
+
 # ffmpeg reads stdin by default and would swallow bytes from the process
 # substitution feeding this loop (it ate the first char of every other line).
 n=0
 : > "$WORK/list.txt"
 
-while IFS=$'\t' read -r id source both full off; do
+while IFS=$'\t' read -r id source both full off grade; do
+  [ "$grade" = "-" ] && grade="null"
   wav="$AUD/$id.wav"
   [ -f "$wav" ] || { echo "!! no narration for $id — run demo/narrate.py"; continue; }
   d=$(dur "$wav")
 
   if [ "$both" = "true" ]; then
-    a="$CAP/$source-A.mp4"; b="$CAP/$source-B.mp4"
+    a=$(src_for "$source-A"); b=$(src_for "$source-B")
     if [ ! -f "$a" ] || [ ! -f "$b" ]; then echo "!! missing $source-A/-B — skipping $id"; continue; fi
     # two phones, side by side, each held on its last frame to the narration length
     ffmpeg -nostdin -y -loglevel error \
@@ -56,14 +61,14 @@ while IFS=$'\t' read -r id source both full off; do
       -map "[v]" -r 30 -t "$d" -c:v libx264 -pix_fmt yuv420p -crf 20 "$WORK/$id.mp4"
   elif [ "$full" = "true" ]; then
     # web/desktop capture — fills the canvas rather than being boxed like a phone
-    src="$CAP/$source.mp4"
+    src=$(src_for "$source")
     [ -f "$src" ] || { echo "!! missing $source.mp4 — skipping $id"; continue; }
     ffmpeg -nostdin -y -loglevel error -ss "$off" -i "$src" \
-      -vf "setpts=PTS-STARTPTS,scale=$W:$H:force_original_aspect_ratio=decrease,pad=$W:$H:(ow-iw)/2:(oh-ih)/2:color=$BG,\
+      -vf "setpts=PTS-STARTPTS,scale=$W:$H:force_original_aspect_ratio=decrease,pad=$W:$H:(ow-iw)/2:(oh-ih)/2:color=$BG,$grade,\
 tpad=stop_mode=clone:stop_duration=600,trim=duration=$d,setsar=1,format=yuv420p" \
       -r 30 -t "$d" -c:v libx264 -crf 20 "$WORK/$id.mp4"
   else
-    src="$CAP/$source.mp4"
+    src=$(src_for "$source")
     [ -f "$src" ] || { echo "!! missing $source.mp4 — skipping $id"; continue; }
     ffmpeg -nostdin -y -loglevel error \
       -ss "$off" -i "$src" -f lavfi -t "$d" -i "color=c=$BG:s=${W}x${H}:r=30" \
@@ -81,7 +86,7 @@ done < <(python3 -c "
 import json,sys
 spec=json.load(open('$HERE/narration.json'))
 for s in spec['segments']:
-    print(s['id'], s['source'], str(s.get('both', False)).lower(), str(s.get('full', False)).lower(), s.get('offset', 0), sep='\t')")
+    print(s['id'], s['source'], str(s.get('both', False)).lower(), str(s.get('full', False)).lower(), s.get('offset', 0), s.get('grade') or '-', sep='\t')")
 
 [ "$n" -gt 0 ] || { echo "nothing to assemble"; exit 1; }
 
